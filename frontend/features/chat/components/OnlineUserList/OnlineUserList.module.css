@@ -1,0 +1,102 @@
+.list {
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.list li {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  gap: 9px;
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 13%, transparent);
+}
+
+.identity {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.identity strong,
+.identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity strong {
+  color: var(--color-text-primary);
+  font-size: 11px;
+}
+
+.identity em {
+  margin-left: 5px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.identity small {
+  margin-top: 3px;
+  color: var(--color-text-secondary);
+  font-size: 9px;
+}
+
+.list button {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 9px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.list button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.list svg {
+  width: 13px;
+  height: 13px;
+}
+
+.selfStatus {
+  color: var(--color-success);
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.state {
+  display: grid;
+  min-height: 180px;
+  flex: 1;
+  margin: 0;
+  padding: 20px;
+  place-items: center;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-align: center;
+}

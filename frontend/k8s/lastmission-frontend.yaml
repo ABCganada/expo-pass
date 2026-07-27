@@ -1,0 +1,77 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lastmission-frontend
+  namespace: lastmission
+  labels:
+    app: lastmission-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lastmission-frontend
+  template:
+    metadata:
+      labels:
+        app: lastmission-frontend
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: asus-vm200
+      containers:
+        - name: lastmission-frontend
+          # 태그는 GitHub Actions(build-ghcr.yml)가 커밋 SHA로 자동 갱신
+          image: ghcr.io/dnjsqja214/lastmission-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lastmission-frontend
+  namespace: lastmission
+spec:
+  selector:
+    app: lastmission-frontend
+  ports:
+    - port: 80
+      targetPort: 3000
+---
+# 프론트 전용 Ingress. 백엔드(/api·/auth)는 viinac/lastmission 저장소에서
+# lastmission-api.coder-han.com 으로 분리 관리한다.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lastmission-frontend
+  namespace: lastmission
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    external-dns.alpha.kubernetes.io/target: viinac.iptime.org
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - lastmission.coder-han.com
+      secretName: lastmission-coder-han-com-tls
+  rules:
+    - host: lastmission.coder-han.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: lastmission-frontend
+                port:
+                  number: 80

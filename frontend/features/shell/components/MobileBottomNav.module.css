@@ -1,0 +1,52 @@
+.container {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid #ededed;
+  border-radius: 20px 20px 0 0;
+  background: var(--color-card-background);
+  box-shadow: 0 -2px 10px rgb(0 0 0 / 0.03);
+
+  /* 활성 여부는 tsx 가 data-active 로만 넘긴다. 아이콘·글자 색은 여기서 상속된다. */
+  .navItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 70px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    color: #a8a7a5;
+    cursor: pointer;
+    transition: color 150ms ease;
+
+    &[data-active="true"] {
+      color: #b83a38;
+    }
+
+    .icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    .label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: inherit;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    display: none;
+  }
+}

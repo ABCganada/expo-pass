@@ -1,0 +1,138 @@
+.picker {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.search > div {
+  position: relative;
+}
+
+.search svg {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-secondary);
+  transform: translateY(-50%);
+}
+
+.search input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px 0 38px;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  outline: 0;
+  background: var(--color-page-background);
+  color: var(--color-text-primary);
+}
+
+.search input:focus {
+  border-color: var(--color-primary);
+}
+
+.results {
+  max-height: 230px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+}
+
+.results > p {
+  margin: 0;
+  padding: 28px 12px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-align: center;
+}
+
+.results > p[data-error="true"] {
+  color: var(--color-danger);
+}
+
+.results button {
+  display: flex;
+  width: 100%;
+  min-height: 50px;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.results button:last-child {
+  border-bottom: 0;
+}
+
+.results button:hover,
+.results button[data-selected="true"] {
+  background: color-mix(in srgb, var(--color-primary) 9%, var(--color-card-background));
+}
+
+.results button[data-selected="true"] {
+  box-shadow: inset 3px 0 var(--color-primary);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-text-secondary);
+  opacity: 0.45;
+}
+
+.results button[data-online="true"] .dot {
+  background: var(--color-success);
+  opacity: 1;
+}
+
+.identity {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.identity strong,
+.identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity strong {
+  font-size: 11px;
+}
+
+.identity small {
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+  font-size: 9px;
+}
+
+.status {
+  color: var(--color-text-secondary);
+  font-size: 9px;
+}
+
+.results button[data-online="true"] .status {
+  color: var(--color-success);
+}

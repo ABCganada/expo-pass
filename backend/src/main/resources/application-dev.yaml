@@ -1,0 +1,20 @@
+server:
+  ssl:
+    enabled: true
+    # IntelliJ 작업 디렉터리인 프로젝트 루트를 기준으로 로컬 개발 인증서를 읽는다.
+    certificate: ${DEV_SSL_CERTIFICATE:file:./frontend/certificates/localhost.pem}
+    certificate-private-key: ${DEV_SSL_PRIVATE_KEY:file:./frontend/certificates/localhost-key.pem}
+
+lastmission:
+  cors:
+    allowed-origins: https://localhost.coder-han.com:3000
+
+  security:
+    csrf:
+      secure-cookie: true
+
+coderhan:
+  auth:
+    # 공통 인증 서버 주소는 .env를 사용하고, 개발용 복귀 주소만 덮어쓴다.
+    post-login-redirect-path: https://localhost.coder-han.com:3000/
+    post-logout-redirect-path: https://localhost.coder-han.com:3000/
