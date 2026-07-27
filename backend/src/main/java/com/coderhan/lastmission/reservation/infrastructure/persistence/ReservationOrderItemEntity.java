@@ -30,16 +30,12 @@ class ReservationOrderItemEntity {
     @Column(name = "unit_price", nullable = false)
     private BigDecimal unitPrice;
 
-    @Column(name = "quantity", nullable = false)
-    private Integer quantity;
-
     @Column(name = "qr_code_hash")
     private String qrCodeHash;
 
-    ReservationOrderItemEntity(String orderId, Long ticketId, BigDecimal unitPrice, Integer quantity) {
+    ReservationOrderItemEntity(String orderId, Long ticketId, BigDecimal unitPrice) {
         this.orderId = orderId;
         this.ticketId = ticketId;
         this.unitPrice = unitPrice;
-        this.quantity = quantity;
     }
 }
