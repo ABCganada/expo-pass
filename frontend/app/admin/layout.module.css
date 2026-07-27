@@ -43,7 +43,7 @@
 
   .content {
     width: 100%;
-    max-width: 1440px;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 16px;
     flex: 1 1 0;
@@ -52,7 +52,7 @@
 
 @media (min-width: 1024px) {
   .main {
-    padding-left: 15rem;
+    padding-left: 16rem;
 
     /* 사이드바가 접히면 그만큼만 비켜선다. */
     &[data-collapsed="true"] {

@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { LogOut, PanelLeftClose, PanelLeftOpen, Users } from "lucide-react";
+import { BarChart3, CalendarDays, ClipboardList, LogOut, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, TicketCheck } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { USER_MENU_ITEMS } from "@/features/shell/constants/navigation";
 import styles from "./AdminSidebar.module.css";
 
 interface AdminSidebarProps {
+  mode: "user" | "manager" | "admin";
   isOpen: boolean;
   onClose: () => void;
   isCollapsed: boolean;
@@ -16,7 +21,20 @@ export function AdminSidebar({
   isCollapsed,
   onToggleCollapse,
   onLogout,
+  mode,
 }: AdminSidebarProps) {
+  const pathname = usePathname();
+  const userIcons = { exhibitions: CalendarDays, reservations: ClipboardList, "qr-ticket": QrCode };
+  const items = mode === "user"
+    ? USER_MENU_ITEMS.map((item) => ({ ...item, href: item.path, icon: userIcons[item.id] }))
+    : mode === "manager" ? [
+        { href: "/manager/reservations", label: "예약자 명단 관리", icon: ClipboardList },
+        { href: "/manager/check-in", label: "QR 체크인", icon: ScanLine },
+        { href: "/manager/check-in/status", label: "체크인 현황", icon: QrCode },
+      ]
+    : [
+        { href: "/admin/exhibitions", label: "행사별 예약 현황", icon: BarChart3 },
+      ];
   return (
     <>
       {isOpen ? <div onClick={onClose} className={styles.backdrop} /> : null}
@@ -27,10 +45,12 @@ export function AdminSidebar({
         <div className={styles.top}>
           <div className={styles.logoArea}>
             <div className={styles.logoGroup}>
-              <div className={styles.logoBadge}>L</div>
+              <div className={styles.logoBadge}><TicketCheck aria-hidden="true" /></div>
               <span className={styles.collapsible}>
-                <span className={styles.logoBrand}>Last Mission</span>
-                <span className={styles.logoSub}>Admin</span>
+                <span className={styles.logoText}>
+                  <span className={styles.logoBrand}>EXPO PASS</span>
+                  <span className={styles.logoSub}>{mode === "user" ? "User" : mode === "manager" ? "Manager" : "Admin"}</span>
+                </span>
               </span>
             </div>
             <button
@@ -43,10 +63,15 @@ export function AdminSidebar({
             </button>
           </div>
           <nav className={styles.nav}>
-            <Link href="/admin/members" className={styles.navItem} data-active="true" onClick={onClose}>
-              <Users className={styles.icon} />
-              <span className={styles.collapsible}>회원 관리</span>
-            </Link>
+            {items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link key={item.href} href={item.href} className={styles.navItem} data-active={pathname === item.href} onClick={onClose}>
+                  <Icon className={styles.icon} />
+                  <span className={styles.collapsible}>{item.label}</span>
+                </Link>
+              );
+            })}
           </nav>
         </div>
         <div className={styles.bottom}>

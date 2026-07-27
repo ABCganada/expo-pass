@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Home, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { CalendarDays, ClipboardList, LogOut, PanelLeftClose, PanelLeftOpen, QrCode } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "../constants/navigation";
 import styles from "./UserSidebar.module.css";
 
@@ -12,6 +13,9 @@ interface UserSidebarProps {
 }
 
 export function UserSidebar({ isCollapsed, onToggleCollapse, onLogout }: UserSidebarProps) {
+  const pathname = usePathname();
+  const icons = { exhibitions: CalendarDays, reservations: ClipboardList, "qr-ticket": QrCode };
+
   return (
     <aside className={styles.sidebar} data-collapsed={isCollapsed}>
       <div className={styles.top}>
@@ -33,12 +37,14 @@ export function UserSidebar({ isCollapsed, onToggleCollapse, onLogout }: UserSid
         </div>
 
         <nav className={styles.nav}>
-          {USER_MENU_ITEMS.map((item) => (
-            <Link key={item.id} href={item.path} className={styles.navLink} data-active="true">
-              <Home className={styles.navIcon} />
+          {USER_MENU_ITEMS.map((item) => {
+            const Icon = icons[item.id];
+            return (
+            <Link key={item.id} href={item.path} className={styles.navLink} data-active={pathname === item.path}>
+              <Icon className={styles.navIcon} />
               <span className={styles.collapsible}>{item.label}</span>
             </Link>
-          ))}
+          );})}
         </nav>
       </div>
 

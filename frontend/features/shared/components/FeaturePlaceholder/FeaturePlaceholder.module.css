@@ -1,0 +1,32 @@
+.page {
+  display: flex;
+  min-height: 420px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card, 16px);
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.iconWrap {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.iconWrap svg { width: 30px; height: 30px; }
+.eyebrow { color: var(--color-primary); font-size: 12px; font-weight: 800; letter-spacing: 0.12em; }
+.page h1 { font-size: 28px; font-weight: 800; }
+.description { max-width: 560px; color: var(--color-text-secondary); line-height: 1.6; }
+.badge { margin-top: 8px; padding: 6px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-page-background); color: var(--color-text-secondary); font-size: 12px; font-weight: 700; }

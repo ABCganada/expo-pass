@@ -16,7 +16,7 @@
 
 # Design Philosophy
 
-Last Mission 은 사내용 인증·메신저 웹앱이다.
+Last Mission 은 박람회 예약·QR 입장 관리와 사내 인증·메신저를 제공하는 웹앱이다.
 
 디자인 키워드
 - Modern
@@ -177,14 +177,16 @@ EmptyState, Loading/Skeleton, Divider.
 ## 레이아웃/셸
 Sidebar, Header, MobileBottomNav, Container, PageHeader, Section, Divider, Footer.
 
-## 도메인 컴포넌트 (last-mission 실제 스코프 = 인증 + 메신저)
+## 도메인 컴포넌트 (last-mission 실제 스코프)
 - **auth**: LoginButton(중앙 인증 리다이렉트), 현재 사용자 표시
 - **chat(메신저)**: MessengerWidget, RoomList, Conversation, OnlineUserList, ParticipantList, UserPicker, RoomActionDialog
-- **shell**: UserSidebar, MobileBottomNav
-- **admin**: AdminHeader, AdminSidebar (회원관리는 API·스키마 승인 전까지 빈 placeholder — mock 데이터 금지)
+- **exhibition/reservation**: 행사 목록, 예약 신청·취소, QR 티켓 (API·스키마 승인 전까지 placeholder)
+- **check-in**: 예약자 명단, QR 체크인, 실시간 체크인 현황 (API·스키마 승인 전까지 placeholder)
+- **shell**: UserSidebar, MobileBottomNav, USER/MANAGER/ADMIN ModeSwitcher
+- **admin**: AdminHeader, AdminSidebar, 행사별 예약 현황 (API·스키마 승인 전까지 placeholder)
 - **theme**: ThemeToggle
 
-> Event/Ticket/Payment/Reservation 등 타 도메인 컴포넌트는 만들지 않는다(스코프 밖).
+> Payment 등 승인되지 않은 타 도메인과 mock 데이터는 만들지 않는다.
 
 ---
 
@@ -254,8 +256,9 @@ Sidebar, Header, MobileBottomNav, Container, PageHeader, Section, Divider, Foote
 
 ```
 app/                      # 라우트 진입점 + 레이아웃
-  (user)/                 # 사용자 셸 레이아웃 + 홈
-  admin/                  # 관리자 셸 + members placeholder
+  (user)/                 # 일반 사용자: 박람회·예약·QR 티켓
+  manager/                # 박람회 관리자: 예약자·체크인
+  admin/                  # 전체 관리자: 행사별 예약 현황
   login/
   globals.css
 features/

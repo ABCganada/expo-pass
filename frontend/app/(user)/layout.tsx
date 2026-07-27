@@ -2,19 +2,19 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ModeSwitcher } from "@/features/auth/components/ModeSwitcher";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { authService } from "@/features/auth/services/authService";
 import { MessengerWidget } from "@/features/chat/components/MessengerWidget/MessengerWidget";
 import { MobileBottomNav } from "@/features/shell/components/MobileBottomNav";
-import { UserSidebar } from "@/features/shell/components/UserSidebar";
-import { ThemeToggle } from "@/features/theme/components/ThemeToggle/ThemeToggle";
+import { AdminSidebar } from "@/features/admin/components/AdminSidebar";
+import { AdminHeader } from "@/features/admin/components/AdminHeader";
 import styles from "./layout.module.css";
 
 export default function UserLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { status: authStatus, user, error: authError } = useAuth();
   const [isUserSidebarCollapsed, setIsUserSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (authStatus === "unauthenticated") router.replace("/login");
@@ -22,7 +22,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      const saved = localStorage.getItem("lastmission-user-sidebar-collapsed");
+      const saved = localStorage.getItem("lastmission-sidebar-collapsed");
       if (saved !== null) setIsUserSidebarCollapsed(saved === "true");
     }, 0);
     return () => window.clearTimeout(timer);
@@ -31,14 +31,12 @@ export default function UserLayout({ children }: { children: ReactNode }) {
   const handleToggleCollapse = () => {
     const collapsed = !isUserSidebarCollapsed;
     setIsUserSidebarCollapsed(collapsed);
-    localStorage.setItem("lastmission-user-sidebar-collapsed", String(collapsed));
+    localStorage.setItem("lastmission-sidebar-collapsed", String(collapsed));
   };
 
   const handleLogout = () => {
     authService.redirectToLogout(`${window.location.origin}/login`);
   };
-
-  const displayName = user?.name?.trim() || user?.email?.trim() || null;
 
   return (
     <div className={styles.shell}>
@@ -51,46 +49,25 @@ export default function UserLayout({ children }: { children: ReactNode }) {
         </div>
       ) : (
         <>
-          <UserSidebar
+          <AdminSidebar
+            mode="user"
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
             isCollapsed={isUserSidebarCollapsed}
             onToggleCollapse={handleToggleCollapse}
             onLogout={handleLogout}
           />
 
-          <div className={styles.main}>
-            <header className={styles.desktopHeader}>
-              <div className={styles.titleGroup}>
-                <h2 className={styles.title}>홈</h2>
-                <span className={styles.subtitle}>서비스 홈</span>
-              </div>
-              <div className={styles.actions}>
-                <ModeSwitcher activeMode="user" roles={user?.roles ?? []} />
-                <div className={styles.profileGroup}>
-                  {displayName ? (
-                    <div className={styles.profile}>
-                      <div className={styles.avatar}>{displayName[0]}</div>
-                      <div className={styles.profileText}>
-                        <span className={styles.profileName}>{displayName}</span>
-                        <span className={styles.profileGoal}>{user?.email}</span>
-                      </div>
-                    </div>
-                  ) : null}
-                  <button onClick={handleLogout} className={styles.logoutButton}>로그아웃</button>
-                  <ThemeToggle />
-                </div>
-              </div>
-            </header>
+          <div className={styles.main} data-collapsed={isUserSidebarCollapsed}>
+            <AdminHeader
+              activeMode="user"
+              onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+              user={user}
+              onLogout={handleLogout}
+            />
 
             <div className={styles.viewport}>
               <div className={styles.contentBox}>
-                <div className={styles.mobileHeader}>
-                  <h1 className={styles.mobileTitle}>홈</h1>
-                  <div className={styles.mobileActions}>
-                    <ModeSwitcher activeMode="user" roles={user?.roles ?? []} compact />
-                    <button onClick={handleLogout} className={styles.mobileLogout}>로그아웃</button>
-                    <ThemeToggle />
-                  </div>
-                </div>
                 {children}
                 <MobileBottomNav />
               </div>

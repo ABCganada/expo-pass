@@ -238,6 +238,15 @@
 }
 
 @media (min-width: 1024px) {
+  .main {
+    padding-left: 16rem;
+    transition: padding-left 200ms ease;
+
+    &[data-collapsed="true"] {
+      padding-left: 72px;
+    }
+  }
+
   .viewport .contentBox {
     max-width: 64rem;
   }

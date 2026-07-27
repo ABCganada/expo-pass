@@ -2,15 +2,16 @@
 
 ## Scope
 
-This package is the Last Mission Next.js frontend. Keep it free of exam, registration, learning-management, and wrong-note domains.
+This package is the Last Mission Next.js frontend. Keep it free of exam, learning-management, and wrong-note domains.
 
 The retained application scope is:
 
 - shared authentication and current-user state
-- user and admin application shells
+- user, exhibition-manager, and platform-admin application shells
+- exhibition discovery, reservations, QR tickets, onsite check-in, and reservation monitoring
 - realtime presence and messenger
 - theme support
-- an empty admin member-management placeholder until its API and database contract are approved
+- empty exhibition/reservation/check-in placeholders until their API and database contracts are approved
 
 ## Structure
 
@@ -19,6 +20,7 @@ The retained application scope is:
 - `features/chat`: messenger UI, API, and models
 - `features/shell`: user navigation shell
 - `features/admin`: admin navigation shell
+- `app/manager`: exhibition-manager routes and access guard
 - `features/shared`: cross-feature API and UI
 - `features/socket`: STOMP connection support
 - `features/store`: Redux store setup
@@ -31,7 +33,7 @@ Keep domain logic inside its feature. Page files should compose feature componen
 - Use TypeScript and the `@/` import alias.
 - Use Redux Toolkit and RTK Query for shared server state.
 - Keep component styles in colocated CSS Modules.
-- Do not introduce mock member data or member-management APIs until the backend and schema are approved.
+- Do not introduce mock exhibition, reservation, ticket, or check-in data until the backend and schema are approved.
 - Do not commit secrets, local environment files, generated certificates, build output, or dependencies.
 - Keep infrastructure identifiers lowercase and hyphen-free when they are used as the cert-core project id: `lastmission`.
 
