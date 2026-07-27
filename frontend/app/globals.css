@@ -27,6 +27,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  letter-spacing: -0.012em;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -34,7 +35,7 @@ body {
 
 html,
 body {
-  transition: background-color 160ms ease, color 160ms ease;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 /* 제목·본문의 기본 크기를 없애고 각 컴포넌트가 직접 정하게 한다. */

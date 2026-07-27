@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Last Mission",
-  description: "Last Mission service",
+  title: "EXPO PASS",
+  description: "박람회 예약과 현장 입장을 연결하는 EXPO PASS",
 };
 
 export default function RootLayout({

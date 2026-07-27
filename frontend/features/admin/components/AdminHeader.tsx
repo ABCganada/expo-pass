@@ -1,17 +1,20 @@
 import React from "react";
 import styles from "./AdminHeader.module.css";
 import { CurrentUser } from "../../auth/types/auth";
-import { ModeSwitcher } from "../../auth/components/ModeSwitcher";
+import { ModeSwitcher, type AppMode } from "../../auth/components/ModeSwitcher/ModeSwitcher";
 import { ThemeToggle } from "../../theme/components/ThemeToggle/ThemeToggle";
 
 interface AdminHeaderProps {
   onMenuToggle: () => void;
   user: CurrentUser | null;
   onLogout: () => void;
+  activeMode: AppMode;
 }
 
-export function AdminHeader({ onMenuToggle, user, onLogout }: AdminHeaderProps) {
+export function AdminHeader({ onMenuToggle, user, onLogout, activeMode }: AdminHeaderProps) {
   const displayName = user?.name?.trim() || user?.email?.trim() || null;
+  const modeTitle = activeMode === "user" ? "박람회 예약" : activeMode === "manager" ? "박람회 운영" : "운영 대시보드";
+  const modeLabel = activeMode === "user" ? "USER" : activeMode === "manager" ? "MANAGER" : "ADMIN";
 
   return (
     <header className={styles.header}>
@@ -31,17 +34,17 @@ export function AdminHeader({ onMenuToggle, user, onLogout }: AdminHeaderProps) 
 
         <div className={styles.titleArea}>
           <h2 className={styles.title}>
-            Last Mission
+            {modeTitle}
           </h2>
           <span className={styles.prototypeBadge}>
-            프로토타입
+            {modeLabel}
           </span>
         </div>
       </div>
 
       {/* 우측 영역 */}
       <div className={styles.rightSection}>
-        <ModeSwitcher activeMode="admin" roles={user?.roles ?? []} compact />
+        <ModeSwitcher activeMode={activeMode} roles={user?.roles ?? []} compact />
         <div className={styles.userGroup}>
           {displayName ? (
             <div className={styles.userArea}>
