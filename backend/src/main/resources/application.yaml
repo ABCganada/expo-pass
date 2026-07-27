@@ -1,0 +1,73 @@
+server:
+  port: ${SERVER_PORT}
+
+spring:
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
+      - optional:file:../../.env[.properties]
+
+  application:
+    name: ${SPRING_APPLICATION_NAME}
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: ${DB_DRIVER_CLASS_NAME}
+    hikari:
+      initialization-fail-timeout: ${DB_HIKARI_INITIALIZATION_FAIL_TIMEOUT}
+
+  # 초기 스키마 기준선을 확정한 뒤 환경변수로 활성화한다.
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:false}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    security:
+      protocol: SSL
+    ssl:
+      bundle: kafka-bundle
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: latest
+
+lastmission:
+  security:
+    csrf:
+      secure-cookie: ${LASTMISSION_CSRF_SECURE_COOKIE:true}
+
+  kafka:
+    enabled: ${LASTMISSION_KAFKA_ENABLED}
+    topic: ${LASTMISSION_KAFKA_TOPIC}
+    consumer-group: ${LASTMISSION_KAFKA_CONSUMER_GROUP}
+
+coderhan:
+  vault:
+    cert:
+      # Vault DB 클라이언트 인증서의 CN이자 CockroachDB 사용자명
+      db-common-name: ${VAULT_DB_COMMON_NAME}
+      # Kafka 클라이언트 인증서의 CN (Strimzi KafkaUser lastmission-svc-main과 일치)
+      kafka-common-name: ${VAULT_KAFKA_COMMON_NAME}
+      bootstrap-dir: ${VAULT_BOOTSTRAP_DIR}
+      log-dir: ${VAULT_LOG_DIR}
+      auth-mount: ${VAULT_AUTH_MOUNT}
+      uri: ${VAULT_URI}
+      authentication: ${VAULT_AUTHENTICATION}
+      auth-role: ${VAULT_AUTH_ROLE}
+      db-pki-path: ${VAULT_DB_PKI_PATH}
+      kafka-pki-path: ${VAULT_KAFKA_PKI_PATH}
+
+  auth:
+    project-id: ${AUTH_PROJECT_ID}
+    app-id: ${AUTH_APP_ID}
+    check-url: ${AUTH_CHECK_URL}
+    login-url: ${AUTH_LOGIN_URL}
+    logout-url: ${AUTH_LOGOUT_URL}
+    post-login-redirect-path: ${POST_LOGIN_REDIRECT}
+    post-logout-redirect-path: ${POST_LOGOUT_REDIRECT}

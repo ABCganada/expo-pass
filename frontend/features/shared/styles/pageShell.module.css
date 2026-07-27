@@ -1,0 +1,50 @@
+/*
+ * 사용자 화면 페이지의 공통 바깥 여백/간격.
+ * 각 페이지의 module.css 에서 `composes: shell from "..."` 로 가져다 쓴다.
+ */
+.shell {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px 20px;
+  color: var(--color-text-primary);
+}
+
+/* 자체 스크롤을 갖는 화면용 */
+.shellFixed {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  gap: 24px;
+  height: 100%;
+  min-height: 0;
+  padding: 24px 16px 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+}
+
+/* 안내 문구만 있는 빈 화면 */
+.centeredState {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .shell,
+  .shellFixed {
+    padding-right: 32px;
+    padding-left: 32px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .shell,
+  .shellFixed {
+    padding: 32px;
+  }
+}

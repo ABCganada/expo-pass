@@ -1,0 +1,20 @@
+:root[data-theme="dark"] {
+  --color-primary: #e0524d;
+  --color-primary-hover: #f06a65;
+  --color-page-background: #101111;
+  --color-content-background: #161717;
+  --color-card-background: #202121;
+  --color-sidebar-background: #0b0c0c;
+  --color-border: #373838;
+  --color-text-primary: #f4f3ef;
+  --color-text-secondary: #aaa8a2;
+  --color-success: #75b987;
+  --color-danger: #f06a65;
+  --color-main-background: var(--color-content-background);
+  --color-primary-red: var(--color-primary);
+  --color-success-green: var(--color-success);
+  --color-warning-red: var(--color-danger);
+  --color-dark-background: #0b0c0c;
+  --background: var(--color-page-background);
+  --foreground: var(--color-text-primary);
+}

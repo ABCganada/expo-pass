@@ -1,0 +1,36 @@
+.switcher {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-page-background);
+
+  /* 현재 모드 여부는 aria-current 가 이미 알려주므로 그대로 선택자로 쓴다. */
+  .link {
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    transition: background-color 150ms ease, color 150ms ease;
+
+    &:hover {
+      background: var(--color-card-background);
+      color: var(--color-text-primary);
+    }
+
+    &[aria-current="page"] {
+      background: var(--color-dark-background);
+      color: #ffffff;
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+    }
+  }
+
+  /* 관리자 헤더처럼 좁은 자리에서 쓰는 축소형 */
+  &[data-compact="true"] .link {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+}

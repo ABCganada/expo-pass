@@ -1,0 +1,70 @@
+name: Build and Push Frontend Image to GHCR
+
+on:
+  push:
+    branches:
+      - main
+    # 매니페스트·문서만 바뀐 push는 재빌드 건너뜀.
+    # (아래 태그 갱신 커밋이 k8s/ 를 건드리므로 무한루프 방지에도 필요)
+    paths-ignore:
+      - 'k8s/**'
+      - '**.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write # 매니페스트 태그 갱신 커밋을 push 하려면 write 필요
+  packages: write # GHCR push
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Validate frontend build configuration
+        run: test -n "$NEXT_PUBLIC_API_URL"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 빌드와 push 를 한 단계로 처리한다.
+      # `docker build` 후 별도 `docker push` 로 나누면 GHCR 에서 `unknown blob` 으로 실패했다.
+      # provenance/sbom 을 끄는 이유도 같다 — 부가 매니페스트 없이 이미지만 단순하게 올린다.
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          provenance: false
+          sbom: false
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/lastmission-frontend:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/lastmission-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 빌드한 이미지의 SHA 태그를 매니페스트에 써넣고 커밋·push
+      # → ArgoCD가 매니페스트 변경을 감지해 자동 배포
+      # [skip ci] + paths-ignore(k8s/**) 로 이 커밋이 워크플로를 재트리거하지 않게 함
+      - name: Update manifest image tag
+        run: |
+          sed -i -E "s|(image: ghcr\.io/[^:]+/lastmission-frontend):.*|\1:${{ github.sha }}|" k8s/lastmission-frontend.yaml
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/lastmission-frontend.yaml
+          git commit -m "chore: bump image tag to ${{ github.sha }} [skip ci]" || echo "no changes to commit"
+          git push origin HEAD:main

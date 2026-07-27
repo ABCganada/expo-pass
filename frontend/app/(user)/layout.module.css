@@ -1,0 +1,273 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--color-page-background);
+  color: var(--color-text-primary);
+  overflow-x: hidden;
+}
+
+/* 로그인 확인 / 오류 안내 화면 */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 100vh;
+  padding: 0 16px;
+  background: var(--color-page-background);
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  text-align: center;
+
+  .stateTitle {
+    color: var(--color-text-primary);
+    font-weight: 700;
+  }
+
+  .stateDetail {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+  }
+}
+
+.main {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* 데스크톱 상단 헤더 */
+.desktopHeader {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-card-background);
+
+  .titleGroup {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+  }
+
+  .subtitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .profileGroup {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-left: 16px;
+    border-left: 1px solid var(--color-border);
+  }
+
+  .profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    background: #b83a38;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .profileText {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .profileName {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-text-primary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profileGoal {
+    overflow: hidden;
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .logoutButton {
+    padding: 6px 12px;
+    border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 150ms ease, border-color 150ms ease;
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
+      color: var(--color-text-primary);
+    }
+  }
+}
+
+/* D-Day 배지 — 데스크톱/모바일 공용 */
+.dDayBadge {
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: #b83a38;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+/* 콘텐츠 뷰포트 */
+.viewport {
+  flex: 1 1 0;
+  overflow-y: auto;
+  background: var(--color-content-background);
+
+  .contentBox {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 28rem;
+    min-height: 100vh;
+    margin: 0 auto;
+    background: var(--color-content-background);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+    overflow: hidden;
+  }
+}
+
+/* 모바일·태블릿 헤더 */
+.mobileHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 24px 20px 4px;
+
+  .mobileTitle {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+  }
+
+  .mobileActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .mobileDDay {
+    padding: 6px 12px;
+    border-radius: 9999px;
+    background: #b83a38;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+  }
+
+  .mobileLogout {
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 9999px;
+    background: var(--color-card-background);
+    color: var(--color-primary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+    cursor: pointer;
+  }
+}
+
+@media (min-width: 768px) {
+  .shell {
+    flex-direction: row;
+  }
+
+  .viewport .contentBox {
+    max-width: 42rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .viewport .contentBox {
+    max-width: 64rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .desktopHeader {
+    display: flex;
+  }
+
+  .mobileHeader {
+    display: none;
+  }
+
+  .viewport {
+    /* 자체 스크롤을 갖는 화면에서는 바깥 스크롤을 고정한다. */
+    &[data-fixed-height="true"] {
+      overflow: hidden;
+    }
+
+    .contentBox {
+      justify-content: flex-start;
+      max-width: 1440px;
+      min-height: 0;
+      box-shadow: none;
+      overflow: visible;
+    }
+
+    &[data-fixed-height="true"] .contentBox {
+      height: 100%;
+    }
+  }
+}

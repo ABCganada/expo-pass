@@ -1,0 +1,38 @@
+/*
+ * 여러 기능에서 공통으로 쓰는 카드 패널.
+ * 각 컴포넌트의 module.css 에서 `composes: panel from "..."` 로 가져다 쓴다.
+ */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-card-background);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+}
+
+.panelTitle {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-page-background);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* 목록 한 줄 — 마지막 줄은 구분선을 지운다. */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-page-background);
+  font-size: 13px;
+
+  &:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+}

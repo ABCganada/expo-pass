@@ -1,0 +1,136 @@
+.header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 64px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-card-background);
+
+  .leftSection {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .menuToggle {
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: background-color 150ms ease;
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-page-background) 40%, transparent);
+    }
+
+    &:focus {
+      outline: none;
+    }
+
+    .menuIcon {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .titleArea {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+  }
+
+  .prototypeBadge {
+    padding: 2px 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-page-background);
+    color: var(--color-text-secondary);
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .rightSection {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .userGroup {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .userArea {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .userAvatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    background: var(--color-primary);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .userName {
+    display: none;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  .logoutButton {
+    margin-left: 4px;
+    padding: 6px 12px;
+    border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 150ms ease, border-color 150ms ease;
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
+      color: var(--color-text-primary);
+    }
+  }
+}
+
+@media (min-width: 640px) {
+  .header .userName {
+    display: inline-block;
+  }
+}
+
+@media (min-width: 1024px) {
+  .header {
+    padding: 0 32px;
+
+    .menuToggle {
+      display: none;
+    }
+  }
+}

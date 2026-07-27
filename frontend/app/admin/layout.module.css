@@ -1,0 +1,66 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--color-page-background);
+  color: var(--color-text-primary);
+  overflow-x: hidden;
+}
+
+/* 로그인 확인 / 오류 / 권한 없음 안내 화면 */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 100vh;
+  padding: 0 16px;
+  background: var(--color-page-background);
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  text-align: center;
+
+  .stateTitle {
+    color: var(--color-text-primary);
+    font-weight: 700;
+  }
+
+  .stateDetail {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+  }
+}
+
+/* 사이드바 폭만큼 비켜서는 본문 영역 */
+.main {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: padding-left 200ms ease;
+
+  .content {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 16px;
+    flex: 1 1 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .main {
+    padding-left: 15rem;
+
+    /* 사이드바가 접히면 그만큼만 비켜선다. */
+    &[data-collapsed="true"] {
+      padding-left: 72px;
+    }
+
+    .content {
+      padding: 32px;
+    }
+  }
+}
