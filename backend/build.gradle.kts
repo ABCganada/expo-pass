@@ -64,6 +64,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-kafka")
 
     // DB 의존성 (CockroachDB / PostgreSQL 호환)
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-core")
