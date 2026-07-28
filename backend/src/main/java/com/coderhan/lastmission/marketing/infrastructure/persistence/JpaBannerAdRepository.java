@@ -1,0 +1,68 @@
+package com.coderhan.lastmission.marketing.infrastructure.persistence;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import com.coderhan.lastmission.marketing.application.BannerAdRepository;
+import com.coderhan.lastmission.marketing.domain.BannerAd;
+import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+
+@Repository
+@RequiredArgsConstructor
+class JpaBannerAdRepository implements BannerAdRepository {
+    private final BannerAdJpaRepository jpaRepository;
+
+    @Override
+    public BannerAd save(UUID slotId, String title, String imageUrl, String linkUrl,
+                         int priority, OffsetDateTime startsAt, OffsetDateTime endsAt, String createdBy) {
+        BannerAdEntity saved = jpaRepository.save(
+                new BannerAdEntity(null, slotId, title, imageUrl, linkUrl, priority,
+                        BannerAdStatus.PENDING, startsAt, endsAt, createdBy, OffsetDateTime.now()));
+        return toDomain(saved);
+    }
+
+    @Override
+    public Optional<BannerAd> findById(UUID id) {
+        return jpaRepository.findById(id).map(JpaBannerAdRepository::toDomain);
+    }
+
+    @Override
+    public List<BannerAd> findActiveBySlot(UUID slotId, OffsetDateTime now) {
+        return jpaRepository.findActiveBySlot(slotId, BannerAdStatus.APPROVED, now).stream()
+                .map(JpaBannerAdRepository::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<BannerAd> findAllActive(OffsetDateTime now) {
+        return jpaRepository.findAllActive(BannerAdStatus.APPROVED, now).stream()
+                .map(JpaBannerAdRepository::toDomain)
+                .toList();
+    }
+
+    @Override
+    public BannerAd updateStatus(UUID id, BannerAdStatus status) {
+        BannerAdEntity entity = jpaRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("BannerAd not found: " + id));
+        entity.setStatus(status);
+        return toDomain(jpaRepository.save(entity));
+    }
+
+    @Override
+    public BannerAd update(UUID id, String title, String imageUrl, String linkUrl,
+                           int priority, OffsetDateTime startsAt, OffsetDateTime endsAt) {
+        BannerAdEntity entity = jpaRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("BannerAd not found: " + id));
+        entity.update(title, imageUrl, linkUrl, priority, startsAt, endsAt);
+        return toDomain(jpaRepository.save(entity));
+    }
+
+    private static BannerAd toDomain(BannerAdEntity entity) {
+        return new BannerAd(entity.getId(), entity.getSlotId(), entity.getTitle(), entity.getImageUrl(),
+                entity.getLinkUrl(), entity.getPriority(), entity.getStatus(),
+                entity.getStartsAt(), entity.getEndsAt(), entity.getCreatedBy(), entity.getCreatedAt());
+    }
+}
