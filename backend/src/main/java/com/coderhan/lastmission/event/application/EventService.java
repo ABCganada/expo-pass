@@ -11,6 +11,8 @@ import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
+import com.coderhan.lastmission.user.UserDirectory;
+import com.coderhan.lastmission.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventService {
     private final EventRepository eventRepository;
     private final EventCategoryRepository eventCategoryRepository;
+    private final UserDirectory userDirectory;
 
     @Transactional(readOnly = true)
     public List<EventListItem> getPublishedEvents() {
@@ -54,6 +57,10 @@ public class EventService {
         }
         EventCategory category = eventCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_CATEGORY_NOT_FOUND, "카테고리를 찾을 수 없습니다."));
+        userDirectory.findActiveAccessById(managerId)
+                .filter(access -> access.roles().contains(UserRole.MANAGER))
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.EVENT_MANAGER_NOT_FOUND, "MANAGER 권한을 가진 담당자를 찾을 수 없습니다."));
         return eventRepository.save(new Event(title, category, managerId));
     }
 
