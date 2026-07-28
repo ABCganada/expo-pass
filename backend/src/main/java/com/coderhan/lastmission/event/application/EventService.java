@@ -70,6 +70,13 @@ public class EventService {
         if (command.title() == null || command.title().isBlank()) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "제목은 비어 있을 수 없습니다.");
         }
+        if (command.startDate() != null && command.endDate() != null
+                && command.endDate().isBefore(command.startDate())) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "종료일은 시작일보다 빠를 수 없습니다.");
+        }
+        if (command.legalDongCode() != null && command.legalDongCode().length() > 10) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "법정동코드는 10자를 초과할 수 없습니다.");
+        }
         EventCategory category = eventCategoryRepository.findById(command.categoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_CATEGORY_NOT_FOUND, "카테고리를 찾을 수 없습니다."));
         event.updateDetails(command.title(), category, command.hostName(), command.venueName(),
