@@ -59,6 +59,7 @@ lastmission:
     enabled: ${LASTMISSION_KAFKA_ENABLED}
     topic: ${LASTMISSION_KAFKA_TOPIC}
     consumer-group: ${LASTMISSION_KAFKA_CONSUMER_GROUP}
+    waiting-room-consumer-group: ${LASTMISSION_KAFKA_WAITING_ROOM_CONSUMER_GROUP}
 
 coderhan:
   vault:

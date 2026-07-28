@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ReservationService {
     private final ReservationRepository repository;
+    private final WaitingRoomService waitingRoomService;   // ← 추가
     private final Clock clock;
 
     /**
@@ -24,6 +25,7 @@ public class ReservationService {
      */
     @Transactional
     public OrderDetail createOrder(long userId, long eventId, List<OrderItemRequest> items) {
+        waitingRoomService.consumeAdmission(userId, eventId);
         ReservationOrder.validateEventId(eventId);
         if (items == null || items.isEmpty()) {
             throw new BusinessException(ErrorCode.RESERVATION_INVALID_REQUEST, "주문할 티켓 항목이 없습니다.");
