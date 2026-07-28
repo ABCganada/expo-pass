@@ -10,6 +10,7 @@ import lombok.Builder;
 public record Payment(
         long id,
         String orderId,
+        Long userId,
         String idempotencyKey,
         BigDecimal amount,
         String method,

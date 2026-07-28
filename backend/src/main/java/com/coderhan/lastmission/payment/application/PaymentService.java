@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.payment.application;
 
 import java.math.BigDecimal;
+import java.util.List;
 import com.coderhan.lastmission.payment.domain.Payment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -24,20 +25,20 @@ public class PaymentService {
      * 유니크 제약 위반으로 실패하면 CockroachDB/Postgres는 같은 트랜잭션 안의 이후 쿼리를 전부
      * 거부하므로, 실패 시 재조회는 반드시 새 트랜잭션(Spring Data 기본 메서드별 트랜잭션)에서 해야 한다.
      */
-    public Payment confirm(String reservationOrderId, String pgOrderId, String paymentKey,
-                           BigDecimal amount) {
+    public Payment confirm(long userId, String reservationOrderId, String pgOrderId,
+                           String paymentKey, BigDecimal amount) {
         Payment.validate(reservationOrderId, pgOrderId, paymentKey, amount);
 
         return repository.findByIdempotencyKey(paymentKey)
-                .orElseGet(() -> confirmAndSave(reservationOrderId, pgOrderId, paymentKey, amount));
+                .orElseGet(() -> confirmAndSave(userId, reservationOrderId, pgOrderId, paymentKey, amount));
     }
 
-    private Payment confirmAndSave(String reservationOrderId, String pgOrderId, String paymentKey,
-                                   BigDecimal amount) {
+    private Payment confirmAndSave(long userId, String reservationOrderId, String pgOrderId,
+                                   String paymentKey, BigDecimal amount) {
         PaymentGateway.ConfirmResult result = paymentGateway.confirm(paymentKey, pgOrderId, amount);
 
         try {
-            return repository.save(reservationOrderId, paymentKey, amount, result.method(), "TOSS",
+            return repository.save(reservationOrderId, userId, paymentKey, amount, result.method(), "TOSS",
                     pgOrderId, paymentKey, result.approvedAt());
         } catch (DataIntegrityViolationException e) {
             /** paymentKey(idempotency_key) 경합이면 먼저 커밋된 쪽을 반환.
@@ -45,5 +46,9 @@ public class PaymentService {
              * 그대로 예외를 던진다(토스에는 이미 승인 요청을 보냈지만, 우리 쪽엔 저장하지 않는다). */
             return repository.findByIdempotencyKey(paymentKey).orElseThrow(() -> e);
         }
+    }
+
+    public List<Payment> getMyPayments(long userId) {
+        return repository.findByUserId(userId);
     }
 }
