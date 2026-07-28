@@ -27,7 +27,6 @@ class JpaBannerStatRepository implements BannerStatRepository {
     public BannerAdStats sumStats(UUID adId) {
         long impressions = impressionJpa.sumCountByAdId(adId);
         long clicks = clickJpa.sumCountByAdId(adId);
-        double ctr = impressions == 0 ? 0.0 : (double) clicks / impressions * 100;
-        return new BannerAdStats(adId, impressions, clicks, ctr);
+        return BannerAdStats.of(adId, impressions, clicks);
     }
 }
