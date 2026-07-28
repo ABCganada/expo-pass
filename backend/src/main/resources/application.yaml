@@ -23,6 +23,19 @@ spring:
   flyway:
     enabled: ${SPRING_FLYWAY_ENABLED:false}
 
+  jpa:
+    database-platform: org.hibernate.dialect.CockroachDialect
+    # false로 꺼야 Hibernate가 기동 시점에 Dialect 확인용 DB 커넥션을 열지 않는다.
+    # 그 시점엔 Vault가 발급하는 DB SSL 번들이 아직 준비 안 됐을 수 있어서, 열려고 하면
+    # 30초 타임아웃을 매번 겪는다(위의 database-platform 값으로 대체되긴 하지만 느려짐).
+    properties:
+      hibernate:
+        boot:
+          allow_jdbc_metadata_access: false
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     security:
