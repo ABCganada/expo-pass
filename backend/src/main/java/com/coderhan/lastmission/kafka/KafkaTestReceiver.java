@@ -21,7 +21,7 @@ public class KafkaTestReceiver {
 
     @KafkaListener(
             topics = "${lastmission.kafka.topic}",
-            groupId = "${lastmission.kafka.consumer-group}",
+            groupId = "lastmission-main-dev-kafka-test-receiver",
             autoStartup = "${lastmission.kafka.enabled:false}"
     )
     public void listen(String message) {
