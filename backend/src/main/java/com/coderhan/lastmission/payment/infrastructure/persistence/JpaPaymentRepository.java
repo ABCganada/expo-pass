@@ -29,6 +29,11 @@ class JpaPaymentRepository implements PaymentRepository {
     }
 
     @Override
+    public Optional<Payment> findById(long id) {
+        return jpaRepository.findById(id).map(JpaPaymentRepository::toDomain);
+    }
+
+    @Override
     public Optional<Payment> findByIdempotencyKey(String idempotencyKey) {
         return jpaRepository.findByIdempotencyKey(idempotencyKey).map(JpaPaymentRepository::toDomain);
     }
