@@ -1,5 +1,5 @@
 export interface NavigationItem {
-  id: "exhibitions" | "reservations" | "qr-ticket" | "vip-ads";
+  id: "exhibitions" | "reservations" | "qr-ticket" | "payments" | "vip-ads";
   label: string;
   path: string;
 }
@@ -9,4 +9,5 @@ export const USER_MENU_ITEMS: NavigationItem[] = [
   { id: "reservations", label: "내 예약 내역", path: "/reservations" },
   { id: "qr-ticket", label: "QR 티켓", path: "/tickets/qr" },
   { id: "vip-ads", label: "VIP 광고", path: "/vip-ads" },
+  { id: "payments", label: "내 결제 내역", path: "/payments" },
 ];
