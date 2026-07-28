@@ -1,0 +1,130 @@
+### 마케팅 배너 API
+### Base URL: https://localhost.coder-han.com:8080
+
+@baseUrl = https://localhost.coder-han.com:8080
+
+# 아래 토큰은 실행 전 로그인 후 발급받은 토큰으로 교체
+@adminToken = Bearer <ADMIN_TOKEN>
+@marketerToken = Bearer <MARKETER_TOKEN>
+
+# 슬롯/광고 ID는 생성 후 응답에서 복사해서 사용
+@slotId = <SLOT_ID>
+@adId = <AD_ID>
+
+
+### ============================
+### [고객] 활성 배너 목록 조회
+### ============================
+
+GET {{baseUrl}}/api/v1/banners
+Accept: application/json
+
+
+### ============================
+### [관리자] 슬롯 생성
+### ============================
+
+POST {{baseUrl}}/api/v1/admin/banner/slots
+Authorization: {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "메인 상단 배너",
+  "maxCount": 3
+}
+
+
+### ============================
+### [관리자] 슬롯 목록 조회
+### ============================
+
+GET {{baseUrl}}/api/v1/admin/banner/slots
+Authorization: {{adminToken}}
+Accept: application/json
+
+
+### ============================
+### [관리자] 슬롯 단건 조회
+### ============================
+
+GET {{baseUrl}}/api/v1/admin/banner/slots/{{slotId}}
+Authorization: {{adminToken}}
+Accept: application/json
+
+
+### ============================
+### [마케터] 광고 등록
+### ============================
+
+POST {{baseUrl}}/api/v1/marketer/banner-ads
+Authorization: {{marketerToken}}
+Content-Type: application/json
+
+{
+  "slotId": "{{slotId}}",
+  "title": "여름 세일 광고",
+  "imageUrl": "https://example.com/images/summer-sale.png",
+  "linkUrl": "https://example.com/sale",
+  "priority": 1,
+  "startsAt": "2026-07-28T00:00:00+09:00",
+  "endsAt": "2026-08-31T23:59:59+09:00"
+}
+
+
+### ============================
+### [마케터] 광고 수정 (PENDING 상태만 가능)
+### ============================
+
+PUT {{baseUrl}}/api/v1/marketer/banner-ads/{{adId}}
+Authorization: {{marketerToken}}
+Content-Type: application/json
+
+{
+  "title": "여름 세일 광고 (수정)",
+  "imageUrl": "https://example.com/images/summer-sale-v2.png",
+  "linkUrl": "https://example.com/sale",
+  "priority": 2,
+  "startsAt": "2026-07-28T00:00:00+09:00",
+  "endsAt": "2026-08-31T23:59:59+09:00"
+}
+
+
+### ============================
+### [관리자] 광고 승인
+### ============================
+
+POST {{baseUrl}}/api/v1/admin/banner/ads/{{adId}}/approve
+Authorization: {{adminToken}}
+Content-Type: application/json
+
+
+### ============================
+### [관리자] 광고 거절
+### ============================
+
+POST {{baseUrl}}/api/v1/admin/banner/ads/{{adId}}/reject
+Authorization: {{adminToken}}
+Content-Type: application/json
+
+
+### ============================
+### [고객] 배너 노출 기록
+### ============================
+
+POST {{baseUrl}}/api/v1/banners/{{adId}}/impressions
+
+
+### ============================
+### [고객] 배너 클릭 기록
+### ============================
+
+POST {{baseUrl}}/api/v1/banners/{{adId}}/clicks
+
+
+### ============================
+### [관리자] 광고 통계 조회
+### ============================
+
+GET {{baseUrl}}/api/v1/admin/banner/ads/{{adId}}/stats
+Authorization: {{adminToken}}
+Accept: application/json
