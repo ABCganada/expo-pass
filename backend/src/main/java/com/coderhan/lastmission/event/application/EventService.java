@@ -5,13 +5,14 @@ import java.util.List;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.event.domain.EventStatus;
+import com.coderhan.lastmission.shared.error.BusinessException;
+import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * DRAFT/CANCELLED는 고객에게 보이지 않는다 — PUBLISHED만 조회한다.
- * UPCOMING/ONGOING/ENDED는 저장되지 않으므로 조회 시점에 {@link Event#phase}로 계산해서 붙여준다.
+ * 행사 목록 조회 - PUBLISHED만 조회
  */
 @Service
 @RequiredArgsConstructor
@@ -27,5 +28,18 @@ public class EventService {
                 .toList();
     }
 
+    /**
+     * 행사 상세 조회
+     */
+    @Transactional(readOnly = true)
+    public EventDetail getEventDetail(long id) {
+        Event event = eventRepository.findNotDeletedById(id)
+                .filter(candidate -> candidate.getStatus() != EventStatus.DRAFT)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        return new EventDetail(event, event.phase(LocalDate.now()));
+    }
+
     public record EventListItem(Event event, EventPhase phase) {}
+
+    public record EventDetail(Event event, EventPhase phase) {}
 }
