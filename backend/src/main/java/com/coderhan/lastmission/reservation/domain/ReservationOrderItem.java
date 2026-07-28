@@ -7,7 +7,7 @@ import com.coderhan.lastmission.shared.error.ErrorCode;
 /**
  * 주문에 속한 티켓 항목 한 건 — 티켓 한 장(row 하나 = 티켓 한 장)을 의미한다.
  *
- * <p>같은 티켓을 여러 장 사면(quantity &gt; 1), row 가 여러 개 생긴다. 각 장마다 현장에서
+ * <p>같은 티켓을 여러 장 사면, row 가 여러 개 생긴다. 각 장마다 현장에서
  * 독립적으로 QR 체크인이 되어야 하므로, {@code quantity} 는 이 record 에 저장하지 않는다
  * (요청 시점에만 존재 — {@link #validate}, {@code ReservationService} 참고).</p>
  *
