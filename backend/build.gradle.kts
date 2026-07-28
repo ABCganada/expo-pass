@@ -3,7 +3,7 @@ import org.gradle.authentication.http.HttpHeaderAuthentication
 
 plugins {
     java
-    id("org.springframework.boot") version "4.0.5"
+    id("org.springframework.boot") version "4.1.0"
     id("io.spring.dependency-management") version "1.1.7"
 }
 
@@ -42,7 +42,7 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.modulith:spring-modulith-bom:2.0.5")
+        mavenBom("org.springframework.modulith:spring-modulith-bom:2.1.0")
     }
 }
 
@@ -55,13 +55,16 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-websocket")
 
     // coder-han 중앙 인증 클라이언트
-    implementation("com.coder-han:coder-han-auth-client:0.1.0-SNAPSHOT")
+    implementation("com.coder-han:coder-han-auth-client:0.1.1-SNAPSHOT")
 
     // CoderHan Vault Cert 라이브러리 (운영 CockroachDB/Kafka 인증서 접속)
-    implementation("com.coder-han:coder-han-vault-cert:0.5.19-SNAPSHOT")
+    implementation("com.coder-han:coder-han-vault-cert:0.5.20-SNAPSHOT")
 
     // Kafka
     implementation("org.springframework.boot:spring-boot-starter-kafka")
+
+    // Valkey 기반 분산락 (Spring Boot 4.x 연동)
+    implementation("org.redisson:redisson-spring-boot-starter:4.6.1")
 
     // DB 의존성 (CockroachDB / PostgreSQL 호환)
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
