@@ -24,7 +24,7 @@ class ApiExceptionHandler {
                     HttpStatus.FORBIDDEN;
             case INVALID_REQUEST, CHAT_MESSAGE_INVALID, CHAT_ROOM_INVALID, RESERVATION_INVALID_REQUEST,
                     BANNER_AD_INVALID_REQUEST, BANNER_AD_ALREADY_REVIEWED, ADMIN_ROLE_INVALID,
-                    PAYMENT_INVALID_REQUEST ->
+                    PAYMENT_INVALID_REQUEST, PAYMENT_CONFIRM_FAILED ->
                     HttpStatus.BAD_REQUEST;
             case CHAT_PARTICIPANT_EXISTS, ADMIN_SELF_DEMOTION -> HttpStatus.CONFLICT;
         };

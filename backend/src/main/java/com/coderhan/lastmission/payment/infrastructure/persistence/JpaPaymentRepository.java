@@ -15,11 +15,15 @@ class JpaPaymentRepository implements PaymentRepository {
     private final PaymentJpaRepository jpaRepository;
 
     @Override
-    public Payment save(String orderId, String idempotencyKey, BigDecimal amount, String method,
-            String pgProvider) {
+    public Payment save(String orderId, String idempotencyKey, BigDecimal amount,
+                        String method, String pgProvider, String pgOrderId,
+                        String pgTransactionId, OffsetDateTime paidAt) {
         OffsetDateTime now = OffsetDateTime.now();
+
         PaymentEntity saved = jpaRepository.save(
-                new PaymentEntity(orderId, idempotencyKey, amount, method, pgProvider, now));
+                new PaymentEntity(orderId, idempotencyKey, amount, method, pgProvider, pgOrderId, pgTransactionId,
+                        paidAt, now));
+
         return toDomain(saved);
     }
 

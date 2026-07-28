@@ -59,14 +59,18 @@ class PaymentEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    /** 승인(confirm) 성공 직후 COMPLETED 상태로 바로 만든다 — REQUESTED row를 거치지 않는다. */
     PaymentEntity(String orderId, String idempotencyKey, BigDecimal amount, String method, String pgProvider,
-            OffsetDateTime now) {
+            String pgOrderId, String pgTransactionId, OffsetDateTime paidAt, OffsetDateTime now) {
         this.orderId = orderId;
         this.idempotencyKey = idempotencyKey;
         this.amount = amount;
         this.method = method;
-        this.status = PaymentStatus.REQUESTED;
+        this.status = PaymentStatus.COMPLETED;
         this.pgProvider = pgProvider;
+        this.pgOrderId = pgOrderId;
+        this.pgTransactionId = pgTransactionId;
+        this.paidAt = paidAt;
         this.createdAt = now;
         this.updatedAt = now;
     }
