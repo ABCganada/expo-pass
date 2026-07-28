@@ -5,8 +5,9 @@
 
 @authCookie = <PASTE_COOKIE_HEADER_VALUE>
 
-# GET {{baseUrl}}/auth/csrf 를 먼저 호출해서 얻는다. 쿠키(위 authCookie의 LASTMISSION-XSRF-TOKEN 부분)와
-# 헤더에 넣을 값(csrfToken)이 서로 다르다 (BREACH 방지용 XOR 마스킹) - 응답 JSON의 token 필드를 아래에 붙여넣는다.
+# GET {{baseUrl}}/auth/csrf 호출 후 응답 token 값을 설정한다.
+# Set-Cookie로 내려온 LASTMISSION-XSRF-TOKEN 값도 authCookie에 추가한다.
+# CSRF 토큰은 1회성이므로 테스트 전 새로 발급한다.
 @csrfToken = <PASTE_TOKEN_FROM_AUTH_CSRF_RESPONSE>
 
 # 상세 조회 테스트용 행사 ID. 목록 조회 응답에서 id 하나 복사해서 채운다.
@@ -113,6 +114,34 @@ X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
   "categoryId": "{{categoryId}}",
   "managerId": "{{managerId}}"
 }
+
+
+### ============================
+### [ADMIN/MANAGER] 관리자 행사 상세 조회
+### 고객용과 달리 DRAFT도 조회 가능(status 필터 없음). MANAGER는 본인 담당 행사만.
+### ============================
+
+GET {{baseUrl}}/api/v1/admin/events/{{eventId}}
+Accept: application/json
+Cookie: {{authCookie}}
+
+
+### ============================
+### [403 확인용] 본인 담당이 아닌 행사를 MANAGER 쿠키로 조회 시도
+### ============================
+
+GET {{baseUrl}}/api/v1/admin/events/{{eventId}}
+Accept: application/json
+Cookie: {{authCookie}}
+
+
+### ============================
+### [404 확인용] 존재하지 않는 행사 관리자 조회
+### ============================
+
+GET {{baseUrl}}/api/v1/admin/events/999999999
+Accept: application/json
+Cookie: {{authCookie}}
 
 
 ### ============================

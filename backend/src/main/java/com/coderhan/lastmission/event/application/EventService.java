@@ -14,6 +14,7 @@ import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.UserDirectory;
+import com.coderhan.lastmission.user.UserRef;
 import com.coderhan.lastmission.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -65,6 +66,22 @@ public class EventService {
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.EVENT_MANAGER_NOT_FOUND, "MANAGER 권한을 가진 담당자를 찾을 수 없습니다."));
         return eventRepository.save(new Event(title, category, managerId));
+    }
+
+    /**
+     * 관리자용 행사 상세 조회 - DRAFT도 조회 가능
+     * ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     */
+    @Transactional(readOnly = true)
+    public AdminEventDetailResult getAdminEventDetail(long eventId, long callerUserId, boolean admin) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        validateEventAccess(event, callerUserId, admin, "조회");
+        UserRef manager = userDirectory.findActiveByIds(List.of(event.getManagerId()))
+                .stream()
+                .findFirst()
+                .orElse(null);
+        return new AdminEventDetailResult(event, manager);
     }
 
     /**
@@ -148,4 +165,6 @@ public class EventService {
     public record EventListItem(Event event, EventPhase phase) {}
 
     public record EventDetail(Event event, EventPhase phase) {}
+    
+    public record AdminEventDetailResult(Event event, UserRef manager) {}
 }

@@ -1,20 +1,24 @@
 package com.coderhan.lastmission.event.presentation;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Locale;
 import com.coderhan.lastmission.event.application.EventService;
 import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
 import com.coderhan.lastmission.event.domain.Event;
+import com.coderhan.lastmission.event.domain.EventCategory;
 import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
+import com.coderhan.lastmission.user.UserRef;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,6 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 class EventAdminController {
     private final EventService eventService;
+
+    @GetMapping("/api/v1/admin/events/{eventId}")
+    ApiResponse<AdminEventDetailResponse> getEventDetail(@PathVariable long eventId,
+            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+        EventService.AdminEventDetailResult detail =
+                eventService.getAdminEventDetail(eventId, principal.userId(), isAdmin(authentication));
+        return ApiResponse.success(AdminEventDetailResponse.from(detail));
+    }
 
     @PatchMapping("/api/v1/admin/events/{eventId}")
     ApiResponse<UpdateEventResponse> updateEvent(@PathVariable long eventId,
@@ -48,6 +60,40 @@ class EventAdminController {
                 .stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch("ROLE_ADMIN"::equals);
+    }
+
+    record AdminEventDetailResponse(
+            String id, String title, String categoryName, String managerId, String managerName, String hostName,
+            String venueName, String address, String detailAddress, String kakaoPlaceId,
+            String legalDongCode, BigDecimal latitude, BigDecimal longitude,
+            LocalDate startDate, LocalDate endDate, EventStatus status, long viewCount,
+            Instant createdAt, Instant updatedAt
+    ) {
+        static AdminEventDetailResponse from(EventService.AdminEventDetailResult detail) {
+            Event event = detail.event();
+            EventCategory category = event.getCategory();
+            UserRef manager = detail.manager();
+            return new AdminEventDetailResponse(
+                    Long.toString(event.getId()),
+                    event.getTitle(),
+                    category.getName(),
+                    Long.toString(event.getManagerId()),
+                    manager == null ? null : manager.name(),
+                    event.getHostName(),
+                    event.getVenueName(),
+                    event.getAddress(),
+                    event.getDetailAddress(),
+                    event.getKakaoPlaceId(),
+                    event.getLegalDongCode(),
+                    event.getLatitude(),
+                    event.getLongitude(),
+                    event.getStartDate(),
+                    event.getEndDate(),
+                    event.getStatus(),
+                    event.getViewCount(),
+                    event.getCreatedAt(),
+                    event.getUpdatedAt());
+        }
     }
 
     record UpdateEventRequest(
