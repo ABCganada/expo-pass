@@ -1,23 +1,275 @@
 .page {
   display: flex;
-  min-height: 320px;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: var(--color-card-background);
-  text-align: center;
+  gap: 20px;
 }
 
-.page h1 {
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title {
   color: var(--color-text-primary);
   font-size: 24px;
   font-weight: 800;
 }
 
-.page p {
+.subtitle {
+  margin-top: 4px;
   color: var(--color-text-secondary);
   font-size: 14px;
+}
+
+.search {
+  min-width: 240px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.search:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.state {
+  display: flex;
+  min-height: 240px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-sm);
+  transition: opacity 0.15s ease;
+}
+
+.tableWrap[data-fetching="true"] {
+  opacity: 0.6;
+}
+
+.table {
+  width: 100%;
+  min-width: 780px;
+  /* 고정 레이아웃: 셀 내용(취소 버튼 등)이 바뀌어도 열 너비가 재계산되지 않아 표 전체가 밀리지 않는다. */
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.memberCol {
+  width: auto;
+}
+
+.statusCol {
+  width: 88px;
+}
+
+.roleCol {
+  width: 84px;
+}
+
+.actionCol {
+  /* 저장 + 취소 두 버튼이 다 들어갈 폭을 미리 확보해 클릭 시 흔들리지 않게 한다. */
+  width: 156px;
+}
+
+.table th,
+.table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.table thead th {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: var(--color-content-background);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr {
+  transition: background 0.12s ease;
+}
+
+.table tbody tr[data-dirty="true"] {
+  background: var(--color-sidebar-active);
+}
+
+.roleCol,
+.statusCol,
+.actionCol {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.roleCell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.actionCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.roleCell input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.roleCell input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.memberName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.memberEmail {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowError {
+  margin-top: 6px;
+  color: var(--color-danger);
+  font-size: 12px;
+}
+
+.selfBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.statusBadge[data-status="ACTIVE"] {
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+  color: var(--color-success);
+}
+
+.statusBadge[data-status="INACTIVE"] {
+  background: color-mix(in srgb, var(--color-text-secondary) 16%, transparent);
+  color: var(--color-text-secondary);
+}
+
+.saveButton {
+  padding: 7px 16px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.saveButton:disabled {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+.resetButton {
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  /* 강조된(dirty) 행 배경 위에서도 또렷하게 보이도록 불투명 카드 배경 + 진한 글자. */
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.resetButton:hover:not(:disabled) {
+  border-color: var(--color-text-secondary);
+}
+
+.resetButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.pageButton {
+  padding: 8px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pageButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pageInfo {
+  color: var(--color-text-secondary);
+  font-size: 13px;
 }
