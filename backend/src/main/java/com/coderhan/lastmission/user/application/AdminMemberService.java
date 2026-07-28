@@ -3,7 +3,7 @@ package com.coderhan.lastmission.user.application;
 import java.util.Collection;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
-import com.coderhan.lastmission.user.domain.RoleCode;
+import com.coderhan.lastmission.user.UserRole;
 import com.coderhan.lastmission.user.domain.UserRoles;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,12 +28,12 @@ public class AdminMemberService {
     }
 
     @Transactional
-    public AdminMember updateRoles(long targetUserId, Collection<RoleCode> requested, long actorUserId) {
+    public AdminMember updateRoles(long targetUserId, Collection<UserRole> requested, long actorUserId) {
         AdminMember target = queryRepository.findById(targetUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ADMIN_MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
 
         UserRoles roles = UserRoles.of(requested);
-        if (targetUserId == actorUserId && !roles.has(RoleCode.ADMIN)) {
+        if (targetUserId == actorUserId && !roles.has(UserRole.ADMIN)) {
             throw new BusinessException(ErrorCode.ADMIN_SELF_DEMOTION,
                     "본인의 ADMIN 권한은 해제할 수 없습니다.");
         }
