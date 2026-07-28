@@ -8,6 +8,10 @@
 # 상세 조회 테스트용 행사 ID. 목록 조회 응답에서 id 하나 복사해서 채운다.
 @eventId = <EVENT_ID>
 
+# 행사 생성 테스트용 카테고리/담당자 ID
+@categoryId = <CATEGORY_ID>
+@managerId = <MANAGER_ID>
+
 
 ### ============================
 ### [고객] 행사 목록 조회
@@ -46,6 +50,52 @@ Cookie: {{authCookie}}
 GET {{baseUrl}}/api/v1/events/not-a-number
 Accept: application/json
 Cookie: {{authCookie}}
+
+
+### ============================
+### [SUPER_ADMIN] 행사 생성
+### 성공 시 status는 항상 DRAFT로 생성됨
+### ============================
+
+POST {{baseUrl}}/api/v1/super-admin/events
+Content-Type: application/json
+Cookie: {{authCookie}}
+
+{
+  "title": "테스트 행사",
+  "categoryId": "{{categoryId}}",
+  "managerId": "{{managerId}}"
+}
+
+
+### ============================
+### [400 확인용] 존재하지 않는 카테고리로 행사 생성
+### ============================
+
+POST {{baseUrl}}/api/v1/super-admin/events
+Content-Type: application/json
+Cookie: {{authCookie}}
+
+{
+  "title": "테스트 행사",
+  "categoryId": "999999999",
+  "managerId": "{{managerId}}"
+}
+
+
+### ============================
+### [403 확인용] MANAGER/USER 쿠키로 행사 생성 시도 → SUPER_ADMIN 전용이라 거부되어야 함
+### ============================
+
+POST {{baseUrl}}/api/v1/super-admin/events
+Content-Type: application/json
+Cookie: {{authCookie}}
+
+{
+  "title": "테스트 행사",
+  "categoryId": "{{categoryId}}",
+  "managerId": "{{managerId}}"
+}
 
 
 ### ============================
