@@ -23,7 +23,7 @@ class EventSuperAdminController {
     @PostMapping("/api/v1/super-admin/events")
     ResponseEntity<ApiResponse<CreateEventResponse>> createDraftEvent(@RequestBody CreateEventRequest request) {
         Event event = eventService.createDraftEvent(
-                request.title(), request.requireCategoryId(), request.requireManagerId());
+                request.title(), request.validateCategoryId(), request.validateManagerId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(CreateEventResponse.from(event)));
     }
 
@@ -34,14 +34,14 @@ class EventSuperAdminController {
     }
 
     record CreateEventRequest(String title, Long categoryId, Long managerId) {
-        long requireCategoryId() {
+        long validateCategoryId() {
             if (categoryId == null || categoryId <= 0) {
                 throw new BusinessException(ErrorCode.INVALID_REQUEST, "카테고리 id가 올바르지 않습니다.");
             }
             return categoryId;
         }
 
-        long requireManagerId() {
+        long validateManagerId() {
             if (managerId == null || managerId <= 0) {
                 throw new BusinessException(ErrorCode.INVALID_REQUEST, "담당자 id가 올바르지 않습니다.");
             }
