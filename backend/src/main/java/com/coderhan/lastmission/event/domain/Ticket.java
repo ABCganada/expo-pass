@@ -1,6 +1,5 @@
 package com.coderhan.lastmission.event.domain;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 
 import jakarta.persistence.Column;
@@ -45,7 +44,7 @@ public class Ticket {
     private int quantityRemaining;
 
     @Column(name = "max_purchase_per_user", nullable = false)
-    private Integer maxPurchasePerUser;
+    private int maxPurchasePerUser;
 
     @Column(name = "sale_start_at", nullable = false)
     private Instant saleStartAt;
@@ -61,8 +60,8 @@ public class Ticket {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public Ticket(Event event, String name, BigDecimal price, int quantityTotal,
-                   Integer maxPurchasePerUser, Instant saleStartAt, Instant saleEndAt) {
+    public Ticket(Event event, String name, int price, int quantityTotal,
+                   int maxPurchasePerUser, Instant saleStartAt, Instant saleEndAt) {
         this.event = event;
         this.name = name;
         this.price = price;
