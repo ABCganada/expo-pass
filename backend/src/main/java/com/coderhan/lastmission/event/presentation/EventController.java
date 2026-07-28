@@ -9,8 +9,6 @@ import com.coderhan.lastmission.event.domain.EventCategory;
 import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.shared.ApiResponse;
-import com.coderhan.lastmission.shared.error.BusinessException;
-import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,15 +31,8 @@ class EventController {
     }
 
     @GetMapping("/{eventId}")
-    ApiResponse<EventDetailResponse> getEventDetail(@PathVariable String eventId) {
-        long id;
-        try {
-            id = Long.parseLong(eventId);
-            if (id <= 0) throw new NumberFormatException();
-        } catch (NumberFormatException e) {
-            throw new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다.");
-        }
-        EventService.EventDetail eventDetail = eventService.getEventDetail(id);
+    ApiResponse<EventDetailResponse> getEventDetail(@PathVariable long eventId) {
+        EventService.EventDetail eventDetail = eventService.getEventDetail(eventId);
         return ApiResponse.success(EventDetailResponse.from(eventDetail));
     }
 
