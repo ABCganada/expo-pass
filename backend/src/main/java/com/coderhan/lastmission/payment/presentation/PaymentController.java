@@ -2,13 +2,17 @@ package com.coderhan.lastmission.payment.presentation;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import com.coderhan.lastmission.payment.application.PaymentService;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.shared.ApiResponse;
+import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,14 +40,27 @@ class PaymentController {
     @PostMapping("/{reservationOrderId}/confirm")
     ResponseEntity<ApiResponse<PaymentResponse>> confirm(
         @PathVariable String reservationOrderId,
-        @RequestBody PaymentConfirmRequest request
+        @RequestBody PaymentConfirmRequest request,
+        @AuthenticationPrincipal LastMissionPrincipal principal
     ) {
-        Payment payment = paymentService.confirm(reservationOrderId, request.pgOrderId(), request.paymentKey(),
-                request.amount());
+        Payment payment = paymentService.confirm(principal.userId(), reservationOrderId, request.pgOrderId(),
+                request.paymentKey(), request.amount());
 
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(ApiResponse.success(PaymentResponse.from(payment)));
+    }
+
+    /** 내 결제 내역 목록 조회. 최신순. */
+    @GetMapping
+    ResponseEntity<ApiResponse<List<PaymentResponse>>> myPayments(@AuthenticationPrincipal LastMissionPrincipal principal) {
+        List<PaymentResponse> payments = paymentService.getMyPayments(principal.userId()).stream()
+                .map(PaymentResponse::from)
+                .toList();
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(payments));
     }
 
     record PaymentConfirmRequest(String pgOrderId, String paymentKey, BigDecimal amount) {}
@@ -51,12 +68,13 @@ class PaymentController {
     record PaymentResponse(
         String id, String orderId, String idempotencyKey,
         BigDecimal amount, String method, PaymentStatus status,
-        String pgProvider, String pgTransactionId, OffsetDateTime paidAt, OffsetDateTime createdAt
+        String pgProvider, String pgOrderId, String pgTransactionId,
+        OffsetDateTime paidAt, OffsetDateTime createdAt
     ) {
         static PaymentResponse from(Payment payment) {
             return new PaymentResponse(Long.toString(payment.id()), payment.orderId(), payment.idempotencyKey(),
                     payment.amount(), payment.method(), payment.status(), payment.pgProvider(),
-                    payment.pgTransactionId(), payment.paidAt(), payment.createdAt());
+                    payment.pgOrderId(), payment.pgTransactionId(), payment.paidAt(), payment.createdAt());
         }
     }
 }
