@@ -13,7 +13,9 @@ interface EventJpaRepository extends JpaRepository<Event, Long>, EventRepository
 
     @Override
     @Query("""
-        SELECT e FROM Event e WHERE e.id = :id AND e.deletedAt IS NULL
+        SELECT e FROM Event e
+        JOIN FETCH e.category
+        WHERE e.id = :id AND e.deletedAt IS NULL
     """)
     Optional<Event> findNotDeletedById(@Param("id") long id);
 
