@@ -2,11 +2,14 @@ package com.coderhan.lastmission.user.infrastructure.persistence;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import com.coderhan.lastmission.user.UserAccess;
 import com.coderhan.lastmission.user.UserDirectory;
 import com.coderhan.lastmission.user.UserRef;
+import com.coderhan.lastmission.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -18,6 +21,29 @@ class JdbcUserDirectory implements UserDirectory {
     private static final org.springframework.jdbc.core.RowMapper<UserRef> USER_MAPPER =
             (rs, rowNum) -> new UserRef(
                     rs.getLong("id"), rs.getString("email"), rs.getString("name"));
+
+    @Override
+    public Optional<UserAccess> findActiveAccessById(long userId) {
+        return jdbcTemplate.query("""
+                SELECT u.id, r.code
+                FROM user_accounts u
+                LEFT JOIN user_roles ur ON ur.user_id = u.id
+                LEFT JOIN user_role_codes r ON r.id = ur.role_id
+                WHERE u.id = ? AND u.status = 'ACTIVE'
+                ORDER BY r.code
+                """, resultSet -> {
+            if (!resultSet.next()) return Optional.empty();
+
+            long activeUserId = resultSet.getLong("id");
+            EnumSet<UserRole> roles = EnumSet.noneOf(UserRole.class);
+            do {
+                String role = resultSet.getString("code");
+                if (role != null) roles.add(UserRole.from(role));
+            } while (resultSet.next());
+
+            return Optional.of(new UserAccess(activeUserId, roles));
+        }, userId);
+    }
 
     @Override
     public Optional<UserRef> findActiveByEmail(String email) {

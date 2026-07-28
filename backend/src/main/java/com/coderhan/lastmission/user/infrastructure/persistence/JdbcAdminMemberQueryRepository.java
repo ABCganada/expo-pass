@@ -12,7 +12,7 @@ import java.util.Optional;
 import com.coderhan.lastmission.user.application.AdminMember;
 import com.coderhan.lastmission.user.application.AdminMemberPage;
 import com.coderhan.lastmission.user.application.AdminMemberQueryRepository;
-import com.coderhan.lastmission.user.domain.RoleCode;
+import com.coderhan.lastmission.user.UserRole;
 import com.coderhan.lastmission.user.domain.UserAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -55,7 +55,7 @@ class JdbcAdminMemberQueryRepository implements AdminMemberQueryRepository {
                     """, ACCOUNT_MAPPER, pattern, pattern, safeSize, offset);
         }
 
-        Map<Long, EnumSet<RoleCode>> rolesByUser = loadRoles(rows.stream().map(AccountRow::id).toList());
+        Map<Long, EnumSet<UserRole>> rolesByUser = loadRoles(rows.stream().map(AccountRow::id).toList());
         List<AdminMember> members = rows.stream().map(row -> toMember(row, rolesByUser)).toList();
         return new AdminMemberPage(members, safePage, safeSize, total);
     }
@@ -65,7 +65,7 @@ class JdbcAdminMemberQueryRepository implements AdminMemberQueryRepository {
         List<AccountRow> rows = jdbcTemplate.query(
                 "SELECT id, email, name, status FROM user_accounts WHERE id = ?", ACCOUNT_MAPPER, userId);
         if (rows.isEmpty()) return Optional.empty();
-        Map<Long, EnumSet<RoleCode>> rolesByUser = loadRoles(List.of(userId));
+        Map<Long, EnumSet<UserRole>> rolesByUser = loadRoles(List.of(userId));
         return Optional.of(toMember(rows.get(0), rolesByUser));
     }
 
@@ -74,26 +74,26 @@ class JdbcAdminMemberQueryRepository implements AdminMemberQueryRepository {
         return value == null ? 0L : value;
     }
 
-    private Map<Long, EnumSet<RoleCode>> loadRoles(List<Long> userIds) {
+    private Map<Long, EnumSet<UserRole>> loadRoles(List<Long> userIds) {
         if (userIds.isEmpty()) return Map.of();
         String placeholders = String.join(",", Collections.nCopies(userIds.size(), "?"));
-        Map<Long, EnumSet<RoleCode>> rolesByUser = new HashMap<>();
-        List<Map.Entry<Long, RoleCode>> pairs = jdbcTemplate.query("""
+        Map<Long, EnumSet<UserRole>> rolesByUser = new HashMap<>();
+        List<Map.Entry<Long, UserRole>> pairs = jdbcTemplate.query("""
                 SELECT ur.user_id AS user_id, rc.code AS code
                 FROM user_roles ur
                 JOIN user_role_codes rc ON rc.id = ur.role_id
                 WHERE ur.user_id IN (%s)
                 """.formatted(placeholders),
-                (rs, rowNum) -> Map.entry(rs.getLong("user_id"), RoleCode.from(rs.getString("code"))),
+                (rs, rowNum) -> Map.entry(rs.getLong("user_id"), UserRole.from(rs.getString("code"))),
                 userIds.toArray());
-        for (Map.Entry<Long, RoleCode> pair : pairs) {
-            rolesByUser.computeIfAbsent(pair.getKey(), key -> EnumSet.noneOf(RoleCode.class)).add(pair.getValue());
+        for (Map.Entry<Long, UserRole> pair : pairs) {
+            rolesByUser.computeIfAbsent(pair.getKey(), key -> EnumSet.noneOf(UserRole.class)).add(pair.getValue());
         }
         return rolesByUser;
     }
 
-    private static AdminMember toMember(AccountRow row, Map<Long, EnumSet<RoleCode>> rolesByUser) {
-        EnumSet<RoleCode> roles = rolesByUser.getOrDefault(row.id(), EnumSet.noneOf(RoleCode.class));
+    private static AdminMember toMember(AccountRow row, Map<Long, EnumSet<UserRole>> rolesByUser) {
+        EnumSet<UserRole> roles = rolesByUser.getOrDefault(row.id(), EnumSet.noneOf(UserRole.class));
         return new AdminMember(row.id(), row.email(), row.name(), row.status(), roles);
     }
 
