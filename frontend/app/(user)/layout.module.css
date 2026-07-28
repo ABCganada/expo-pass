@@ -162,21 +162,22 @@
 /* 콘텐츠 뷰포트 */
 .viewport {
   flex: 1 1 0;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px;
   overflow-y: auto;
-  background: var(--color-content-background);
+  background: var(--color-page-background);
 
   .contentBox {
     position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     width: 100%;
-    max-width: 28rem;
-    min-height: 100vh;
-    margin: 0 auto;
-    background: var(--color-content-background);
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
-    overflow: hidden;
+    min-height: 0;
+    background: transparent;
+    overflow: visible;
   }
 }
 
@@ -232,9 +233,6 @@
     flex-direction: row;
   }
 
-  .viewport .contentBox {
-    max-width: 42rem;
-  }
 }
 
 @media (min-width: 1024px) {
@@ -247,8 +245,8 @@
     }
   }
 
-  .viewport .contentBox {
-    max-width: 64rem;
+  .viewport {
+    padding: 32px;
   }
 }
 
@@ -265,14 +263,6 @@
     /* 자체 스크롤을 갖는 화면에서는 바깥 스크롤을 고정한다. */
     &[data-fixed-height="true"] {
       overflow: hidden;
-    }
-
-    .contentBox {
-      justify-content: flex-start;
-      max-width: 1440px;
-      min-height: 0;
-      box-shadow: none;
-      overflow: visible;
     }
 
     &[data-fixed-height="true"] .contentBox {

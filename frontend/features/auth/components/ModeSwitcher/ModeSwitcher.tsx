@@ -9,39 +9,45 @@ interface ModeSwitcherProps {
   compact?: boolean;
 }
 
-const modes: Array<{ mode: AppMode; label: string; href: string }> = [
-  { mode: "user", label: "일반 유저", href: "/exhibitions" },
-  { mode: "manager", label: "박람회 관리자", href: "/manager/reservations" },
-  { mode: "admin", label: "전체 관리자", href: "/admin/exhibitions" },
-];
-
-function canAccess(mode: AppMode, roles: string[]) {
-  if (mode === "user") return roles.length > 0;
-  if (mode === "manager") return roles.includes("MANAGER") || roles.includes("ADMIN");
-  return roles.includes("ADMIN");
+interface RoleTab {
+  role: string;
+  mode: AppMode;
+  label: string;
+  href: string;
 }
+
+/**
+ * 권한 → 탭 정의. 배열 순서가 곧 탭이 보이는 좌→우 순서다.
+ * 새 권한에 화면을 붙이려면 여기에 한 줄만 추가하면 스위처에 자동 반영된다.
+ */
+const ROLE_TABS: RoleTab[] = [
+  { role: "USER", mode: "user", label: "일반 유저", href: "/exhibitions" },
+  { role: "MANAGER", mode: "manager", label: "박람회 관리자", href: "/manager/reservations" },
+  { role: "ADMIN", mode: "admin", label: "전체 관리자", href: "/admin/exhibitions" },
+];
 
 export function ModeSwitcher({
   activeMode,
   roles,
   compact = false,
 }: ModeSwitcherProps) {
+  const tabs = ROLE_TABS.filter((tab) => roles.includes(tab.role));
+
+  // 전환할 곳이 없으면(예: USER 권한만 보유) 스위처를 아예 숨긴다.
+  if (tabs.length < 2) return null;
+
   return (
     <nav aria-label="화면 모드 전환" className={styles.switcher} data-compact={compact}>
-      {modes.map(({ mode, label, href }) => canAccess(mode, roles) ? (
-          <Link
-            key={mode}
-            href={href}
-            aria-current={activeMode === mode ? "page" : undefined}
-            className={styles.link}
-          >
-            {label}
-          </Link>
-        ) : (
-          <span key={mode} className={styles.link} aria-disabled="true" title="권한이 필요합니다">
-            {label}
-          </span>
-        ))}
+      {tabs.map(({ mode, label, href }) => (
+        <Link
+          key={mode}
+          href={href}
+          aria-current={activeMode === mode ? "page" : undefined}
+          className={styles.link}
+        >
+          {label}
+        </Link>
+      ))}
     </nav>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, CalendarDays, ClipboardList, LogOut, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, TicketCheck } from "lucide-react";
+import { BarChart3, CalendarDays, ClipboardList, LogOut, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, TicketCheck, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "@/features/shell/constants/navigation";
 import styles from "./AdminSidebar.module.css";
@@ -34,6 +34,7 @@ export function AdminSidebar({
       ]
     : [
         { href: "/admin/exhibitions", label: "행사별 예약 현황", icon: BarChart3 },
+        { href: "/admin/members", label: "회원 관리", icon: Users },
       ];
   return (
     <>
@@ -44,7 +45,12 @@ export function AdminSidebar({
       >
         <div className={styles.top}>
           <div className={styles.logoArea}>
-            <div className={styles.logoGroup}>
+            <button
+              type="button"
+              className={styles.logoGroup}
+              onClick={() => window.location.reload()}
+              aria-label="페이지 새로고침"
+            >
               <div className={styles.logoBadge}><TicketCheck aria-hidden="true" /></div>
               <span className={styles.collapsible}>
                 <span className={styles.logoText}>
@@ -52,7 +58,7 @@ export function AdminSidebar({
                   <span className={styles.logoSub}>{mode === "user" ? "User" : mode === "manager" ? "Manager" : "Admin"}</span>
                 </span>
               </span>
-            </div>
+            </button>
             <button
               type="button"
               onClick={onToggleCollapse}
