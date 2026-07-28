@@ -9,6 +9,8 @@ import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,6 +25,12 @@ class EventSuperAdminController {
         Event event = eventService.createDraftEvent(
                 request.title(), request.requireCategoryId(), request.requireManagerId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(CreateEventResponse.from(event)));
+    }
+
+    @DeleteMapping("/api/v1/super-admin/events/{eventId}")
+    ApiResponse<Void> deleteEvent(@PathVariable long eventId) {
+        eventService.deleteEvent(eventId);
+        return ApiResponse.success("행사를 삭제했습니다.", null);
     }
 
     record CreateEventRequest(String title, Long categoryId, Long managerId) {
