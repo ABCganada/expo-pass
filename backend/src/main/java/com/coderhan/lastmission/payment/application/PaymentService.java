@@ -3,6 +3,8 @@ package com.coderhan.lastmission.payment.application;
 import java.math.BigDecimal;
 import java.util.List;
 import com.coderhan.lastmission.payment.domain.Payment;
+import com.coderhan.lastmission.shared.error.BusinessException;
+import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -50,5 +52,20 @@ public class PaymentService {
 
     public List<Payment> getMyPayments(long userId) {
         return repository.findByUserId(userId);
+    }
+
+    public Payment getPayment(long userId, long paymentId) {
+        Payment payment = repository.findById(paymentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, "결제 내역을 찾을 수 없습니다."));
+
+        validatePaymentAccess(userId, payment);
+
+        return payment;
+    }
+
+    private void validatePaymentAccess(long userId, Payment payment) {
+        if (payment.userId() == null || payment.userId() != userId) {
+            throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED, "본인의 결제 내역만 조회할 수 있습니다.");
+        }
     }
 }

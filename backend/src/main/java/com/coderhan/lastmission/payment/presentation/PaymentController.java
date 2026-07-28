@@ -1,23 +1,21 @@
 package com.coderhan.lastmission.payment.presentation;
 
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.List;
 import com.coderhan.lastmission.payment.application.PaymentService;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.shared.ApiResponse;
+import com.coderhan.lastmission.shared.error.BusinessException;
+import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -51,16 +49,34 @@ class PaymentController {
             .body(ApiResponse.success(PaymentResponse.from(payment)));
     }
 
-    /** 내 결제 내역 목록 조회. 최신순. */
+    /** 내 결제 내역 목록 조회. 최신순 */
     @GetMapping
-    ResponseEntity<ApiResponse<List<PaymentResponse>>> myPayments(@AuthenticationPrincipal LastMissionPrincipal principal) {
+    ApiResponse<List<PaymentResponse>> myPayments(@AuthenticationPrincipal LastMissionPrincipal principal) {
         List<PaymentResponse> payments = paymentService.getMyPayments(principal.userId()).stream()
                 .map(PaymentResponse::from)
                 .toList();
 
-        return ResponseEntity
-            .status(HttpStatus.OK)
-            .body(ApiResponse.success(payments));
+        return ApiResponse.success(payments);
+    }
+
+    /** 결제 내역 상세 조회. 본인 것만 조회 가능. */
+    @GetMapping("/{paymentId}")
+    ApiResponse<PaymentResponse> getPayment(
+        @PathVariable String paymentId,
+        @AuthenticationPrincipal LastMissionPrincipal principal
+    ) {
+        Payment payment = paymentService.getPayment(principal.userId(), parsePaymentId(paymentId));
+        return ApiResponse.success(PaymentResponse.from(payment));
+    }
+
+    private long parsePaymentId(String value) {
+        try {
+            long id = Long.parseLong(value);
+            if (id <= 0) throw new NumberFormatException();
+            return id;
+        } catch (NumberFormatException exception) {
+            throw new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, "결제 내역을 찾을 수 없습니다.");
+        }
     }
 
     record PaymentConfirmRequest(String pgOrderId, String paymentKey, BigDecimal amount) {}

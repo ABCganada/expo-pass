@@ -14,6 +14,7 @@ public interface PaymentRepository {
                  String method, String pgProvider, String pgOrderId,
                  String pgTransactionId, OffsetDateTime paidAt);
 
+    Optional<Payment> findById(long id);
     Optional<Payment> findByIdempotencyKey(String idempotencyKey);
     Optional<Payment> findByOrderIdAndStatus(String orderId, PaymentStatus status);  // 이중 결제 여부 체크용
     List<Payment> findByUserId(long userId);  // 내 결제 내역 조회용, 최신순
