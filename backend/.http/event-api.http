@@ -192,6 +192,77 @@ X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
 
 
 ### ============================
+### [ADMIN/MANAGER] 행사 상태 변경 - PUBLISHED로 발행
+### detailAddress/kakaoPlaceId는 선택.
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}/status
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "status": "PUBLISHED"
+}
+
+
+### ============================
+### [400 확인용] 필수 필드 안 채운 채로 PUBLISHED 시도 (예: 방금 생성만 하고 수정 안 한 행사)
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}/status
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "status": "PUBLISHED"
+}
+
+
+### ============================
+### [ADMIN/MANAGER] 행사 상태 변경 - CANCELLED로 취소
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}/status
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "status": "CANCELLED"
+}
+
+
+### ============================
+### [400 확인용] 이미 CANCELLED된 행사 상태 재변경 시도 → 종결 상태라 거부
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}/status
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "status": "PUBLISHED"
+}
+
+
+### ============================
+### [400 확인용] 존재하지 않는 status 값
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}/status
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "status": "NOT_A_STATUS"
+}
+
+
+### ============================
 ### [SUPER_ADMIN] 행사 삭제 (소프트 삭제)
 ### ============================
 
