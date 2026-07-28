@@ -3,6 +3,7 @@ package com.coderhan.lastmission.event.application;
 import java.time.LocalDate;
 import java.util.List;
 import com.coderhan.lastmission.event.domain.Event;
+import com.coderhan.lastmission.event.domain.EventCategory;
 import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.shared.error.BusinessException;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class EventService {
     private final EventRepository eventRepository;
+    private final EventCategoryRepository eventCategoryRepository;
 
     @Transactional(readOnly = true)
     public List<EventListItem> getPublishedEvents() {
@@ -37,6 +39,19 @@ public class EventService {
                 .filter(candidate -> candidate.getStatus() != EventStatus.DRAFT)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
         return new EventDetail(event, event.phase(LocalDate.now()));
+    }
+
+    /** 
+     * 행사 생성 - SUPER_ADMIN 전용
+     */
+    @Transactional
+    public Event createDraftEvent(String title, long categoryId, long managerId) {
+        if (title == null || title.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "제목은 비어 있을 수 없습니다.");
+        }
+        EventCategory category = eventCategoryRepository.findById(categoryId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_CATEGORY_NOT_FOUND, "카테고리를 찾을 수 없습니다."));
+        return eventRepository.save(new Event(title, category, managerId));
     }
 
     public record EventListItem(Event event, EventPhase phase) {}
