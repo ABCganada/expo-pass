@@ -14,10 +14,12 @@ class ApiExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     ResponseEntity<ErrorResponse> handleBusinessException(BusinessException exception) {
         HttpStatus status = switch (exception.errorCode()) {
-            case CHAT_ROOM_NOT_FOUND, CHAT_MESSAGE_NOT_FOUND, CHAT_USER_NOT_FOUND, RESERVATION_NOT_FOUND ->
+            case CHAT_ROOM_NOT_FOUND, CHAT_MESSAGE_NOT_FOUND, CHAT_USER_NOT_FOUND, RESERVATION_NOT_FOUND,
+                    BANNER_SLOT_NOT_FOUND, BANNER_AD_NOT_FOUND ->
                     HttpStatus.NOT_FOUND;
-            case CHAT_ACCESS_DENIED, RESERVATION_ACCESS_DENIED -> HttpStatus.FORBIDDEN;
-            case INVALID_REQUEST, CHAT_MESSAGE_INVALID, CHAT_ROOM_INVALID, RESERVATION_INVALID_REQUEST ->
+            case CHAT_ACCESS_DENIED, RESERVATION_ACCESS_DENIED, BANNER_AD_ACCESS_DENIED -> HttpStatus.FORBIDDEN;
+            case INVALID_REQUEST, CHAT_MESSAGE_INVALID, CHAT_ROOM_INVALID, RESERVATION_INVALID_REQUEST,
+                    BANNER_AD_INVALID_REQUEST, BANNER_AD_ALREADY_REVIEWED ->
                     HttpStatus.BAD_REQUEST;
             case CHAT_PARTICIPANT_EXISTS -> HttpStatus.CONFLICT;
         };
