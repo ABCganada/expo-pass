@@ -32,7 +32,7 @@ public class EventService {
 
     @Transactional(readOnly = true)
     public List<EventListItem> getPublishedEvents() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         return eventRepository.findByStatusOrderByStartDateAsc(EventStatus.PUBLISHED)
                 .stream()
                 .map(event -> new EventListItem(event, event.phase(today)))
@@ -47,7 +47,7 @@ public class EventService {
         Event event = eventRepository.findNotDeletedById(id)
                 .filter(candidate -> candidate.getStatus() != EventStatus.DRAFT)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        return new EventDetail(event, event.phase(LocalDate.now()));
+        return new EventDetail(event, event.phase(LocalDate.now(clock)));
     }
 
     /**
@@ -74,9 +74,7 @@ public class EventService {
     public Event updateEvent(long eventId, long callerUserId, boolean admin, UpdateEventCommand command) {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        if (!admin && !Objects.equals(event.getManagerId(), callerUserId)) {
-            throw new BusinessException(ErrorCode.EVENT_ACCESS_DENIED, "본인이 담당하는 행사만 수정할 수 있습니다.");
-        }
+        validateEventAccess(event, callerUserId, admin, "수정");
         if (command.title() == null || command.title().isBlank()) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "제목은 비어 있을 수 없습니다.");
         }
@@ -103,6 +101,48 @@ public class EventService {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
         event.softDelete(Instant.now(clock));
+    }
+
+    /**
+     * 행사 상태 변경 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     */
+    @Transactional
+    public Event changeStatus(long eventId, long callerUserId, boolean isAdmin, EventStatus targetStatus) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        validateEventAccess(event, callerUserId, isAdmin, "상태를 변경");
+        if (event.getStatus() == EventStatus.CANCELLED) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "취소된 행사는 상태를 변경할 수 없습니다.");
+        }
+        switch (targetStatus) {
+            case PUBLISHED -> {
+                validatePublishable(event);
+                event.publish();
+            }
+            case CANCELLED -> event.cancel();
+            case DRAFT -> throw new BusinessException(ErrorCode.INVALID_REQUEST, "DRAFT로는 되돌릴 수 없습니다.");
+        }
+        return event;
+    }
+
+    /** ADMIN은 전체 허용, 아니면 본인이 담당(manager_id)하는 행사인지 확인 */
+    private void validateEventAccess(Event event, long callerUserId, boolean isAdmin, String action) {
+        if (!isAdmin && !Objects.equals(event.getManagerId(), callerUserId)) {
+            throw new BusinessException(ErrorCode.EVENT_ACCESS_DENIED, "본인이 담당하는 행사만 " + action + "할 수 있습니다.");
+        }
+    }
+
+    private void validatePublishable(Event event) {
+        if (isBlank(event.getHostName()) || isBlank(event.getVenueName()) || isBlank(event.getAddress())
+                || isBlank(event.getLegalDongCode()) || event.getLatitude() == null || event.getLongitude() == null
+                || event.getStartDate() == null || event.getEndDate() == null) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST,
+                    "게시하려면 주최/장소명/주소/법정동코드/좌표/시작일/종료일이 모두 입력되어야 합니다.");
+        }
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     public record EventListItem(Event event, EventPhase phase) {}

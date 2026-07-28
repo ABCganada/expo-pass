@@ -2,6 +2,7 @@ package com.coderhan.lastmission.event.presentation;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Locale;
 import com.coderhan.lastmission.event.application.EventService;
 import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
 import com.coderhan.lastmission.event.domain.Event;
@@ -33,6 +34,15 @@ class EventAdminController {
         return ApiResponse.success(UpdateEventResponse.from(event));
     }
 
+    @PatchMapping("/api/v1/admin/events/{eventId}/status")
+    ApiResponse<UpdateEventResponse> changeStatus(@PathVariable long eventId,
+            @RequestBody ChangeStatusRequest request,
+            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+        Event event = eventService.changeStatus(
+                eventId, principal.userId(), isAdmin(authentication), request.toEventStatus());
+        return ApiResponse.success(UpdateEventResponse.from(event));
+    }
+
     private static boolean isAdmin(Authentication authentication) {
         return authentication != null && authentication.getAuthorities()
                 .stream()
@@ -51,6 +61,17 @@ class EventAdminController {
             }
             return new UpdateEventCommand(title, categoryId, hostName, venueName, address, detailAddress,
                     kakaoPlaceId, legalDongCode, latitude, longitude, startDate, endDate);
+        }
+    }
+
+    record ChangeStatusRequest(String status) {
+        EventStatus toEventStatus() {
+            try {
+                return EventStatus.valueOf(status.toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException | NullPointerException _) {
+                throw new BusinessException(ErrorCode.INVALID_REQUEST,
+                        "status 값이 올바르지 않습니다. (PUBLISHED, DRAFT, CANCELLED 중 하나여야 합니다.)");
+            }
         }
     }
 
