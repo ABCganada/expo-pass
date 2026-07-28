@@ -39,6 +39,7 @@ class SecurityConfig {
                         .requestMatchers("/auth/check").denyAll()
                         .requestMatchers("/auth/**", "/error").permitAll()
                         .requestMatchers("/api/v1/super-admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/events/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/manager/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/kafka/test/**").hasAnyRole("ADMIN", "DEVELOPER")
