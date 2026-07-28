@@ -65,6 +65,11 @@ lastmission:
     consumer-group: ${LASTMISSION_KAFKA_CONSUMER_GROUP}
     waiting-room-consumer-group: ${LASTMISSION_KAFKA_WAITING_ROOM_CONSUMER_GROUP}
 
+  toss:
+    base-url: ${TOSS_API_BASE_URL:https://api.tosspayments.com}
+    # 절대 git에 실제 값을 커밋하지 않는다 — 로컬은 .env, 운영은 k8s Secret으로만 주입.
+    secret-key: ${TOSS_SECRET_KEY}
+
 coderhan:
   vault:
     cert:
