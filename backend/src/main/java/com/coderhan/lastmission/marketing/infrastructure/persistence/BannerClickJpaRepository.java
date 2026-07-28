@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 interface BannerClickJpaRepository extends JpaRepository<BannerClickEntity, UUID> {
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query(value = """
             INSERT INTO marketing_banner_clicks (id, ad_id, stat_date, count)
             VALUES (gen_random_uuid(), :adId, :date, 1)
