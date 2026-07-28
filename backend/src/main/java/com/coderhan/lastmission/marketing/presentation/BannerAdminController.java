@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.application.BannerAdService;
 import com.coderhan.lastmission.marketing.application.BannerSlotService;
+import com.coderhan.lastmission.marketing.application.BannerStatService;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
+import com.coderhan.lastmission.marketing.domain.BannerAdStats;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
 import com.coderhan.lastmission.shared.ApiResponse;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 class BannerAdminController {
     private final BannerSlotService bannerSlotService;
     private final BannerAdService bannerAdService;
+    private final BannerStatService bannerStatService;
 
     // --- 슬롯 관리 ---
 
@@ -62,7 +65,20 @@ class BannerAdminController {
         return ApiResponse.success(BannerAdResponse.from(bannerAdService.reject(id)));
     }
 
+    // --- 통계 조회 ---
+
+    @GetMapping("/ads/{id}/stats")
+    ApiResponse<BannerStatsResponse> getStats(@PathVariable UUID id) {
+        return ApiResponse.success(BannerStatsResponse.from(bannerStatService.getStats(id)));
+    }
+
     record CreateSlotRequest(String name, int maxCount) {}
+
+    record BannerStatsResponse(UUID adId, long impressions, long clicks, double ctr) {
+        static BannerStatsResponse from(BannerAdStats stats) {
+            return new BannerStatsResponse(stats.adId(), stats.impressions(), stats.clicks(), stats.ctr());
+        }
+    }
 
     record BannerSlotResponse(UUID id, String name, int maxCount, OffsetDateTime createdAt) {
         static BannerSlotResponse from(BannerSlot slot) {

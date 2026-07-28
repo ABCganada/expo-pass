@@ -105,3 +105,26 @@ Content-Type: application/json
 POST {{baseUrl}}/api/v1/admin/banner/ads/{{adId}}/reject
 Authorization: {{adminToken}}
 Content-Type: application/json
+
+
+### ============================
+### [고객] 배너 노출 기록
+### ============================
+
+POST {{baseUrl}}/api/v1/banners/{{adId}}/impressions
+
+
+### ============================
+### [고객] 배너 클릭 기록
+### ============================
+
+POST {{baseUrl}}/api/v1/banners/{{adId}}/clicks
+
+
+### ============================
+### [관리자] 광고 통계 조회
+### ============================
+
+GET {{baseUrl}}/api/v1/admin/banner/ads/{{adId}}/stats
+Authorization: {{adminToken}}
+Accept: application/json

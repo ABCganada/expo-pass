@@ -1,0 +1,56 @@
+### 행사(Event) API
+### Base URL: https://localhost.example.com:8080
+
+@baseUrl = https://localhost.example.com:8080
+
+@authCookie = <PASTE_COOKIE_HEADER_VALUE>
+
+# 상세 조회 테스트용 행사 ID. 목록 조회 응답에서 id 하나 복사해서 채운다.
+@eventId = <EVENT_ID>
+
+
+### ============================
+### [고객] 행사 목록 조회
+### PUBLISHED만, CANCELLED/DRAFT 제외, deleted_at IS NULL
+### 인증만 되어 있으면 ADMIN/MANAGER/USER/DEVELOPER 전부 접근 가능 (역할 제한 없음)
+### ============================
+
+GET {{baseUrl}}/api/v1/events
+Accept: application/json
+Cookie: {{authCookie}}
+
+
+### ============================
+### [고객] 행사 상세 조회
+### PUBLISHED/CANCELLED 조회 가능, DRAFT·삭제됨은 EVENT_NOT_FOUND(404)
+### ============================
+
+GET {{baseUrl}}/api/v1/events/{{eventId}}
+Accept: application/json
+Cookie: {{authCookie}}
+
+
+### ============================
+### [404 확인용] 존재하지 않는 ID로 상세 조회
+### ============================
+
+GET {{baseUrl}}/api/v1/events/999999999
+Accept: application/json
+Cookie: {{authCookie}}
+
+
+### ============================
+### [400/404 확인용] 숫자가 아닌 ID로 상세 조회
+### ============================
+
+GET {{baseUrl}}/api/v1/events/not-a-number
+Accept: application/json
+Cookie: {{authCookie}}
+
+
+### ============================
+### [인증 실패 확인용] 쿠키 없이 호출 → 401 기대
+### ============================
+
+GET {{baseUrl}}/api/v1/events
+Accept: application/json
