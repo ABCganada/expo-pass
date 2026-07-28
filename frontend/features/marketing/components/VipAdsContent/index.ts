@@ -1,0 +1,1 @@
+export { VipAdsContent } from "./VipAdsContent";
