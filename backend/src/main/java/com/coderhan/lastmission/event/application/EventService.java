@@ -2,6 +2,9 @@ package com.coderhan.lastmission.event.application;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
+
+import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventCategory;
 import com.coderhan.lastmission.event.domain.EventPhase;
@@ -41,7 +44,7 @@ public class EventService {
         return new EventDetail(event, event.phase(LocalDate.now()));
     }
 
-    /** 
+    /**
      * 행사 생성 - SUPER_ADMIN 전용
      */
     @Transactional
@@ -52,6 +55,27 @@ public class EventService {
         EventCategory category = eventCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_CATEGORY_NOT_FOUND, "카테고리를 찾을 수 없습니다."));
         return eventRepository.save(new Event(title, category, managerId));
+    }
+
+    /**
+     * 행사 필드 수정 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     */
+    @Transactional
+    public Event updateEvent(long eventId, long callerUserId, boolean admin, UpdateEventCommand command) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        if (!admin && !Objects.equals(event.getManagerId(), callerUserId)) {
+            throw new BusinessException(ErrorCode.EVENT_ACCESS_DENIED, "본인이 담당하는 행사만 수정할 수 있습니다.");
+        }
+        if (command.title() == null || command.title().isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "제목은 비어 있을 수 없습니다.");
+        }
+        EventCategory category = eventCategoryRepository.findById(command.categoryId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_CATEGORY_NOT_FOUND, "카테고리를 찾을 수 없습니다."));
+        event.updateDetails(command.title(), category, command.hostName(), command.venueName(),
+                command.address(), command.detailAddress(), command.kakaoPlaceId(), command.legalDongCode(),
+                command.latitude(), command.longitude(), command.startDate(), command.endDate());
+        return event;
     }
 
     public record EventListItem(Event event, EventPhase phase) {}
