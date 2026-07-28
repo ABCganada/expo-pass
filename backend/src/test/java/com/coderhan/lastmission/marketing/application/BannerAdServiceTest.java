@@ -1,0 +1,265 @@
+package com.coderhan.lastmission.marketing.application;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import com.coderhan.lastmission.marketing.domain.BannerAd;
+import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
+import com.coderhan.lastmission.marketing.domain.BannerSlot;
+import com.coderhan.lastmission.shared.error.BusinessException;
+import com.coderhan.lastmission.shared.error.ErrorCode;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class BannerAdServiceTest {
+    private static final UUID SLOT_ID = UUID.randomUUID();
+    private static final UUID AD_ID = UUID.randomUUID();
+    private static final String MARKETER = "marketer@example.com";
+    private static final String OTHER = "other@example.com";
+    private static final OffsetDateTime NOW = OffsetDateTime.parse("2026-07-28T00:00:00Z");
+    private static final OffsetDateTime STARTS_AT = NOW.plusDays(1);
+    private static final OffsetDateTime ENDS_AT = NOW.plusDays(30);
+
+    @Mock BannerAdRepository adRepository;
+    @Mock BannerSlotRepository slotRepository;
+    @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-28T00:00:00Z"), ZoneOffset.UTC);
+
+    @InjectMocks BannerAdService service;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // registerAd
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void registerAd_슬롯이_없으면_예외() {
+        // Arrange
+        when(slotRepository.findById(SLOT_ID)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.registerAd(
+                SLOT_ID, "여름 세일", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT, MARKETER))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_SLOT_NOT_FOUND));
+
+        verify(adRepository, never()).save(any(), any(), any(), any(), any(int.class), any(), any(), any());
+    }
+
+    @Test
+    void registerAd_제목이_없으면_예외() {
+        // Arrange
+        when(slotRepository.findById(SLOT_ID)).thenReturn(Optional.of(slot()));
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.registerAd(
+                SLOT_ID, "", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT, MARKETER))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
+    }
+
+    @Test
+    void registerAd_종료일이_시작일보다_이전이면_예외() {
+        // Arrange
+        when(slotRepository.findById(SLOT_ID)).thenReturn(Optional.of(slot()));
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.registerAd(
+                SLOT_ID, "여름 세일", "https://img.example.com/img.png", null, 1, ENDS_AT, STARTS_AT, MARKETER))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
+    }
+
+    @Test
+    void registerAd_정상입력이면_PENDING_상태로_저장() {
+        // Arrange
+        BannerAd expected = ad(BannerAdStatus.PENDING);
+        when(slotRepository.findById(SLOT_ID)).thenReturn(Optional.of(slot()));
+        when(adRepository.save(SLOT_ID, "여름 세일", "https://img.example.com/img.png",
+                null, 1, STARTS_AT, ENDS_AT, MARKETER)).thenReturn(expected);
+
+        // Act
+        BannerAd result = service.registerAd(
+                SLOT_ID, "여름 세일", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT, MARKETER);
+
+        // Assert
+        assertThat(result).isSameAs(expected);
+        assertThat(result.status()).isEqualTo(BannerAdStatus.PENDING);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // updateAd
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void updateAd_광고가_없으면_예외() {
+        // Arrange
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.updateAd(
+                AD_ID, MARKETER, "수정된 제목", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_NOT_FOUND));
+    }
+
+    @Test
+    void updateAd_본인_광고가_아니면_예외() {
+        // Arrange
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.updateAd(
+                AD_ID, OTHER, "수정된 제목", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_ACCESS_DENIED));
+    }
+
+    @Test
+    void updateAd_이미_승인된_광고는_수정_불가() {
+        // Arrange
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.APPROVED)));
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.updateAd(
+                AD_ID, MARKETER, "수정된 제목", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_ALREADY_REVIEWED));
+    }
+
+    @Test
+    void updateAd_이미_거절된_광고는_수정_불가() {
+        // Arrange
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.REJECTED)));
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.updateAd(
+                AD_ID, MARKETER, "수정된 제목", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_ALREADY_REVIEWED));
+    }
+
+    @Test
+    void updateAd_PENDING이고_본인이면_수정_성공() {
+        // Arrange
+        BannerAd updated = ad(BannerAdStatus.PENDING);
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
+        when(adRepository.update(AD_ID, "수정된 제목", "https://img.example.com/img.png",
+                null, 1, STARTS_AT, ENDS_AT)).thenReturn(updated);
+
+        // Act
+        BannerAd result = service.updateAd(
+                AD_ID, MARKETER, "수정된 제목", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT);
+
+        // Assert
+        assertThat(result).isSameAs(updated);
+        verify(adRepository).update(AD_ID, "수정된 제목", "https://img.example.com/img.png",
+                null, 1, STARTS_AT, ENDS_AT);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // approve
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void approve_광고가_없으면_예외() {
+        // Arrange
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.approve(AD_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_NOT_FOUND));
+    }
+
+    @Test
+    void approve_이미_처리된_광고면_예외() {
+        // Arrange
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.APPROVED)));
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.approve(AD_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_ALREADY_REVIEWED));
+    }
+
+    @Test
+    void approve_PENDING_광고면_APPROVED로_변경() {
+        // Arrange
+        BannerAd approved = ad(BannerAdStatus.APPROVED);
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
+        when(adRepository.updateStatus(AD_ID, BannerAdStatus.APPROVED)).thenReturn(approved);
+
+        // Act
+        BannerAd result = service.approve(AD_ID);
+
+        // Assert
+        assertThat(result.status()).isEqualTo(BannerAdStatus.APPROVED);
+        verify(adRepository).updateStatus(AD_ID, BannerAdStatus.APPROVED);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // reject
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void reject_PENDING_광고면_REJECTED로_변경() {
+        // Arrange
+        BannerAd rejected = ad(BannerAdStatus.REJECTED);
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
+        when(adRepository.updateStatus(AD_ID, BannerAdStatus.REJECTED)).thenReturn(rejected);
+
+        // Act
+        BannerAd result = service.reject(AD_ID);
+
+        // Assert
+        assertThat(result.status()).isEqualTo(BannerAdStatus.REJECTED);
+        verify(adRepository).updateStatus(AD_ID, BannerAdStatus.REJECTED);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // getActiveBanners
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void getActiveBanners_현재_시각_기준으로_활성_광고_반환() {
+        // Arrange
+        List<BannerAd> active = List.of(ad(BannerAdStatus.APPROVED));
+        when(adRepository.findAllActive(NOW)).thenReturn(active);
+
+        // Act
+        List<BannerAd> result = service.getActiveBanners();
+
+        // Assert
+        assertThat(result).isSameAs(active);
+        verify(adRepository).findAllActive(NOW);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private BannerSlot slot() {
+        return new BannerSlot(SLOT_ID, "메인 배너", 3, NOW);
+    }
+
+    private BannerAd ad(BannerAdStatus status) {
+        return new BannerAd(AD_ID, SLOT_ID, "여름 세일", "https://img.example.com/img.png",
+                null, 1, status, STARTS_AT, ENDS_AT, MARKETER, NOW);
+    }
+}
