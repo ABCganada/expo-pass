@@ -1,5 +1,7 @@
 package com.coderhan.lastmission.event.application;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +28,7 @@ public class EventService {
     private final EventRepository eventRepository;
     private final EventCategoryRepository eventCategoryRepository;
     private final UserDirectory userDirectory;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public List<EventListItem> getPublishedEvents() {
@@ -90,6 +93,16 @@ public class EventService {
                 command.address(), command.detailAddress(), command.kakaoPlaceId(), command.legalDongCode(),
                 command.latitude(), command.longitude(), command.startDate(), command.endDate());
         return event;
+    }
+
+    /** 
+     * 행사 삭제 - SUPER_ADMIN 전용 
+     */
+    @Transactional
+    public void deleteEvent(long eventId) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        event.softDelete(Instant.now(clock));
     }
 
     public record EventListItem(Event event, EventPhase phase) {}

@@ -192,6 +192,42 @@ X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
 
 
 ### ============================
+### [SUPER_ADMIN] 행사 삭제 (소프트 삭제)
+### ============================
+
+DELETE {{baseUrl}}/api/v1/super-admin/events/{{eventId}}
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+
+### ============================
+### [403 확인용] MANAGER/USER 쿠키로 행사 삭제 시도 → SUPER_ADMIN 전용이라 거부되어야 함
+### ============================
+
+DELETE {{baseUrl}}/api/v1/super-admin/events/{{eventId}}
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+
+### ============================
+### [404 확인용] 존재하지 않는 행사 삭제
+### ============================
+
+DELETE {{baseUrl}}/api/v1/super-admin/events/999999999
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+
+### ============================
+### [404 확인용] 삭제된 행사를 고객 상세조회로 재조회 → 소프트 삭제 확인
+### ============================
+
+GET {{baseUrl}}/api/v1/events/{{eventId}}
+Accept: application/json
+Cookie: {{authCookie}}
+
+
+### ============================
 ### [인증 실패 확인용] 쿠키 없이 호출 → 401 기대
 ### ============================
 
