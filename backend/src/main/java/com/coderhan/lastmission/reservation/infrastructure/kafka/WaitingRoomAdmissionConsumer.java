@@ -22,7 +22,7 @@ class WaitingRoomAdmissionConsumer {
 
     @KafkaListener(
             topics = "${lastmission.kafka.topic}",
-            groupId = "${lastmission.kafka.waiting-room-consumer-group}",
+            groupId = "${lastmission.kafka.consumer-group}",
             autoStartup = "${lastmission.kafka.enabled:false}"
     )
     public void listen(String message) {
