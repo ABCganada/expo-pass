@@ -50,6 +50,17 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       auto-offset-reset: latest
 
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      username: ${SPRING_DATA_REDIS_USERNAME:default}
+      password: ${SPRING_DATA_REDIS_PASSWORD}
+      ssl:
+        enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
+      repositories:
+        enabled: false
+
 lastmission:
   # 브라우저 CORS 허용 오리진. 로컬은 기본값(localhost 포함), 프로덕션은 env로 앱 오리진만 남긴다.
   cors:
@@ -63,7 +74,6 @@ lastmission:
     enabled: ${LASTMISSION_KAFKA_ENABLED}
     topic: ${LASTMISSION_KAFKA_TOPIC}
     consumer-group: ${LASTMISSION_KAFKA_CONSUMER_GROUP}
-    waiting-room-consumer-group: ${LASTMISSION_KAFKA_WAITING_ROOM_CONSUMER_GROUP}
 
 coderhan:
   vault:
