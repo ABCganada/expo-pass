@@ -21,10 +21,17 @@ class JpaRefundRepository implements RefundRepository {
     private final RefundJpaRepository jpaRepository;
 
     @Override
-    public Refund save(long paymentId, BigDecimal amount, String reason) {
+    public Refund save(long paymentId, BigDecimal amount, String reason, OffsetDateTime completedAt) {
+        RefundEntity saved = jpaRepository.save(RefundEntity.completed(paymentId, amount, reason, completedAt));
+
+        return toDomain(saved);
+    }
+
+    @Override
+    public Refund saveAsRequested(long paymentId, BigDecimal amount, String reason) {
         OffsetDateTime now = OffsetDateTime.now();
 
-        RefundEntity saved = jpaRepository.save(new RefundEntity(paymentId, amount, reason, now));
+        RefundEntity saved = jpaRepository.save(RefundEntity.requestedByEventAdmin(paymentId, amount, reason, now));
 
         return toDomain(saved);
     }

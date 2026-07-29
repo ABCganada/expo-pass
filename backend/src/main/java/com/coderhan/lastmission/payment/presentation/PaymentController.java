@@ -75,7 +75,8 @@ class PaymentController {
         return ApiResponse.success(PaymentResponse.from(payment));
     }
 
-    /** 환불 신청 접수. REQUESTED 상태로만 접수하고, 승인/거절/토스 취소는 별도 관리자 플로우가 담당한다. */
+    /** 환불 신청 접수. REQUESTED 상태로만 접수
+     * 행사 3일 전 자동 승인, 그 외는 행사 관리자가 수동 승인하도록 한다 */
     @PostMapping("/{paymentId}/refunds")
     ResponseEntity<ApiResponse<RefundResponse>> request(
             @PathVariable String paymentId,

@@ -1,5 +1,9 @@
 package com.coderhan.lastmission.payment.application;
 
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
@@ -13,13 +17,21 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RefundService {
 
+    /** 행사 시작 D-3 이전 신청은 자동승인 */
+    private static final long AUTO_APPROVAL_MIN_DAYS_BEFORE_EVENT = 3;
+
     private final RefundRepository refundRepository;
     private final PaymentRepository paymentRepository;
+    private final PaymentGateway paymentGateway;
+    private final EventScheduleReader eventScheduleReader;
+    private final Clock clock;
 
     /**
      * 환불 신청 접수. 환불 금액은 항상 결제 전액
-     * 자동승인/토스 결제취소는 이 메서드의 책임이 아니다 — 여기서는 REQUESTED 상태로
-     * 접수만 하고, 실제 승인·취소는 별도의 관리자 승인 플로우에서 처리한다.
+     *
+     * 행사 시작일 기준 D-3 이전 신청이면 자동승인 — 토스 결제취소를 이 메서드 안에서 즉시
+     * 호출하고 COMPLETED로 저장한다. D-3 이내 신청이면 REQUESTED로만 접수하고, 승인/거절은
+     * 이벤트 관리자가 별도 화면에서 처리한다(그 API는 이번 스코프에 포함되지 않는다).
      */
     public Refund request(long userId, long paymentId, String reason) {
         Payment payment = paymentRepository.findById(paymentId)
@@ -29,11 +41,34 @@ public class RefundService {
         validateRefundable(payment);
         validateNoActiveRefund(paymentId);
 
+        if (canAutoApprove(payment.orderId())) {
+            return refund(payment, reason);
+        }
+
+        return saveAsRequested(payment, reason);
+    }
+
+    private boolean canAutoApprove(String orderId) {
+        LocalDate eventStartDate = eventScheduleReader.findEventStartDate(orderId);
+        long daysUntilStart = ChronoUnit.DAYS.between(LocalDate.now(clock), eventStartDate);
+
+        return daysUntilStart >= AUTO_APPROVAL_MIN_DAYS_BEFORE_EVENT;
+    }
+
+    private Refund refund(Payment payment, String reason) {
+        paymentGateway.cancel(payment.pgTransactionId(), reason);
+
         try {
-            return refundRepository.save(paymentId, payment.amount(), reason);
+            return refundRepository.save(payment.id(), payment.amount(), reason, OffsetDateTime.now(clock));
         } catch (DataIntegrityViolationException e) {
-            /** idx_payment_refunds_unique_active 위반 — 검증과 저장 사이의 경합으로 먼저
-             * 접수된 신청이 있는 경우다. */
+            throw new BusinessException(ErrorCode.PAYMENT_REFUND_ALREADY_EXISTS, "이미 진행 중인 환불 신청이 있습니다.");
+        }
+    }
+
+    private Refund saveAsRequested(Payment payment, String reason) {
+        try {
+            return refundRepository.saveAsRequested(payment.id(), payment.amount(), reason);
+        } catch (DataIntegrityViolationException e) {
             throw new BusinessException(ErrorCode.PAYMENT_REFUND_ALREADY_EXISTS, "이미 진행 중인 환불 신청이 있습니다.");
         }
     }

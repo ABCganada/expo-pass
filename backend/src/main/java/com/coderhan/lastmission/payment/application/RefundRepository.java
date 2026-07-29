@@ -1,13 +1,17 @@
 package com.coderhan.lastmission.payment.application;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.domain.Refund;
 
 public interface RefundRepository {
 
-    /** 신청 접수 시점엔 항상 REQUESTED 상태로 저장한다 — 승인/거절/완료는 별도 플로우에서 처리. */
-    Refund save(long paymentId, BigDecimal amount, String reason);
+    /** 자동승인 대상 신청 접수 */
+    Refund save(long paymentId, BigDecimal amount, String reason, OffsetDateTime completedAt);
+
+    /** 수동승인(이벤트 관리자) 대상 신청 접수. 항상 REQUESTED 상태로 저장한다 — 승인/거절은 별도 플로우에서 처리. */
+    Refund saveAsRequested(long paymentId, BigDecimal amount, String reason);
 
     /** 결제 1건당 진행 중인(REQUESTED/APPROVED/COMPLETED) 환불이 있는지 조회 — 중복 신청 방지용 */
     Optional<Refund> findActiveByPaymentId(long paymentId);

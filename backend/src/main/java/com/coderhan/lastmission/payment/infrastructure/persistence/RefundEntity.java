@@ -56,20 +56,32 @@ class RefundEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    /** 신청 접수 시점엔 REQUESTED 상태로만 만든다 — 자동승인/토스 취소는 별도 플로우가 담당한다. */
-    RefundEntity(
-            Long paymentId,
-            BigDecimal amount,
-            String reason,
-            OffsetDateTime now
-    ) {
-        this.paymentId = paymentId;
-        this.amount = amount;
-        this.reason = reason;
-        this.status = RefundStatus.REQUESTED;
-        this.autoApproved = false;
-        this.requestedAt = now;
-        this.createdAt = now;
-        this.updatedAt = now;
+    /** 자동승인 대상. 토스 취소가 이미 성공한 뒤 호출되므로 바로 COMPLETED 상태로 바로 만든다. */
+    static RefundEntity completed(Long paymentId, BigDecimal amount, String reason, OffsetDateTime completedAt) {
+        RefundEntity entity = new RefundEntity();
+        entity.paymentId = paymentId;
+        entity.amount = amount;
+        entity.reason = reason;
+        entity.status = RefundStatus.COMPLETED;
+        entity.autoApproved = true;
+        entity.requestedAt = completedAt;
+        entity.refundedAt = completedAt;
+        entity.createdAt = completedAt;
+        entity.updatedAt = completedAt;
+        return entity;
+    }
+
+    /** 수동승인(이벤트 관리자) 대상. REQUESTED 상태로만 만든다 — 승인/거절은 별도 플로우 */
+    static RefundEntity requestedByEventAdmin(Long paymentId, BigDecimal amount, String reason, OffsetDateTime now) {
+        RefundEntity entity = new RefundEntity();
+        entity.paymentId = paymentId;
+        entity.amount = amount;
+        entity.reason = reason;
+        entity.status = RefundStatus.REQUESTED;
+        entity.autoApproved = false;
+        entity.requestedAt = now;
+        entity.createdAt = now;
+        entity.updatedAt = now;
+        return entity;
     }
 }
