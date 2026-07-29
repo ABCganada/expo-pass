@@ -50,6 +50,16 @@ public class ReservationService {
                         .orElseThrow(() -> new BusinessException(ErrorCode.TICKET_NOT_FOUND,
                                 "존재하지 않는 티켓입니다. ticketId=" + id))));
 
+        // 이 주문에 등장하는 티켓 종류별로 필요한 수량을 합산 (같은 티켓이 여러 줄로 나뉘어 왔을 경우 대비)
+        Map<Long, Integer> quantityByTicketId = items.stream()
+                .collect(Collectors.groupingBy(OrderItemRequest::ticketId, Collectors.summingInt(OrderItemRequest::quantity)));
+
+        quantityByTicketId.forEach((ticketId, quantity) -> {
+            boolean decreased = eventQueryPort.decreaseTicketStock(ticketId, quantity);
+            if (!decreased) {
+                throw new BusinessException(ErrorCode.TICKET_SOLD_OUT, "재고가 부족합니다. ticketId=" + ticketId);
+            }
+        });
 
         BigDecimal totalAmount = items.stream()
                 .map(item -> {

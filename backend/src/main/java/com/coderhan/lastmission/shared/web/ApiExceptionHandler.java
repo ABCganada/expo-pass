@@ -26,7 +26,8 @@ class ApiExceptionHandler {
                     BANNER_AD_INVALID_REQUEST, BANNER_AD_ALREADY_REVIEWED, ADMIN_ROLE_INVALID,
                     PAYMENT_INVALID_REQUEST, PAYMENT_CONFIRM_FAILED, BANNER_STAT_INVALID_DATE_RANGE ->
                     HttpStatus.BAD_REQUEST;
-            case CHAT_PARTICIPANT_EXISTS, ADMIN_SELF_DEMOTION, RESERVATION_ALREADY_CHECKED_IN -> HttpStatus.CONFLICT;
+            case CHAT_PARTICIPANT_EXISTS, ADMIN_SELF_DEMOTION, RESERVATION_ALREADY_CHECKED_IN, TICKET_SOLD_OUT ->
+                    HttpStatus.CONFLICT;
         };
         return ResponseEntity.status(status).body(
                 new ErrorResponse(false, exception.errorCode().name(), exception.getMessage()));
