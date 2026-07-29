@@ -36,14 +36,14 @@ class EventSuperAdminController {
     record CreateEventRequest(String title, Long categoryId, Long managerId) {
         long validateCategoryId() {
             if (categoryId == null || categoryId <= 0) {
-                throw new BusinessException(ErrorCode.INVALID_REQUEST, "카테고리 id가 올바르지 않습니다.");
+                throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "카테고리 id가 올바르지 않습니다.");
             }
             return categoryId;
         }
 
         long validateManagerId() {
             if (managerId == null || managerId <= 0) {
-                throw new BusinessException(ErrorCode.INVALID_REQUEST, "담당자 id가 올바르지 않습니다.");
+                throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "담당자 id가 올바르지 않습니다.");
             }
             return managerId;
         }

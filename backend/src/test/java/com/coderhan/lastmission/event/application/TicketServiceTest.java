@@ -125,7 +125,7 @@ class TicketServiceTest {
 
         assertThatThrownBy(() -> service.deleteTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false))
                 .isInstanceOfSatisfying(BusinessException.class,
-                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
         assertThat(ticket.isDeleted()).isFalse();
     }
 
