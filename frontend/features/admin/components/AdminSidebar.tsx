@@ -15,6 +15,10 @@ interface AdminSidebarProps {
   onLogout: () => void;
 }
 
+type NavLink = { type?: "link"; href: string; label: string; icon: React.ComponentType<{ className?: string }> };
+type NavSection = { type: "section"; label: string };
+type NavItem = NavLink | NavSection;
+
 export function AdminSidebar({
   isOpen,
   onClose,
@@ -31,16 +35,19 @@ export function AdminSidebar({
     payments: Receipt,
     "vip-ads": Megaphone,
   };
-  const items = mode === "user"
-    ? USER_MENU_ITEMS.map((item) => ({ ...item, href: item.path, icon: userIcons[item.id] }))
+  const items: NavItem[] = mode === "user"
+    ? USER_MENU_ITEMS.map((item) => ({ href: item.path, label: item.label, icon: userIcons[item.id] }))
     : mode === "manager" ? [
         { href: "/manager/reservations", label: "예약자 명단 관리", icon: ClipboardList },
         { href: "/manager/check-in", label: "QR 체크인", icon: ScanLine },
         { href: "/manager/check-in/status", label: "체크인 현황", icon: QrCode },
+        { type: "section" as const, label: "마케팅" },
+        { href: "/manager/banner-ads", label: "광고 관리", icon: Megaphone },
       ]
     : [
         { href: "/admin/exhibitions", label: "행사별 예약 현황", icon: BarChart3 },
         { href: "/admin/members", label: "회원 관리", icon: Users },
+        { href: "/admin/banners", label: "광고 관리", icon: Megaphone },
       ];
   return (
     <>
@@ -76,6 +83,13 @@ export function AdminSidebar({
           </div>
           <nav className={styles.nav}>
             {items.map((item) => {
+              if (item.type === "section") {
+                return (
+                  <span key={item.label} className={`${styles.navSection} ${styles.collapsible}`}>
+                    {item.label}
+                  </span>
+                );
+              }
               const Icon = item.icon;
               return (
                 <Link key={item.href} href={item.href} className={styles.navItem} data-active={pathname === item.href} onClick={onClose}>
