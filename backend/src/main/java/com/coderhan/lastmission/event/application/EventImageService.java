@@ -42,7 +42,12 @@ public class EventImageService {
         int displayOrder = (int) eventImageRepository.countByEventId(eventId);
         EventImage image = new EventImage(event, imageUrl, imageType, displayOrder);
 
-        return eventImageRepository.save(image);
+        try {
+            return eventImageRepository.save(image);
+        } catch (RuntimeException e) {
+            eventImageStorage.cleanup(imageUrl);
+            throw e;
+        }
     }
 
     private String uploadToStorage(long eventId, MultipartFile file) {

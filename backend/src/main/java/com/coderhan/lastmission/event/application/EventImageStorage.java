@@ -6,4 +6,7 @@ package com.coderhan.lastmission.event.application;
 public interface EventImageStorage {
 
     String upload(long eventId, String originalFilename, String contentType, byte[] content);
+
+    // 고아 파일 정리용
+    void cleanup(String imageUrl);
 }
