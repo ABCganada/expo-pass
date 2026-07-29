@@ -60,6 +60,13 @@ class JpaBannerAdRepository implements BannerAdRepository {
         return toDomain(jpaRepository.save(entity));
     }
 
+    @Override
+    public List<BannerAd> findByCreatedBy(String email) {
+        return jpaRepository.findByCreatedByOrderByCreatedAtDesc(email).stream()
+                .map(JpaBannerAdRepository::toDomain)
+                .toList();
+    }
+
     private static BannerAd toDomain(BannerAdEntity entity) {
         return new BannerAd(entity.getId(), entity.getSlotId(), entity.getTitle(), entity.getImageUrl(),
                 entity.getLinkUrl(), entity.getPriority(), entity.getStatus(),
