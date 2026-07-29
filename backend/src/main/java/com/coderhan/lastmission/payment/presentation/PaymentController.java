@@ -1,8 +1,11 @@
 package com.coderhan.lastmission.payment.presentation;
 
 import com.coderhan.lastmission.payment.application.PaymentService;
+import com.coderhan.lastmission.payment.application.RefundService;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
+import com.coderhan.lastmission.payment.domain.Refund;
+import com.coderhan.lastmission.payment.domain.RefundStatus;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
@@ -23,6 +26,7 @@ import java.util.List;
 class PaymentController {
 
     private final PaymentService paymentService;
+    private final RefundService refundService;
 
     /**
      * 결제 승인 API. Payment 도메인이 제공하는 유일한 쓰기 API다 — 별도의 "결제 신청" API는 없다.
@@ -33,7 +37,9 @@ class PaymentController {
      * 완료 후 successUrl로 돌려주는 값 3개를 그대로 받는다 — orderId는 우리가 위젯을 열 때
      * 토스에 넘긴 값이라 reservationOrderId와 다를 수 있다(재시도 시 접미사 등).
      *
-     * amount는 Reservation과 대조하지 않고 클라이언트가 보낸 값을 그대로 신뢰한다(팀 결정).
+     * TODO amount는 Reservation과 대조/검증 로직 추가 필요
+     * TODO 결제 승인/실패에 대한 알림 reservation에 줘야 PENDING 변경 가능
+     * TODO 결제 - 오더 간 정합성 스케줄링
      */
     @PostMapping("/{reservationOrderId}/confirm")
     ResponseEntity<ApiResponse<PaymentResponse>> confirm(
@@ -69,6 +75,21 @@ class PaymentController {
         return ApiResponse.success(PaymentResponse.from(payment));
     }
 
+    /** 환불 신청 접수. REQUESTED 상태로만 접수
+     * 행사 3일 전 자동 승인, 그 외는 행사 관리자가 수동 승인하도록 한다 */
+    @PostMapping("/{paymentId}/refunds")
+    ResponseEntity<ApiResponse<RefundResponse>> request(
+            @PathVariable String paymentId,
+            @RequestBody RefundRequest request,
+            @AuthenticationPrincipal LastMissionPrincipal principal
+    ) {
+        Refund refund = refundService.request(principal.userId(), parsePaymentId(paymentId), request.reason());
+
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(ApiResponse.success(RefundResponse.from(refund)));
+    }
+
     private long parsePaymentId(String value) {
         try {
             long id = Long.parseLong(value);
@@ -80,6 +101,20 @@ class PaymentController {
     }
 
     record PaymentConfirmRequest(String pgOrderId, String paymentKey, BigDecimal amount) {}
+
+    record RefundRequest(String reason) {}
+
+    record RefundResponse(
+        String id, String paymentId, BigDecimal amount,
+        String reason, RefundStatus status, boolean autoApproved,
+        OffsetDateTime requestedAt, OffsetDateTime createdAt
+    ) {
+        static RefundResponse from(Refund refund) {
+            return new RefundResponse(Long.toString(refund.id()), Long.toString(refund.paymentId()),
+                    refund.amount(), refund.reason(), refund.status(), refund.autoApproved(),
+                    refund.requestedAt(), refund.createdAt());
+        }
+    }
 
     record PaymentResponse(
         String id, String orderId, String idempotencyKey,

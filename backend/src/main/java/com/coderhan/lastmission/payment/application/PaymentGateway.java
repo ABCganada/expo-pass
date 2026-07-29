@@ -8,7 +8,11 @@ import java.time.OffsetDateTime;
  * 구현체는 infrastructure 계층에 둔다(예: infrastructure.toss.TossPaymentGateway)
  */
 public interface PaymentGateway {
+
     ConfirmResult confirm(String paymentKey, String pgOrderId, BigDecimal amount);
+    CancelResult cancel(String paymentKey, String reason);
 
     record ConfirmResult(String method, OffsetDateTime approvedAt) {}
+
+    record CancelResult(OffsetDateTime canceledAt) {}
 }

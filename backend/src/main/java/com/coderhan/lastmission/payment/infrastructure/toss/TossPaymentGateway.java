@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Base64;
+import java.util.List;
 import com.coderhan.lastmission.payment.application.PaymentGateway;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
@@ -50,6 +51,22 @@ class TossPaymentGateway implements PaymentGateway {
         }
     }
 
+    @Override
+    public CancelResult cancel(String paymentKey, String reason) {
+        try {
+            TossCancelResponse response = restClient.post()
+                    .uri("/v1/payments/{paymentKey}/cancel", paymentKey)
+                    .body(new TossCancelRequest(reason))
+                    .retrieve()
+                    .body(TossCancelResponse.class);
+
+            return new CancelResult(response.latestCancelledAt());
+        } catch (RestClientResponseException e) {
+            throw new BusinessException(ErrorCode.PAYMENT_REFUND_CANCEL_FAILED,
+                    "토스 결제취소에 실패했습니다: " + e.getResponseBodyAsString());
+        }
+    }
+
     private static long toKrwAmount(BigDecimal amount) {
         try {
             return amount.longValueExact();
@@ -66,4 +83,17 @@ class TossPaymentGateway implements PaymentGateway {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record TossConfirmResponse(String method, OffsetDateTime approvedAt) {}
+
+    private record TossCancelRequest(String cancelReason) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record TossCancelResponse(List<CancelDetail> cancels) {
+        /** 취소 이력 중 가장 최근 건 — 전액 취소만 지원하므로 항상 1건이다. */
+        OffsetDateTime latestCancelledAt() {
+            return cancels.get(cancels.size() - 1).cancelledAt();
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        record CancelDetail(OffsetDateTime cancelledAt) {}
+    }
 }
