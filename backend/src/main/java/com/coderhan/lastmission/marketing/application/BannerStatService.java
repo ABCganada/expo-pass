@@ -37,4 +37,14 @@ public class BannerStatService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + adId));
         return statRepository.sumStats(adId);
     }
+
+    @Transactional(readOnly = true)
+    public BannerAdStats getStatsByDateRange(UUID adId, LocalDate from, LocalDate to) {
+        adRepository.findById(adId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + adId));
+        if (from.isAfter(to)) {
+            throw new BusinessException(ErrorCode.BANNER_STAT_INVALID_DATE_RANGE, "from은 to보다 이전이어야 합니다.");
+        }
+        return statRepository.sumStatsByDateRange(adId, from, to);
+    }
 }
