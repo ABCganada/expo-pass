@@ -41,6 +41,19 @@ public class EventService {
     }
 
     /**
+     * 관리자용 행사 목록 조회 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     */
+    @Transactional(readOnly = true)
+    public List<EventListItem> getAdminEvents(long callerUserId, boolean isAdmin) {
+        LocalDate today = LocalDate.now(clock);
+        return eventRepository.findAllOrderByStartDateAsc()
+                .stream()
+                .filter(event -> isAdmin || Objects.equals(event.getManagerId(), callerUserId))
+                .map(event -> new EventListItem(event, event.phase(today)))
+                .toList();
+    }
+
+    /**
      * 행사 상세 조회
      */
     @Transactional(readOnly = true)
@@ -110,8 +123,8 @@ public class EventService {
         return event;
     }
 
-    /** 
-     * 행사 삭제 - SUPER_ADMIN 전용 
+    /**
+     * 행사 삭제 - SUPER_ADMIN 전용
      */
     @Transactional
     public void deleteEvent(long eventId) {
