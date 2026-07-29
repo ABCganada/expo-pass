@@ -3,6 +3,7 @@ package com.coderhan.lastmission.event.presentation;
 import java.time.Instant;
 import com.coderhan.lastmission.event.application.TicketService;
 import com.coderhan.lastmission.event.application.command.CreateTicketCommand;
+import com.coderhan.lastmission.event.application.command.UpdateTicketCommand;
 import com.coderhan.lastmission.event.domain.Ticket;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
@@ -14,6 +15,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,6 +33,15 @@ class TicketAdminController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(TicketResponse.from(ticket)));
     }
 
+    @PutMapping("/api/v1/admin/events/{eventId}/tickets/{ticketId}")
+    ResponseEntity<ApiResponse<TicketResponse>> updateTicket(@PathVariable long eventId, @PathVariable long ticketId,
+            @RequestBody UpdateTicketRequest request,
+            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+        Ticket ticket = ticketService.updateTicket(
+                eventId, ticketId, principal.userId(), isAdmin(authentication), request.toCommand());
+        return ResponseEntity.ok(ApiResponse.success(TicketResponse.from(ticket)));
+    }
+
     private static boolean isAdmin(Authentication authentication) {
         return authentication != null && authentication.getAuthorities()
                 .stream()
@@ -44,6 +55,14 @@ class TicketAdminController {
     ) {
         CreateTicketCommand toCommand() {
             return new CreateTicketCommand(name, price, quantityTotal, maxPurchasePerUser, saleStartAt, saleEndAt);
+        }
+    }
+
+    record UpdateTicketRequest(
+            String name, Integer price, Integer maxPurchasePerUser, Instant saleStartAt, Instant saleEndAt
+    ) {
+        UpdateTicketCommand toCommand() {
+            return new UpdateTicketCommand(name, price, maxPurchasePerUser, saleStartAt, saleEndAt);
         }
     }
 
