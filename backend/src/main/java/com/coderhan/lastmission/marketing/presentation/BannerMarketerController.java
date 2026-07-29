@@ -8,9 +8,11 @@ import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -27,6 +29,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 class BannerMarketerController {
     private final BannerAdService bannerAdService;
+
+    @GetMapping
+    ApiResponse<List<BannerAdResponse>> getMyAds(@AuthenticationPrincipal LastMissionPrincipal principal) {
+        List<BannerAdResponse> responses = bannerAdService.getMyAds(principal.email()).stream()
+                .map(BannerAdResponse::from)
+                .toList();
+        return ApiResponse.success(responses);
+    }
 
     @PostMapping
     ResponseEntity<ApiResponse<BannerAdResponse>> registerAd(
