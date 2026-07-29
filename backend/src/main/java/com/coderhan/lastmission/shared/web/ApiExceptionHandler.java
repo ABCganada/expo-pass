@@ -29,10 +29,10 @@ class ApiExceptionHandler {
                     RESERVATION_INVALID_REQUEST, BANNER_AD_INVALID_REQUEST,
                     BANNER_AD_ALREADY_REVIEWED, ADMIN_ROLE_INVALID,
                     PAYMENT_INVALID_REQUEST, PAYMENT_CONFIRM_FAILED,
-                    BANNER_STAT_INVALID_DATE_RANGE ->
+                    PAYMENT_REFUND_NOT_ALLOWED, BANNER_STAT_INVALID_DATE_RANGE ->
                     HttpStatus.BAD_REQUEST;
 
-            case CHAT_PARTICIPANT_EXISTS, ADMIN_SELF_DEMOTION ->
+            case CHAT_PARTICIPANT_EXISTS, ADMIN_SELF_DEMOTION, PAYMENT_REFUND_ALREADY_EXISTS ->
                     HttpStatus.CONFLICT;
         };
         return ResponseEntity.status(status).body(
