@@ -60,6 +60,9 @@ public class Ticket {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     public Ticket(Event event, String name, int price, int quantityTotal,
                    int maxPurchasePerUser, Instant saleStartAt, Instant saleEndAt) {
         this.event = event;
@@ -70,5 +73,21 @@ public class Ticket {
         this.maxPurchasePerUser = maxPurchasePerUser;
         this.saleStartAt = saleStartAt;
         this.saleEndAt = saleEndAt;
+    }
+
+    public void updateDetails(String name, int price, int maxPurchasePerUser, Instant saleStartAt, Instant saleEndAt) {
+        this.name = name;
+        this.price = price;
+        this.maxPurchasePerUser = maxPurchasePerUser;
+        this.saleStartAt = saleStartAt;
+        this.saleEndAt = saleEndAt;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public void softDelete(Instant now) {
+        this.deletedAt = now;
     }
 }
