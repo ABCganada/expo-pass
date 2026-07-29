@@ -8,17 +8,24 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventBookmark;
 import com.coderhan.lastmission.event.domain.EventCategory;
+import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -29,6 +36,7 @@ class EventBookmarkServiceTest {
 
     @Mock EventBookmarkRepository eventBookmarkRepository;
     @Mock EventRepository eventRepository;
+    @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks EventBookmarkService service;
 
@@ -73,10 +81,25 @@ class EventBookmarkServiceTest {
         verify(eventBookmarkRepository).deleteAllByEventId(EVENT_ID);
     }
 
+    @Test
+    void 내_북마크_목록_조회() {
+        Event event = event();
+        EventBookmark bookmark = new EventBookmark(event, USER_ID);
+        when(eventBookmarkRepository.findAllByUserIdOrderByCreatedAtDesc(USER_ID)).thenReturn(List.of(bookmark));
+
+        List<EventBookmarkService.BookmarkedEvent> result = service.getMyBookmarkedEvents(USER_ID);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).event()).isSameAs(event);
+        assertThat(result.get(0).phase()).isEqualTo(EventPhase.ONGOING);
+    }
+
     private Event event() {
         EventCategory category = new EventCategory("MUSIC", "음악", true);
         Event event = new Event("테스트 행사", category, 999L);
         ReflectionTestUtils.setField(event, "id", EVENT_ID);
+        ReflectionTestUtils.setField(event, "startDate", LocalDate.parse("2026-07-01"));
+        ReflectionTestUtils.setField(event, "endDate", LocalDate.parse("2026-07-31"));
         return event;
     }
 }
