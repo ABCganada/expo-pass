@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,6 +41,13 @@ class EventImageAdminController {
                 eventId, principal.userId(), isAdmin(authentication), toImageType(imageType), file);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(EventImageResponse.from(image)));
+    }
+
+    @DeleteMapping("/{imageId}")
+    ResponseEntity<ApiResponse<Void>> deleteImage(@PathVariable long eventId, @PathVariable long imageId,
+            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+        eventImageService.deleteImage(eventId, imageId, principal.userId(), isAdmin(authentication));
+        return ResponseEntity.ok(ApiResponse.success("이미지를 삭제했습니다.", null));
     }
 
     private static EventImageType toImageType(String value) {

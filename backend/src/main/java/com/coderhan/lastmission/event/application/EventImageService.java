@@ -13,6 +13,8 @@ import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -48,6 +50,31 @@ public class EventImageService {
             eventImageStorage.cleanup(imageUrl);
             throw e;
         }
+    }
+
+    /**
+     * 행사 이미지 삭제 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     */
+    @Transactional
+    public void deleteImage(long eventId, long imageId, long callerUserId, boolean isAdmin) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        validateEventAccess(event, callerUserId, isAdmin, "이미지를 삭제");
+
+        EventImage image = eventImageRepository.findByIdAndEventId(imageId, eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_IMAGE_NOT_FOUND, "이미지를 찾을 수 없습니다."));
+
+        eventImageRepository.delete(image);
+        registerCleanupAfterCommit(image.getImageUrl());
+    }
+    
+    private void registerCleanupAfterCommit(String imageUrl) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                eventImageStorage.cleanup(imageUrl);
+            }
+        });
     }
 
     private String uploadToStorage(long eventId, MultipartFile file) {

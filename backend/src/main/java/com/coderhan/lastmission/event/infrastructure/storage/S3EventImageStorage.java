@@ -48,14 +48,18 @@ class S3EventImageStorage implements EventImageStorage {
     @Override
     public void cleanup(String imageUrl) {
         try {
-            s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(keyFromUrl(imageUrl)).build());
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(keyFromUrl(imageUrl))
+                    .build());
         } catch (SdkException e) {
             log.warn("S3 고아 파일 cleanup 실패. url={}", imageUrl, e);
         }
     }
 
     private static String keyFromUrl(String imageUrl) {
-        return URI.create(imageUrl).getPath().substring(1);
+        String path = URI.create(imageUrl).getPath();
+        return path.startsWith("/") ? path.substring(1) : path;
     }
 
     // 파일 확장자 추출
