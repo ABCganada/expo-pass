@@ -1,7 +1,7 @@
 package com.coderhan.lastmission.event.application;
 
 import java.util.Optional;
-import com.coderhan.lastmission.event.EventDirectory;
+import com.coderhan.lastmission.event.EventQueryPort;
 import com.coderhan.lastmission.event.TicketInfo;
 import com.coderhan.lastmission.event.domain.Ticket;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-class TicketStockService implements EventDirectory {
+class TicketStockService implements EventQueryPort {
     private final TicketRepository ticketRepository;
 
     @Override
@@ -23,6 +23,12 @@ class TicketStockService implements EventDirectory {
     @Transactional
     public boolean decreaseTicketStock(long ticketId, int quantity) {
         return ticketRepository.decreaseTicketStock(ticketId, quantity) > 0;
+    }
+
+    @Override
+    @Transactional
+    public void increaseTicketStock(long ticketId, int quantity) {
+        ticketRepository.increaseTicketStock(ticketId, quantity);
     }
 
     private static TicketInfo toTicketInfo(Ticket ticket) {

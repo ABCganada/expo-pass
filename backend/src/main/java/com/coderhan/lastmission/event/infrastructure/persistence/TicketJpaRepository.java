@@ -44,4 +44,14 @@ interface TicketJpaRepository extends JpaRepository<Ticket, Long>, TicketReposit
             )
     """)
     int decreaseTicketStock(@Param("id") long ticketId, @Param("quantity") int quantity);
+
+    @Override
+    @Modifying
+    @Query("""
+        UPDATE Ticket t SET t.quantityRemaining = t.quantityRemaining + :quantity
+        WHERE t.id = :id
+            AND t.deletedAt IS NULL
+            AND t.quantityRemaining + :quantity <= t.quantityTotal
+    """)
+    int increaseTicketStock(@Param("id") long ticketId, @Param("quantity") int quantity);
 }

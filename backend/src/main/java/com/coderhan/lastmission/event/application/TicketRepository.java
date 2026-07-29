@@ -11,4 +11,6 @@ public interface TicketRepository {
     Optional<Ticket> findAvailableById(long id);
 
     int decreaseTicketStock(long ticketId, int quantity);
+
+    int increaseTicketStock(long ticketId, int quantity);
 }
