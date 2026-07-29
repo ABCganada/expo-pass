@@ -26,4 +26,8 @@ interface BannerClickJpaRepository extends JpaRepository<BannerClickEntity, UUID
 
     @Query("SELECT e.statDate, SUM(e.count) FROM BannerClickEntity e WHERE e.adId = :adId AND e.statDate BETWEEN :from AND :to GROUP BY e.statDate ORDER BY e.statDate")
     List<Object[]> findDailyCountByAdIdAndDateRange(@Param("adId") UUID adId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Modifying
+    @Query("DELETE FROM BannerClickEntity e WHERE e.adId = :adId")
+    void deleteByAdId(@Param("adId") UUID adId);
 }

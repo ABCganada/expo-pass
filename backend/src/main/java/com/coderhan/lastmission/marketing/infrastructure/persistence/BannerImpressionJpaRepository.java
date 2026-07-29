@@ -26,4 +26,8 @@ interface BannerImpressionJpaRepository extends JpaRepository<BannerImpressionEn
 
     @Query("SELECT e.statDate, SUM(e.count) FROM BannerImpressionEntity e WHERE e.adId = :adId AND e.statDate BETWEEN :from AND :to GROUP BY e.statDate ORDER BY e.statDate")
     List<Object[]> findDailyCountByAdIdAndDateRange(@Param("adId") UUID adId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Modifying
+    @Query("DELETE FROM BannerImpressionEntity e WHERE e.adId = :adId")
+    void deleteByAdId(@Param("adId") UUID adId);
 }

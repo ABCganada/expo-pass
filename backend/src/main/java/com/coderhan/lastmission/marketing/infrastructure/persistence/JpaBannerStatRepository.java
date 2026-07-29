@@ -29,6 +29,12 @@ class JpaBannerStatRepository implements BannerStatRepository {
     }
 
     @Override
+    public void deleteStatsByAdId(UUID adId) {
+        impressionJpa.deleteByAdId(adId);
+        clickJpa.deleteByAdId(adId);
+    }
+
+    @Override
     public BannerAdStats sumStats(UUID adId) {
         long impressions = impressionJpa.sumCountByAdId(adId);
         long clicks = clickJpa.sumCountByAdId(adId);

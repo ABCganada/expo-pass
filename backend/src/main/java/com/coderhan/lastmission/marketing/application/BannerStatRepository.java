@@ -9,6 +9,7 @@ import com.coderhan.lastmission.marketing.domain.BannerDailyStat;
 public interface BannerStatRepository {
     void incrementImpression(UUID adId, LocalDate date);
     void incrementClick(UUID adId, LocalDate date);
+    void deleteStatsByAdId(UUID adId);
     BannerAdStats sumStats(UUID adId);
     BannerAdStats sumStatsByDateRange(UUID adId, LocalDate from, LocalDate to);
     List<BannerDailyStat> findDailyStats(UUID adId, LocalDate from, LocalDate to);
