@@ -58,10 +58,11 @@ class ReservationController {
 
     record CreateOrderRequest(long eventId, List<OrderItemRequest> items) {}
 
-    record OrderItemResponse(String orderItemId, String ticketId, BigDecimal unitPrice) {
+    record OrderItemResponse(String orderItemId, String ticketId, BigDecimal unitPrice, String qrCodeHash,
+            OffsetDateTime checkedInAt) {
         static OrderItemResponse from(ReservationOrderItem item) {
             return new OrderItemResponse(Long.toString(item.orderItemId()), Long.toString(item.ticketId()),
-                    item.unitPrice());
+                    item.unitPrice(), item.qrCodeHash(), item.checkedInAt());
         }
     }
 

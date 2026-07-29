@@ -14,11 +14,6 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-/**
- * 예약 저장소. reservation_orders / reservation_order_items 만 읽고 쓴다.
- *
- * 애노테이션 없는 순수 record 로 유지하고, Entity ↔ record 변환은 이 클래스에서만 한다.</p>
- */
 @Repository
 @RequiredArgsConstructor
 class JpaReservationRepository implements ReservationRepository {
@@ -38,16 +33,16 @@ class JpaReservationRepository implements ReservationRepository {
 
     @Override
     public ReservationOrder createOrder(String orderId, long userId, long eventId, BigDecimal totalAmount,
-            OffsetDateTime now) {
+                                        OffsetDateTime now) {
         ReservationOrderEntity saved = orderJpaRepository.save(
                 new ReservationOrderEntity(orderId, userId, eventId, OrderStatus.PENDING, totalAmount, now, now));
         return toDomain(saved);
     }
 
     @Override
-    public ReservationOrderItem addItem(String orderId, long ticketId, BigDecimal unitPrice) {
+    public ReservationOrderItem addItem(String orderId, long ticketId, BigDecimal unitPrice, String qrCodeHash) {
         ReservationOrderItemEntity saved = itemJpaRepository.save(
-                new ReservationOrderItemEntity(orderId, ticketId, unitPrice));
+                new ReservationOrderItemEntity(orderId, ticketId, unitPrice, qrCodeHash));
         return toDomain(saved);
     }
 
@@ -63,6 +58,16 @@ class JpaReservationRepository implements ReservationRepository {
                 .toList();
     }
 
+    @Override
+    public Optional<ReservationOrderItem> findItemByQrCodeHash(String qrCodeHash) {
+        return itemJpaRepository.findByQrCodeHash(qrCodeHash).map(JpaReservationRepository::toDomain);
+    }
+
+    @Override
+    public boolean checkin(String qrCodeHash, long adminUserId, OffsetDateTime now) {
+        return itemJpaRepository.checkin(qrCodeHash, adminUserId, now) > 0;
+    }
+
     private static ReservationOrder toDomain(ReservationOrderEntity entity) {
         return new ReservationOrder(entity.getOrderId(), entity.getUserId(), entity.getEventId(),
                 entity.getStatus(), entity.getTotalAmount(), entity.getReservedAt(), entity.getUpdatedAt());
@@ -70,6 +75,6 @@ class JpaReservationRepository implements ReservationRepository {
 
     private static ReservationOrderItem toDomain(ReservationOrderItemEntity entity) {
         return new ReservationOrderItem(entity.getOrderItemId(), entity.getOrderId(), entity.getTicketId(),
-                entity.getUnitPrice(), entity.getQrCodeHash());
+                entity.getUnitPrice(), entity.getQrCodeHash(), entity.getCheckedInAt());
     }
 }

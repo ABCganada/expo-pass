@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import com.coderhan.lastmission.reservation.domain.ReservationOrder;
 import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
@@ -43,7 +44,7 @@ public class ReservationService {
         // (장마다 현장에서 독립적으로 QR 체크인되어야 하므로 하나의 row에 quantity로 뭉쳐두지 않는다).
         List<ReservationOrderItem> savedItems = items.stream()
                 .flatMap(item -> IntStream.range(0, item.quantity())
-                        .mapToObj(ignored -> repository.addItem(orderId, item.ticketId(), item.unitPrice())))
+                        .mapToObj(ignored -> repository.addItem(orderId, item.ticketId(), item.unitPrice(), UUID.randomUUID().toString())))
                 .toList();
         return new OrderDetail(order, savedItems);
     }
@@ -56,6 +57,23 @@ public class ReservationService {
             throw new BusinessException(ErrorCode.RESERVATION_ACCESS_DENIED, "본인의 주문만 조회할 수 있습니다.");
         }
         return new OrderDetail(order, repository.findItems(orderId));
+    }
+
+    /**
+     * 관리자 QR 체크인. 이미 체크인됐거나 존재하지 않는 QR이면 예외.
+     */
+    @Transactional
+    public ReservationOrderItem checkin(long adminUserId, String qrCodeHash) {
+        OffsetDateTime now = OffsetDateTime.now(clock);
+        boolean checkedIn = repository.checkin(qrCodeHash, adminUserId, now);
+        if (!checkedIn) {
+            ReservationOrderItem existing = repository.findItemByQrCodeHash(qrCodeHash)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_QR_NOT_FOUND,
+                            "존재하지 않는 QR입니다."));
+            throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CHECKED_IN,
+                    "이미 체크인된 티켓입니다. (체크인 시각: " + existing.checkedInAt() + ")");
+        }
+        return repository.findItemByQrCodeHash(qrCodeHash).orElseThrow();
     }
 
     public record OrderItemRequest(long ticketId, BigDecimal unitPrice, int quantity) {}
