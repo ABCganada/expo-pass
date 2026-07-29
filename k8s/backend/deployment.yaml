@@ -33,6 +33,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: lastmission-backend-env
+            - secretRef:
+                name: lastmission-backend-redis
           readinessProbe:
             tcpSocket:
               port: http
