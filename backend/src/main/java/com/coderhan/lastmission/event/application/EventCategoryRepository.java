@@ -9,4 +9,7 @@ public interface EventCategoryRepository {
 
     // 카테고리 목록 조회용
     List<EventCategory> findAllByActiveTrue();
+
+    // 관리자용 전체 카테고리 목록 조회용 (비활성화 포함)
+    List<EventCategory> findAll();
 }
