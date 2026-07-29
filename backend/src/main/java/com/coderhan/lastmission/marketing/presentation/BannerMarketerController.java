@@ -12,7 +12,10 @@ import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -72,6 +75,20 @@ class BannerMarketerController {
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAdStats stats = bannerStatService.getStatsByDateRange(id, from, to);
         return ApiResponse.success(BannerStatsResponse.from(stats));
+    }
+
+    @GetMapping("/{id}/stats/export")
+    ResponseEntity<byte[]> exportStats(
+            @PathVariable UUID id,
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to,
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        byte[] xlsx = bannerStatService.exportStatsByDateRange(id, from, to);
+        String filename = "banner-stats-" + id + "-" + from + "-" + to + ".xlsx";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+        return ResponseEntity.ok().headers(headers).body(xlsx);
     }
 
     record RegisterAdRequest(
