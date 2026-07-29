@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventService {
     private final EventRepository eventRepository;
     private final EventCategoryRepository eventCategoryRepository;
+    private final EventBookmarkService eventBookmarkService;
     private final UserDirectory userDirectory;
     private final Clock clock;
 
@@ -131,6 +132,7 @@ public class EventService {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
         event.softDelete(Instant.now(clock));
+        eventBookmarkService.removeBookmarksForEvent(eventId);
     }
 
     /**

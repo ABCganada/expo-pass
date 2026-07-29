@@ -33,4 +33,12 @@ public class EventBookmarkService {
         eventBookmarkRepository.save(new EventBookmark(event, userId));
         return true;
     }
+
+    /**
+     * 행사 삭제 시 그 행사의 북마크를 함께 삭제
+     */
+    @Transactional
+    public void removeBookmarksForEvent(long eventId) {
+        eventBookmarkRepository.deleteAllByEventId(eventId);
+    }
 }

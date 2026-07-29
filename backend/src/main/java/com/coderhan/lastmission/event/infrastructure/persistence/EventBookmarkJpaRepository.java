@@ -5,4 +5,7 @@ import com.coderhan.lastmission.event.domain.EventBookmark;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 interface EventBookmarkJpaRepository extends JpaRepository<EventBookmark, Long>, EventBookmarkRepository {
+
+    @Override
+    void deleteAllByEventId(long eventId);
 }
