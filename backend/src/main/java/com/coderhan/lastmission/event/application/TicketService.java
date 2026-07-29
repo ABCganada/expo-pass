@@ -1,5 +1,6 @@
 package com.coderhan.lastmission.event.application;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TicketService {
     private final EventRepository eventRepository;
     private final TicketRepository ticketRepository;
+    private final Clock clock;
 
     /**
      * 티켓 생성 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
@@ -45,7 +47,7 @@ public class TicketService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
         validateEventAccess(event, callerUserId, isAdmin, "티켓을 수정");
 
-        Ticket ticket = ticketRepository.findByIdAndEventId(ticketId, event.getId())
+        Ticket ticket = ticketRepository.findNotDeletedByIdAndEventId(ticketId, event.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.TICKET_NOT_FOUND, "티켓을 찾을 수 없습니다."));
         validateTicketFields(command.name(), command.price(), ticket.getQuantityTotal(),
                 command.maxPurchasePerUser(), command.saleStartAt(), command.saleEndAt());
@@ -53,6 +55,25 @@ public class TicketService {
         ticket.updateDetails(command.name(), command.price(), command.maxPurchasePerUser(),
                 command.saleStartAt(), command.saleEndAt());
         return ticket;
+    }
+
+    /**
+     * 티켓 삭제 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     */
+    @Transactional
+    public void deleteTicket(long eventId, long ticketId, long callerUserId, boolean isAdmin) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        validateEventAccess(event, callerUserId, isAdmin, "티켓을 삭제");
+
+        Ticket ticket = ticketRepository.findNotDeletedByIdAndEventId(ticketId, event.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.TICKET_NOT_FOUND, "티켓을 찾을 수 없습니다."));
+        // TODO : 예약 이력 조회 후 판단으로 변경
+        // 현재 : 재고 차감 여부를 예약 발생 여부로 간주 (임시)
+        if (ticket.getQuantityRemaining() != ticket.getQuantityTotal()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "예약 이력이 있는 티켓은 삭제할 수 없습니다.");
+        }
+        ticket.softDelete(Instant.now(clock));
     }
 
     /** ADMIN은 전체 허용, 아니면 본인이 담당(manager_id)하는 행사인지 확인 */

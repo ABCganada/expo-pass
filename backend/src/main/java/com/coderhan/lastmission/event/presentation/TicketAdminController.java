@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -40,6 +41,13 @@ class TicketAdminController {
         Ticket ticket = ticketService.updateTicket(
                 eventId, ticketId, principal.userId(), isAdmin(authentication), request.toCommand());
         return ResponseEntity.ok(ApiResponse.success(TicketResponse.from(ticket)));
+    }
+
+    @DeleteMapping("/api/v1/admin/events/{eventId}/tickets/{ticketId}")
+    ResponseEntity<ApiResponse<Void>> deleteTicket(@PathVariable long eventId, @PathVariable long ticketId,
+            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+        ticketService.deleteTicket(eventId, ticketId, principal.userId(), isAdmin(authentication));
+        return ResponseEntity.ok(ApiResponse.success("티켓을 삭제했습니다.", null));
     }
 
     private static boolean isAdmin(Authentication authentication) {

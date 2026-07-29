@@ -13,22 +13,31 @@ interface TicketJpaRepository extends JpaRepository<Ticket, Long>, TicketReposit
     @Override
     @Query("""
         SELECT t FROM Ticket t JOIN t.event e
-        WHERE t.id = :id AND e.deletedAt IS NULL
+        WHERE t.id = :id AND t.deletedAt IS NULL AND e.deletedAt IS NULL
               AND e.status = com.coderhan.lastmission.event.domain.EventStatus.PUBLISHED
     """)
     Optional<Ticket> findAvailableById(@Param("id") long id);
 
     @Override
+    @Query("""
+        SELECT t FROM Ticket t 
+        JOIN t.event e
+        WHERE t.id = :id AND e.id = :eventId AND t.deletedAt IS NULL
+    """)
+    Optional<Ticket> findNotDeletedByIdAndEventId(@Param("id") Long id, @Param("eventId") Long eventId);
+
+    @Override
     @Modifying
     @Query("""
         UPDATE Ticket t SET t.quantityRemaining = t.quantityRemaining - :quantity
-        WHERE t.id = :id 
+        WHERE t.id = :id
+            AND t.deletedAt IS NULL
             AND t.quantityRemaining >= :quantity
             AND t.saleStartAt <= CURRENT_TIMESTAMP
             AND t.saleEndAt >= CURRENT_TIMESTAMP
             AND EXISTS (
                 SELECT 1
-                FROM Event e    
+                FROM Event e
                 WHERE e = t.event
                 AND e.deletedAt IS NULL
                 AND e.status = com.coderhan.lastmission.event.domain.EventStatus.PUBLISHED
