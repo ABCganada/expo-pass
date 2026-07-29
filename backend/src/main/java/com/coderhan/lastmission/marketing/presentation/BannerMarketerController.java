@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * PENDING 상태 광고만 수정 가능하며, 본인이 등록한 광고만 수정할 수 있다.
  */
 @RestController
-@RequestMapping("/api/v1/marketer/banner-ads")
+@RequestMapping("/api/v1/manager/banner-ads")
 @RequiredArgsConstructor
 class BannerMarketerController {
     private final BannerAdService bannerAdService;

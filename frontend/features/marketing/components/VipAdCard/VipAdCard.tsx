@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ExternalLink } from "lucide-react";
 import { bannerService } from "../../services/bannerService";
 import type { BannerAd } from "../../types/banner";
@@ -11,8 +11,25 @@ interface VipAdCardProps {
 }
 
 export function VipAdCard({ ad }: VipAdCardProps) {
+  const cardRef = useRef<HTMLElement>(null);
+
   useEffect(() => {
-    bannerService.recordImpression(ad.id);
+    const el = cardRef.current;
+    if (!el) return;
+
+    // 광고가 뷰포트에 50% 이상 노출됐을 때 한 번만 카운트
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          bannerService.recordImpression(ad.id);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.5 },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [ad.id]);
 
   const handleClick = async () => {
@@ -21,7 +38,7 @@ export function VipAdCard({ ad }: VipAdCardProps) {
   };
 
   return (
-    <article className={styles.card}>
+    <article ref={cardRef} className={styles.card}>
       <div className={styles.imageWrapper}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={ad.imageUrl} alt={ad.title} className={styles.image} draggable={false} />

@@ -45,6 +45,10 @@ public class LastMissionAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         if (HttpMethod.OPTIONS.matches(request.getMethod())) return true;
         String path = requestPath(request);
+        // 공개 배너 API: 인증 필터를 거치면 비인증 요청에 CORS 헤더 없이 401이 반환되므로 제외
+        if (HttpMethod.GET.matches(request.getMethod()) && "/api/v1/banners".equals(path)) return true;
+        if (HttpMethod.POST.matches(request.getMethod()) && path.startsWith("/api/v1/banners/")
+                && (path.endsWith("/impressions") || path.endsWith("/clicks"))) return true;
         return !(path.startsWith("/api/") || path.equals("/ws") || path.startsWith("/ws/"));
     }
 
