@@ -103,7 +103,7 @@ class EventAdminController {
     ) {
         UpdateEventCommand toCommand() {
             if (categoryId == null || categoryId <= 0) {
-                throw new BusinessException(ErrorCode.INVALID_REQUEST, "카테고리 id가 올바르지 않습니다.");
+                throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "카테고리 id가 올바르지 않습니다.");
             }
             return new UpdateEventCommand(title, categoryId, hostName, venueName, address, detailAddress,
                     kakaoPlaceId, legalDongCode, latitude, longitude, startDate, endDate);
@@ -115,7 +115,7 @@ class EventAdminController {
             try {
                 return EventStatus.valueOf(status.toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException | NullPointerException _) {
-                throw new BusinessException(ErrorCode.INVALID_REQUEST,
+                throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST,
                         "status 값이 올바르지 않습니다. (PUBLISHED, DRAFT, CANCELLED 중 하나여야 합니다.)");
             }
         }
