@@ -15,4 +15,9 @@ public interface RefundRepository {
 
     /** 결제 1건당 진행 중인(REQUESTED/APPROVED/COMPLETED) 환불이 있는지 조회 — 중복 신청 방지용 */
     Optional<Refund> findActiveByPaymentId(long paymentId);
+
+    Optional<Refund> findById(long refundId);
+
+    /** 이벤트 관리자 승인. REQUESTED -> COMPLETED */
+    Refund approve(long refundId, long approvedBy, OffsetDateTime completedAt);
 }

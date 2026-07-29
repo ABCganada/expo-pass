@@ -42,6 +42,19 @@ class JpaRefundRepository implements RefundRepository {
                 .map(JpaRefundRepository::toDomain);
     }
 
+    @Override
+    public Optional<Refund> findById(long refundId) {
+        return jpaRepository.findById(refundId).map(JpaRefundRepository::toDomain);
+    }
+
+    @Override
+    public Refund approve(long refundId, long approvedBy, OffsetDateTime completedAt) {
+        RefundEntity entity = jpaRepository.findById(refundId).orElseThrow();
+        entity.approve(approvedBy, completedAt);
+
+        return toDomain(jpaRepository.save(entity));
+    }
+
     private static Refund toDomain(RefundEntity entity) {
         return Refund.builder()
                 .id(entity.getId())

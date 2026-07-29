@@ -18,6 +18,7 @@ class ApiExceptionHandler {
             case CHAT_ROOM_NOT_FOUND, CHAT_MESSAGE_NOT_FOUND, CHAT_USER_NOT_FOUND,
                     RESERVATION_NOT_FOUND, BANNER_SLOT_NOT_FOUND, BANNER_AD_NOT_FOUND,
                     ADMIN_MEMBER_NOT_FOUND, EVENT_NOT_FOUND, PAYMENT_NOT_FOUND,
+                    PAYMENT_REFUND_NOT_FOUND,
                     EVENT_CATEGORY_NOT_FOUND, EVENT_MANAGER_NOT_FOUND ->
                     HttpStatus.NOT_FOUND;
 
@@ -33,7 +34,8 @@ class ApiExceptionHandler {
                     BANNER_STAT_INVALID_DATE_RANGE ->
                     HttpStatus.BAD_REQUEST;
 
-            case CHAT_PARTICIPANT_EXISTS, ADMIN_SELF_DEMOTION, PAYMENT_REFUND_ALREADY_EXISTS ->
+            case CHAT_PARTICIPANT_EXISTS, ADMIN_SELF_DEMOTION, PAYMENT_REFUND_ALREADY_EXISTS,
+                    PAYMENT_REFUND_ALREADY_DECIDED ->
                     HttpStatus.CONFLICT;
         };
         return ResponseEntity.status(status).body(

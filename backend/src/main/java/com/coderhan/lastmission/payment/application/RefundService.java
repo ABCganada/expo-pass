@@ -7,6 +7,7 @@ import java.time.temporal.ChronoUnit;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
+import com.coderhan.lastmission.payment.domain.RefundStatus;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -70,6 +71,27 @@ public class RefundService {
             return refundRepository.saveAsRequested(payment.id(), payment.amount(), reason);
         } catch (DataIntegrityViolationException e) {
             throw new BusinessException(ErrorCode.PAYMENT_REFUND_ALREADY_EXISTS, "이미 진행 중인 환불 신청이 있습니다.");
+        }
+    }
+
+    /** 이벤트 관리자의 환불 승인. REQUESTED 상태인 신청만 승인 가능 */
+    public Refund approve(long approverUserId, long refundId) {
+        Refund refund = refundRepository.findById(refundId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_REFUND_NOT_FOUND, "환불 신청 내역을 찾을 수 없습니다."));
+
+        validateStatusRequested(refund);
+
+        Payment payment = paymentRepository.findById(refund.paymentId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, "결제 내역을 찾을 수 없습니다."));
+
+        paymentGateway.cancel(payment.pgTransactionId(), refund.reason());
+
+        return refundRepository.approve(refundId, approverUserId, OffsetDateTime.now(clock));
+    }
+
+    private void validateStatusRequested(Refund refund) {
+        if (refund.status() != RefundStatus.REQUESTED) {
+            throw new BusinessException(ErrorCode.PAYMENT_REFUND_ALREADY_DECIDED, "이미 처리된 환불 신청입니다.");
         }
     }
 

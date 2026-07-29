@@ -35,7 +35,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 class RefundServiceTest {
     private static final long USER_ID = 7L;
     private static final long OTHER_USER_ID = 99L;
+    private static final long ADMIN_USER_ID = 42L;
     private static final long PAYMENT_ID = 5L;
+    private static final long REFUND_ID = 1L;
     private static final BigDecimal AMOUNT = BigDecimal.valueOf(10000);
     private static final OffsetDateTime NOW = OffsetDateTime.parse("2026-07-23T10:00:00Z");
     private static final LocalDate TODAY = NOW.toLocalDate();
@@ -149,6 +151,46 @@ class RefundServiceTest {
         assertThatThrownBy(() -> service.request(USER_ID, PAYMENT_ID, "사유"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_ALREADY_EXISTS));
+    }
+
+    @Test
+    @DisplayName("REQUESTED 상태인 환불을 승인하면 토스 취소를 호출하고 COMPLETED로 갱신한다")
+    void approvesRequestedRefundAndCancelsPayment() {
+        Refund pending = request(RefundStatus.REQUESTED);
+        Refund approved = request(RefundStatus.COMPLETED);
+        when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.of(pending));
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(completedPayment()));
+        when(refundRepository.approve(REFUND_ID, ADMIN_USER_ID, OffsetDateTime.now(clock))).thenReturn(approved);
+
+        Refund result = service.approve(ADMIN_USER_ID, REFUND_ID);
+
+        assertThat(result).isSameAs(approved);
+        verify(paymentGateway).cancel("pg-tx-1", "단순 변심");
+        verify(refundRepository).approve(REFUND_ID, ADMIN_USER_ID, OffsetDateTime.now(clock));
+    }
+
+    @Test
+    @DisplayName("환불 신청 내역이 없으면 PAYMENT_REFUND_NOT_FOUND 예외를 던진다")
+    void rejectsApprovalWhenRefundNotFound() {
+        when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.approve(ADMIN_USER_ID, REFUND_ID))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_NOT_FOUND));
+
+        verify(paymentGateway, never()).cancel(any(), any());
+    }
+
+    @Test
+    @DisplayName("이미 승인/거절된 환불이면 PAYMENT_REFUND_ALREADY_DECIDED 예외를 던진다")
+    void rejectsApprovalWhenAlreadyDecided() {
+        when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.of(request(RefundStatus.COMPLETED)));
+
+        assertThatThrownBy(() -> service.approve(ADMIN_USER_ID, REFUND_ID))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_ALREADY_DECIDED));
+
+        verify(paymentGateway, never()).cancel(any(), any());
     }
 
     private static Payment completedPayment() {

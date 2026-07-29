@@ -84,4 +84,12 @@ class RefundEntity {
         entity.updatedAt = now;
         return entity;
     }
+
+    /** 이벤트 관리자가 승인 */
+    void approve(Long approvedBy, OffsetDateTime completedAt) {
+        this.status = RefundStatus.COMPLETED;
+        this.approvedBy = approvedBy;
+        this.refundedAt = completedAt;
+        this.updatedAt = completedAt;
+    }
 }
