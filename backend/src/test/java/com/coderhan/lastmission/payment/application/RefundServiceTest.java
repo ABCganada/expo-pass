@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
@@ -35,8 +36,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 class RefundServiceTest {
     private static final long USER_ID = 7L;
     private static final long OTHER_USER_ID = 99L;
-    private static final long ADMIN_USER_ID = 42L;
     private static final long PAYMENT_ID = 5L;
+    private static final long OTHER_PAYMENT_ID = 6L;
     private static final long REFUND_ID = 1L;
     private static final BigDecimal AMOUNT = BigDecimal.valueOf(10000);
     private static final OffsetDateTime NOW = OffsetDateTime.parse("2026-07-23T10:00:00Z");
@@ -46,6 +47,7 @@ class RefundServiceTest {
     @Mock PaymentRepository paymentRepository;
     @Mock PaymentGateway paymentGateway;
     @Mock EventScheduleReader eventScheduleReader;
+    @Mock EventManagerLookup eventManagerLookup;
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks RefundService service;
@@ -154,19 +156,35 @@ class RefundServiceTest {
     }
 
     @Test
-    @DisplayName("REQUESTED 상태인 환불을 승인하면 토스 취소를 호출하고 COMPLETED로 갱신한다")
+    @DisplayName("본인이 담당하는 행사의 환불이면 승인 시 토스 취소를 호출하고 COMPLETED로 갱신한다")
     void approvesRequestedRefundAndCancelsPayment() {
         Refund pending = request(RefundStatus.REQUESTED);
         Refund approved = request(RefundStatus.COMPLETED);
         when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.of(pending));
         when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(completedPayment()));
-        when(refundRepository.approve(REFUND_ID, ADMIN_USER_ID, OffsetDateTime.now(clock))).thenReturn(approved);
+        when(eventManagerLookup.findEventManagerId("ORD-1")).thenReturn(USER_ID);
+        when(refundRepository.approve(REFUND_ID, USER_ID, OffsetDateTime.now(clock))).thenReturn(approved);
 
-        Refund result = service.approve(ADMIN_USER_ID, REFUND_ID);
+        Refund result = service.approve(USER_ID, REFUND_ID);
 
         assertThat(result).isSameAs(approved);
         verify(paymentGateway).cancel("pg-tx-1", "단순 변심");
-        verify(refundRepository).approve(REFUND_ID, ADMIN_USER_ID, OffsetDateTime.now(clock));
+        verify(refundRepository).approve(REFUND_ID, USER_ID, OffsetDateTime.now(clock));
+    }
+
+    @Test
+    @DisplayName("본인이 담당하지 않는 행사의 환불이면 승인 시 PAYMENT_REFUND_ACCESS_DENIED 예외를 던진다")
+    void deniesApprovalWhenCallerDoesNotManageEvent() {
+        when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.of(request(RefundStatus.REQUESTED)));
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(completedPayment()));
+        when(eventManagerLookup.findEventManagerId("ORD-1")).thenReturn(OTHER_USER_ID);
+
+        assertThatThrownBy(() -> service.approve(USER_ID, REFUND_ID))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_ACCESS_DENIED));
+
+        verify(paymentGateway, never()).cancel(any(), any());
+        verify(refundRepository, never()).approve(anyLong(), anyLong(), any());
     }
 
     @Test
@@ -174,7 +192,7 @@ class RefundServiceTest {
     void rejectsApprovalWhenRefundNotFound() {
         when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.approve(ADMIN_USER_ID, REFUND_ID))
+        assertThatThrownBy(() -> service.approve(USER_ID, REFUND_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_NOT_FOUND));
 
@@ -186,7 +204,7 @@ class RefundServiceTest {
     void rejectsApprovalWhenAlreadyDecided() {
         when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.of(request(RefundStatus.COMPLETED)));
 
-        assertThatThrownBy(() -> service.approve(ADMIN_USER_ID, REFUND_ID))
+        assertThatThrownBy(() -> service.approve(USER_ID, REFUND_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_ALREADY_DECIDED));
 
@@ -194,18 +212,34 @@ class RefundServiceTest {
     }
 
     @Test
-    @DisplayName("REQUESTED 상태인 환불을 거절하면 토스는 호출하지 않고 REJECTED로 갱신한다")
+    @DisplayName("본인이 담당하는 행사의 환불이면 거절 시 토스는 호출하지 않고 REJECTED로 갱신한다")
     void marksRefundAsRejectedWithoutCallingGateway() {
         Refund pending = request(RefundStatus.REQUESTED);
         Refund rejected = request(RefundStatus.REJECTED);
         when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.of(pending));
-        when(refundRepository.reject(REFUND_ID, ADMIN_USER_ID, OffsetDateTime.now(clock))).thenReturn(rejected);
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(completedPayment()));
+        when(eventManagerLookup.findEventManagerId("ORD-1")).thenReturn(USER_ID);
+        when(refundRepository.reject(REFUND_ID, USER_ID, OffsetDateTime.now(clock))).thenReturn(rejected);
 
-        Refund result = service.reject(ADMIN_USER_ID, REFUND_ID);
+        Refund result = service.reject(USER_ID, REFUND_ID);
 
         assertThat(result).isSameAs(rejected);
-        verify(refundRepository).reject(REFUND_ID, ADMIN_USER_ID, OffsetDateTime.now(clock));
+        verify(refundRepository).reject(REFUND_ID, USER_ID, OffsetDateTime.now(clock));
         verify(paymentGateway, never()).cancel(any(), any());
+    }
+
+    @Test
+    @DisplayName("본인이 담당하지 않는 행사의 환불이면 거절 시에도 PAYMENT_REFUND_ACCESS_DENIED 예외를 던진다")
+    void deniesRejectionWhenCallerDoesNotManageEvent() {
+        when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.of(request(RefundStatus.REQUESTED)));
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(completedPayment()));
+        when(eventManagerLookup.findEventManagerId("ORD-1")).thenReturn(OTHER_USER_ID);
+
+        assertThatThrownBy(() -> service.reject(USER_ID, REFUND_ID))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_ACCESS_DENIED));
+
+        verify(refundRepository, never()).reject(anyLong(), anyLong(), any());
     }
 
     @Test
@@ -213,7 +247,7 @@ class RefundServiceTest {
     void rejectionFailsWhenRefundNotFound() {
         when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.reject(ADMIN_USER_ID, REFUND_ID))
+        assertThatThrownBy(() -> service.reject(USER_ID, REFUND_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_NOT_FOUND));
 
@@ -225,17 +259,38 @@ class RefundServiceTest {
     void rejectionFailsWhenAlreadyDecided() {
         when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.of(request(RefundStatus.COMPLETED)));
 
-        assertThatThrownBy(() -> service.reject(ADMIN_USER_ID, REFUND_ID))
+        assertThatThrownBy(() -> service.reject(USER_ID, REFUND_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_ALREADY_DECIDED));
 
         verify(refundRepository, never()).reject(anyLong(), anyLong(), any());
     }
 
+    @Test
+    @DisplayName("본인이 담당하는 행사의 환불만 대기 목록에서 본다")
+    void listsOnlyRefundsForOwnedEvent() {
+        Refund owned = request(RefundStatus.REQUESTED);
+        Refund notOwned = requestForPayment(RefundStatus.REQUESTED, OTHER_PAYMENT_ID);
+        when(refundRepository.findAllRequested()).thenReturn(List.of(owned, notOwned));
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(completedPayment()));
+        when(paymentRepository.findById(OTHER_PAYMENT_ID))
+                .thenReturn(Optional.of(completedPaymentWithOrderId(OTHER_PAYMENT_ID, "ORD-2")));
+        when(eventManagerLookup.findEventManagerId("ORD-1")).thenReturn(USER_ID);
+        when(eventManagerLookup.findEventManagerId("ORD-2")).thenReturn(OTHER_USER_ID);
+
+        List<Refund> result = service.listPending(USER_ID);
+
+        assertThat(result).containsExactly(owned);
+    }
+
     private static Payment completedPayment() {
+        return completedPaymentWithOrderId(PAYMENT_ID, "ORD-1");
+    }
+
+    private static Payment completedPaymentWithOrderId(long paymentId, String orderId) {
         return Payment.builder()
-                .id(PAYMENT_ID)
-                .orderId("ORD-1")
+                .id(paymentId)
+                .orderId(orderId)
                 .userId(USER_ID)
                 .idempotencyKey("key-1")
                 .amount(AMOUNT)
@@ -260,9 +315,13 @@ class RefundServiceTest {
     }
 
     private static Refund request(RefundStatus status) {
+        return requestForPayment(status, PAYMENT_ID);
+    }
+
+    private static Refund requestForPayment(RefundStatus status, long paymentId) {
         return Refund.builder()
-                .id(1L)
-                .paymentId(PAYMENT_ID)
+                .id(REFUND_ID)
+                .paymentId(paymentId)
                 .amount(AMOUNT)
                 .reason("단순 변심")
                 .status(status)

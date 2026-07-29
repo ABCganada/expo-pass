@@ -4,6 +4,8 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Objects;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
@@ -25,6 +27,7 @@ public class RefundService {
     private final PaymentRepository paymentRepository;
     private final PaymentGateway paymentGateway;
     private final EventScheduleReader eventScheduleReader;
+    private final EventManagerLookup eventManagerLookup;
     private final Clock clock;
 
     /**
@@ -74,7 +77,7 @@ public class RefundService {
         }
     }
 
-    /** 이벤트 관리자의 환불 승인. REQUESTED 상태인 신청만 승인 가능 */
+    /** 이벤트 관리자의 환불 승인. REQUESTED 상태인 신청 중 본인이 담당하는 행사의 건만 승인 가능하다. */
     public Refund approve(long approverUserId, long refundId) {
         Refund refund = refundRepository.findById(refundId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_REFUND_NOT_FOUND, "환불 신청 내역을 찾을 수 없습니다."));
@@ -84,19 +87,49 @@ public class RefundService {
         Payment payment = paymentRepository.findById(refund.paymentId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, "결제 내역을 찾을 수 없습니다."));
 
+        validateEventAccess(payment, approverUserId);
+
         paymentGateway.cancel(payment.pgTransactionId(), refund.reason());
 
         return refundRepository.approve(refundId, approverUserId, OffsetDateTime.now(clock));
     }
 
-    /** 이벤트 관리자의 환불 거절. REQUESTED 상태인 신청만 거절 가능. 실제 결제취소는 호출하지 않음 */
+    /**
+     * 이벤트 관리자의 환불 거절. REQUESTED 상태인 신청 중 본인이 담당하는 행사의 건만
+     * 거절 가능하다. 실제 결제취소는 호출하지 않는다.
+     */
     public Refund reject(long approverUserId, long refundId) {
         Refund refund = refundRepository.findById(refundId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_REFUND_NOT_FOUND, "환불 신청 내역을 찾을 수 없습니다."));
 
         validateStatusRequested(refund);
 
+        Payment payment = paymentRepository.findById(refund.paymentId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, "결제 내역을 찾을 수 없습니다."));
+
+        validateEventAccess(payment, approverUserId);
+
         return refundRepository.reject(refundId, approverUserId, OffsetDateTime.now(clock));
+    }
+
+    /** 이벤트 관리자가 승인/거절해야 할 대기 목록. 본인이 담당하는 행사의 환불만 보인다. */
+    public List<Refund> listPending(long callerUserId) {
+        return refundRepository.findAllRequested().stream()
+                .filter(refund -> isManagedByCaller(refund, callerUserId))
+                .toList();
+    }
+
+    private boolean isManagedByCaller(Refund refund, long callerUserId) {
+        return paymentRepository.findById(refund.paymentId())
+                .map(payment -> Objects.equals(eventManagerLookup.findEventManagerId(payment.orderId()), callerUserId))
+                .orElse(false);
+    }
+
+    private void validateEventAccess(Payment payment, long callerUserId) {
+        Long managerId = eventManagerLookup.findEventManagerId(payment.orderId());
+        if (!Objects.equals(managerId, callerUserId)) {
+            throw new BusinessException(ErrorCode.PAYMENT_REFUND_ACCESS_DENIED, "본인이 담당하는 행사의 환불만 처리할 수 있습니다.");
+        }
     }
 
     private void validateStatusRequested(Refund refund) {

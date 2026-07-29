@@ -63,6 +63,13 @@ class JpaRefundRepository implements RefundRepository {
         return toDomain(jpaRepository.save(entity));
     }
 
+    @Override
+    public List<Refund> findAllRequested() {
+        return jpaRepository.findByStatusOrderByRequestedAtAsc(RefundStatus.REQUESTED).stream()
+                .map(JpaRefundRepository::toDomain)
+                .toList();
+    }
+
     private static Refund toDomain(RefundEntity entity) {
         return Refund.builder()
                 .id(entity.getId())

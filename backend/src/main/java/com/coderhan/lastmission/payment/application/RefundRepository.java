@@ -2,6 +2,7 @@ package com.coderhan.lastmission.payment.application;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.domain.Refund;
 
@@ -23,4 +24,7 @@ public interface RefundRepository {
 
     /** 이벤트 관리자 거절. REQUESTED -> REJECTED */
     Refund reject(long refundId, long decidedBy, OffsetDateTime decidedAt);
+
+    /** 이벤트 관리자가 승인/거절해야 할 대기 목록. 오래 기다린 순(신청일 오름차순) */
+    List<Refund> findAllRequested();
 }
