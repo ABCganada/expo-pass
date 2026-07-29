@@ -5,8 +5,27 @@
 
 @authCookie = <PASTE_COOKIE_HEADER_VALUE>
 
+# GET {{baseUrl}}/auth/csrf 호출 후 응답 token 값을 설정한다.
+# Set-Cookie로 내려온 LASTMISSION-XSRF-TOKEN 값도 authCookie에 추가한다.
+# CSRF 토큰은 1회성이므로 테스트 전 새로 발급한다.
+@csrfToken = <PASTE_TOKEN_FROM_AUTH_CSRF_RESPONSE>
+
 # 상세 조회 테스트용 행사 ID. 목록 조회 응답에서 id 하나 복사해서 채운다.
-@eventId = <EVENT_ID>
+@eventId = 1
+
+# 행사 생성 테스트용 카테고리/담당자 ID
+@categoryId = 1
+@managerId = 1
+
+
+### ============================
+### [0단계] CSRF 토큰 발급 (POST/PATCH/DELETE 테스트 전에 먼저 실행)
+### 응답의 token 값을 위 @csrfToken에 붙여넣고, Set-Cookie의 LASTMISSION-XSRF-TOKEN 값을
+### @authCookie 문자열 끝에 이어붙인다. 매번 새로 받아야 한다(1회성 토큰).
+### ============================
+
+GET {{baseUrl}}/auth/csrf
+Cookie: {{authCookie}}
 
 
 ### ============================
@@ -44,6 +63,266 @@ Cookie: {{authCookie}}
 ### ============================
 
 GET {{baseUrl}}/api/v1/events/not-a-number
+Accept: application/json
+Cookie: {{authCookie}}
+
+
+### ============================
+### [SUPER_ADMIN] 행사 생성
+### 성공 시 status는 항상 DRAFT로 생성됨
+### ============================
+
+POST {{baseUrl}}/api/v1/super-admin/events
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "title": "테스트 행사",
+  "categoryId": "{{categoryId}}",
+  "managerId": "{{managerId}}"
+}
+
+
+### ============================
+### [400 확인용] 존재하지 않는 카테고리로 행사 생성
+### ============================
+
+POST {{baseUrl}}/api/v1/super-admin/events
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "title": "테스트 행사",
+  "categoryId": "999999999",
+  "managerId": "{{managerId}}"
+}
+
+
+### ============================
+### [403 확인용] MANAGER/USER 쿠키로 행사 생성 시도 → SUPER_ADMIN 전용이라 거부되어야 함
+### ============================
+
+POST {{baseUrl}}/api/v1/super-admin/events
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "title": "테스트 행사",
+  "categoryId": "{{categoryId}}",
+  "managerId": "{{managerId}}"
+}
+
+
+### ============================
+### [ADMIN/MANAGER] 관리자 행사 상세 조회
+### 고객용과 달리 DRAFT도 조회 가능(status 필터 없음). MANAGER는 본인 담당 행사만.
+### ============================
+
+GET {{baseUrl}}/api/v1/admin/events/{{eventId}}
+Accept: application/json
+Cookie: {{authCookie}}
+
+
+### ============================
+### [403 확인용] 본인 담당이 아닌 행사를 MANAGER 쿠키로 조회 시도
+### ============================
+
+GET {{baseUrl}}/api/v1/admin/events/{{eventId}}
+Accept: application/json
+Cookie: {{authCookie}}
+
+
+### ============================
+### [404 확인용] 존재하지 않는 행사 관리자 조회
+### ============================
+
+GET {{baseUrl}}/api/v1/admin/events/999999999
+Accept: application/json
+Cookie: {{authCookie}}
+
+
+### ============================
+### [ADMIN/MANAGER] 행사 수정
+### MANAGER는 본인이 담당(manager_id)하는 행사만 가능, 아니면 EVENT_ACCESS_DENIED(403)
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "title": "수정된 행사명",
+  "categoryId": "{{categoryId}}",
+  "hostName": "코더한",
+  "venueName": "코엑스",
+  "address": "서울 강남구 영동대로 513",
+  "detailAddress": "3층 컨벤션홀",
+  "kakaoPlaceId": null,
+  "legalDongCode": "11",
+  "latitude": 37.5126,
+  "longitude": 127.0594,
+  "startDate": "2026-09-01",
+  "endDate": "2026-09-03"
+}
+
+
+### ============================
+### [403 확인용] 본인 담당이 아닌 행사를 MANAGER 쿠키로 수정 시도
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "title": "수정 시도",
+  "categoryId": "{{categoryId}}",
+  "hostName": null,
+  "venueName": null,
+  "address": null,
+  "detailAddress": null,
+  "kakaoPlaceId": null,
+  "legalDongCode": null,
+  "latitude": null,
+  "longitude": null,
+  "startDate": "2026-09-01",
+  "endDate": "2026-09-03"
+}
+
+
+### ============================
+### [404 확인용] 존재하지 않는 행사 수정
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/999999999
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "title": "수정 시도",
+  "categoryId": "{{categoryId}}",
+  "hostName": null,
+  "venueName": null,
+  "address": null,
+  "detailAddress": null,
+  "kakaoPlaceId": null,
+  "legalDongCode": null,
+  "latitude": null,
+  "longitude": null,
+  "startDate": "2026-09-01",
+  "endDate": "2026-09-03"
+}
+
+
+### ============================
+### [ADMIN/MANAGER] 행사 상태 변경 - PUBLISHED로 발행
+### detailAddress/kakaoPlaceId는 선택.
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}/status
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "status": "PUBLISHED"
+}
+
+
+### ============================
+### [400 확인용] 필수 필드 안 채운 채로 PUBLISHED 시도 (예: 방금 생성만 하고 수정 안 한 행사)
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}/status
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "status": "PUBLISHED"
+}
+
+
+### ============================
+### [ADMIN/MANAGER] 행사 상태 변경 - CANCELLED로 취소
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}/status
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "status": "CANCELLED"
+}
+
+
+### ============================
+### [400 확인용] 이미 CANCELLED된 행사 상태 재변경 시도 → 종결 상태라 거부
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}/status
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "status": "PUBLISHED"
+}
+
+
+### ============================
+### [400 확인용] 존재하지 않는 status 값
+### ============================
+
+PATCH {{baseUrl}}/api/v1/admin/events/{{eventId}}/status
+Content-Type: application/json
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "status": "NOT_A_STATUS"
+}
+
+
+### ============================
+### [SUPER_ADMIN] 행사 삭제 (소프트 삭제)
+### ============================
+
+DELETE {{baseUrl}}/api/v1/super-admin/events/{{eventId}}
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+
+### ============================
+### [403 확인용] MANAGER/USER 쿠키로 행사 삭제 시도 → SUPER_ADMIN 전용이라 거부되어야 함
+### ============================
+
+DELETE {{baseUrl}}/api/v1/super-admin/events/{{eventId}}
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+
+### ============================
+### [404 확인용] 존재하지 않는 행사 삭제
+### ============================
+
+DELETE {{baseUrl}}/api/v1/super-admin/events/999999999
+Cookie: {{authCookie}}
+X-LASTMISSION-XSRF-TOKEN: {{csrfToken}}
+
+
+### ============================
+### [404 확인용] 삭제된 행사를 고객 상세조회로 재조회 → 소프트 삭제 확인
+### ============================
+
+GET {{baseUrl}}/api/v1/events/{{eventId}}
 Accept: application/json
 Cookie: {{authCookie}}
 

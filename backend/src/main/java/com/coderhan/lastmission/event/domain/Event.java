@@ -56,10 +56,10 @@ public class Event {
     @Column(name = "longitude")
     private BigDecimal longitude;
 
-    @Column(name = "start_date", nullable = false)
+    @Column(name = "start_date")
     private LocalDate startDate;
 
-    @Column(name = "end_date", nullable = false)
+    @Column(name = "end_date")
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
@@ -96,6 +96,24 @@ public class Event {
 
     public boolean isDeleted() {
         return deletedAt != null;
+    }
+
+    /** 필드 수정 전용 */
+    public void updateDetails(String title, EventCategory category, String hostName, String venueName,
+            String address, String detailAddress, String kakaoPlaceId, String legalDongCode,
+            BigDecimal latitude, BigDecimal longitude, LocalDate startDate, LocalDate endDate) {
+        this.title = title;
+        this.category = category;
+        this.hostName = hostName;
+        this.venueName = venueName;
+        this.address = address;
+        this.detailAddress = detailAddress;
+        this.kakaoPlaceId = kakaoPlaceId;
+        this.legalDongCode = legalDongCode;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
 
     public void publish() {
