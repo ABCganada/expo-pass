@@ -1,21 +1,30 @@
 package com.coderhan.lastmission.marketing.presentation;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.application.BannerAdService;
+import com.coderhan.lastmission.marketing.application.BannerStatService;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
+import com.coderhan.lastmission.marketing.domain.BannerAdStats;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -27,6 +36,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 class BannerMarketerController {
     private final BannerAdService bannerAdService;
+    private final BannerStatService bannerStatService;
+
+    @GetMapping
+    ApiResponse<List<BannerAdResponse>> getMyAds(@AuthenticationPrincipal LastMissionPrincipal principal) {
+        List<BannerAdResponse> responses = bannerAdService.getMyAds(principal.email()).stream()
+                .map(BannerAdResponse::from)
+                .toList();
+        return ApiResponse.success(responses);
+    }
 
     @PostMapping
     ResponseEntity<ApiResponse<BannerAdResponse>> registerAd(
@@ -49,6 +67,30 @@ class BannerMarketerController {
         return ApiResponse.success(BannerAdResponse.from(ad));
     }
 
+    @GetMapping("/{id}/stats")
+    ApiResponse<BannerStatsResponse> getStats(
+            @PathVariable UUID id,
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to,
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        BannerAdStats stats = bannerStatService.getStatsByDateRange(id, from, to);
+        return ApiResponse.success(BannerStatsResponse.from(stats));
+    }
+
+    @GetMapping("/{id}/stats/export")
+    ResponseEntity<byte[]> exportStats(
+            @PathVariable UUID id,
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to,
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        byte[] xlsx = bannerStatService.exportStatsByDateRange(id, from, to);
+        String filename = "banner-stats-" + id + "-" + from + "-" + to + ".xlsx";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+        return ResponseEntity.ok().headers(headers).body(xlsx);
+    }
+
     record RegisterAdRequest(
             UUID slotId,
             String title,
@@ -67,6 +109,12 @@ class BannerMarketerController {
             OffsetDateTime startsAt,
             OffsetDateTime endsAt
     ) {}
+
+    record BannerStatsResponse(UUID adId, long impressions, long clicks, double ctr) {
+        static BannerStatsResponse from(BannerAdStats stats) {
+            return new BannerStatsResponse(stats.adId(), stats.impressions(), stats.clicks(), stats.ctr());
+        }
+    }
 
     record BannerAdResponse(
             UUID id,

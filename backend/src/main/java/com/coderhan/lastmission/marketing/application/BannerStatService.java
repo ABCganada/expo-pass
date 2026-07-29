@@ -2,8 +2,10 @@ package com.coderhan.lastmission.marketing.application;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.domain.BannerAdStats;
+import com.coderhan.lastmission.marketing.domain.BannerDailyStat;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BannerStatService {
     private final BannerStatRepository statRepository;
     private final BannerAdRepository adRepository;
+    private final BannerStatExcelPort excelPort;
     private final Clock clock;
 
     @Transactional
@@ -36,5 +39,26 @@ public class BannerStatService {
         adRepository.findById(adId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + adId));
         return statRepository.sumStats(adId);
+    }
+
+    @Transactional(readOnly = true)
+    public BannerAdStats getStatsByDateRange(UUID adId, LocalDate from, LocalDate to) {
+        adRepository.findById(adId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + adId));
+        if (from.isAfter(to)) {
+            throw new BusinessException(ErrorCode.BANNER_STAT_INVALID_DATE_RANGE, "from은 to보다 이전이어야 합니다.");
+        }
+        return statRepository.sumStatsByDateRange(adId, from, to);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportStatsByDateRange(UUID adId, LocalDate from, LocalDate to) {
+        adRepository.findById(adId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + adId));
+        if (from.isAfter(to)) {
+            throw new BusinessException(ErrorCode.BANNER_STAT_INVALID_DATE_RANGE, "from은 to보다 이전이어야 합니다.");
+        }
+        List<BannerDailyStat> dailyStats = statRepository.findDailyStats(adId, from, to);
+        return excelPort.write(dailyStats);
     }
 }
