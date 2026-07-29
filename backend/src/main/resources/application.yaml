@@ -50,7 +50,22 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       auto-offset-reset: latest
 
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      username: ${SPRING_DATA_REDIS_USERNAME:default}
+      password: ${SPRING_DATA_REDIS_PASSWORD}
+      ssl:
+        enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
+      repositories:
+        enabled: false
+
 lastmission:
+  # 브라우저 CORS 허용 오리진. 로컬은 기본값(localhost 포함), 프로덕션은 env로 앱 오리진만 남긴다.
+  cors:
+    allowed-origins: ${LASTMISSION_CORS_ALLOWED_ORIGINS:https://lastmission.example.com,https://localhost.example.com:3000,http://localhost:3000}
+
   security:
     csrf:
       secure-cookie: ${LASTMISSION_CSRF_SECURE_COOKIE:true}
@@ -59,7 +74,11 @@ lastmission:
     enabled: ${LASTMISSION_KAFKA_ENABLED}
     topic: ${LASTMISSION_KAFKA_TOPIC}
     consumer-group: ${LASTMISSION_KAFKA_CONSUMER_GROUP}
-    waiting-room-consumer-group: ${LASTMISSION_KAFKA_WAITING_ROOM_CONSUMER_GROUP}
+
+  toss:
+    base-url: ${TOSS_API_BASE_URL:https://api.tosspayments.com}
+    # 절대 git에 실제 값을 커밋하지 않는다 — 로컬은 .env, 운영은 k8s Secret으로만 주입.
+    secret-key: ${TOSS_SECRET_KEY}
 
 coderhan:
   vault:

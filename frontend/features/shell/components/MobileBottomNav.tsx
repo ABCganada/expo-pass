@@ -1,14 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, ClipboardList, QrCode } from "lucide-react";
+import { CalendarDays, ClipboardList, Megaphone, QrCode, Receipt } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "../constants/navigation";
 import styles from "./MobileBottomNav.module.css";
 
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const icons = { exhibitions: CalendarDays, reservations: ClipboardList, "qr-ticket": QrCode };
+  const icons = {
+    exhibitions: CalendarDays,
+    reservations: ClipboardList,
+    "qr-ticket": QrCode,
+    payments: Receipt,
+    "vip-ads": Megaphone,
+  };
 
   return (
     <nav className={styles.container} aria-label="하단 메뉴">

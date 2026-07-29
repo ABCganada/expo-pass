@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.marketing.infrastructure.persistence;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -19,4 +20,10 @@ interface BannerClickJpaRepository extends JpaRepository<BannerClickEntity, UUID
 
     @Query("SELECT COALESCE(SUM(e.count), 0) FROM BannerClickEntity e WHERE e.adId = :adId")
     long sumCountByAdId(@Param("adId") UUID adId);
+
+    @Query("SELECT COALESCE(SUM(e.count), 0) FROM BannerClickEntity e WHERE e.adId = :adId AND e.statDate BETWEEN :from AND :to")
+    long sumCountByAdIdAndDateRange(@Param("adId") UUID adId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Query("SELECT e.statDate, SUM(e.count) FROM BannerClickEntity e WHERE e.adId = :adId AND e.statDate BETWEEN :from AND :to GROUP BY e.statDate ORDER BY e.statDate")
+    List<Object[]> findDailyCountByAdIdAndDateRange(@Param("adId") UUID adId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

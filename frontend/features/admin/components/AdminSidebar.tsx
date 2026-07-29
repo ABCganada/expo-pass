@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, CalendarDays, ClipboardList, LogOut, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, TicketCheck, Users } from "lucide-react";
+import { BarChart3, CalendarDays, ClipboardList, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, Receipt, ScanLine, TicketCheck, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "@/features/shell/constants/navigation";
 import styles from "./AdminSidebar.module.css";
@@ -24,7 +24,13 @@ export function AdminSidebar({
   mode,
 }: AdminSidebarProps) {
   const pathname = usePathname();
-  const userIcons = { exhibitions: CalendarDays, reservations: ClipboardList, "qr-ticket": QrCode };
+  const userIcons = {
+    exhibitions: CalendarDays,
+    reservations: ClipboardList,
+    "qr-ticket": QrCode,
+    payments: Receipt,
+    "vip-ads": Megaphone,
+  };
   const items = mode === "user"
     ? USER_MENU_ITEMS.map((item) => ({ ...item, href: item.path, icon: userIcons[item.id] }))
     : mode === "manager" ? [

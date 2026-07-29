@@ -12,7 +12,12 @@ data:
   DB_PASSWORD: ""
   DB_DRIVER_CLASS_NAME: org.postgresql.Driver
   DB_HIKARI_INITIALIZATION_FAIL_TIMEOUT: "-1"
+  SPRING_DATA_REDIS_HOST: valkey.example.com
+  SPRING_DATA_REDIS_PORT: "6379"
+  SPRING_DATA_REDIS_USERNAME: default
+  SPRING_DATA_REDIS_SSL_ENABLED: "false"
   KAFKA_BOOTSTRAP_SERVERS: kafka181-kafka-bootstrap.kafka.svc.cluster.local:9093
+  LASTMISSION_CORS_ALLOWED_ORIGINS: https://lastmission.example.com
   LASTMISSION_KAFKA_ENABLED: "true"
   LASTMISSION_KAFKA_TOPIC: lastmission.main.events
   LASTMISSION_KAFKA_CONSUMER_GROUP: lastmission-main

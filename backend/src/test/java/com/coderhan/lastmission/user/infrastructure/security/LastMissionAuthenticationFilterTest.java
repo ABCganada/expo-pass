@@ -11,7 +11,7 @@ import com.coderhan.lastmission.user.LastMissionPrincipal;
 import com.coderhan.lastmission.user.application.AuthenticatedUser;
 import com.coderhan.lastmission.user.application.ProvisionUserCommand;
 import com.coderhan.lastmission.user.application.UserProvisioningService;
-import com.coderhan.lastmission.user.domain.RoleCode;
+import com.coderhan.lastmission.user.UserRole;
 import com.coderhan.lastmission.user.domain.UserAccount;
 import com.coderhan.auth.client.AuthCheckResponse;
 import com.coderhan.auth.client.AuthClient;
@@ -86,7 +86,7 @@ class LastMissionAuthenticationFilterTest {
         UserAccount user = new UserAccount(10L, "keycloak-subject", "user@example.com", "사용자", UserAccount.Status.ACTIVE);
         when(authClient.check(request, response)).thenReturn(auth);
         when(service.provision(new ProvisionUserCommand("keycloak-subject", "user@example.com", "사용자")))
-                .thenReturn(new AuthenticatedUser(user, Set.of(RoleCode.USER)));
+                .thenReturn(new AuthenticatedUser(user, Set.of(UserRole.USER)));
         filter.doFilter(request, response, chain);
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         assertThat(authentication.getPrincipal()).isEqualTo(new LastMissionPrincipal(10L, "keycloak-subject", "user@example.com", "사용자"));
@@ -100,7 +100,7 @@ class LastMissionAuthenticationFilterTest {
         UserAccount user = new UserAccount(10L, "keycloak-subject", "user@example.com", "사용자", UserAccount.Status.INACTIVE);
         when(authClient.check(request, response)).thenReturn(auth);
         when(service.provision(new ProvisionUserCommand("keycloak-subject", "user@example.com", "사용자")))
-                .thenReturn(new AuthenticatedUser(user, Set.of(RoleCode.USER)));
+                .thenReturn(new AuthenticatedUser(user, Set.of(UserRole.USER)));
         filter.doFilter(request, response, chain);
         assertThat(response.getStatus()).isEqualTo(403);
         verify(chain, never()).doFilter(request, response);

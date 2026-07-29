@@ -24,7 +24,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: lastmission-backend
-          image: ghcr.io/your-org/lastmission-backend:4c4deebc0b245a02f2c79c8b33690bf1f7dda346
+          image: ghcr.io/your-org/lastmission-backend:9e03e1cbe7e0c713dc6976cbfbed00d54988403b
           imagePullPolicy: Always
           ports:
             - name: http
@@ -33,6 +33,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: lastmission-backend-env
+            - secretRef:
+                name: lastmission-backend-redis
           readinessProbe:
             tcpSocket:
               port: http

@@ -67,4 +67,9 @@ public class BannerAdService {
     public List<BannerAd> getActiveBanners() {
         return adRepository.findAllActive(OffsetDateTime.now(clock));
     }
+
+    @Transactional(readOnly = true)
+    public List<BannerAd> getMyAds(String email) {
+        return adRepository.findByCreatedBy(email);
+    }
 }

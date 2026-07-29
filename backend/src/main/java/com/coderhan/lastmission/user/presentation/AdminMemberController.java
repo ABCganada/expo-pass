@@ -10,7 +10,7 @@ import com.coderhan.lastmission.user.LastMissionPrincipal;
 import com.coderhan.lastmission.user.application.AdminMember;
 import com.coderhan.lastmission.user.application.AdminMemberPage;
 import com.coderhan.lastmission.user.application.AdminMemberService;
-import com.coderhan.lastmission.user.domain.RoleCode;
+import com.coderhan.lastmission.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,13 +62,13 @@ class AdminMemberController {
         }
     }
 
-    private Set<RoleCode> parseRoles(UpdateRolesRequest request) {
+    private Set<UserRole> parseRoles(UpdateRolesRequest request) {
         List<String> raw = request == null || request.roles() == null ? List.of() : request.roles();
-        EnumSet<RoleCode> parsed = EnumSet.noneOf(RoleCode.class);
+        EnumSet<UserRole> parsed = EnumSet.noneOf(UserRole.class);
         for (String value : raw) {
             if (value == null || value.isBlank()) continue;
             try {
-                parsed.add(RoleCode.from(value));
+                parsed.add(UserRole.from(value));
             } catch (IllegalArgumentException exception) {
                 throw new BusinessException(ErrorCode.ADMIN_ROLE_INVALID, "알 수 없는 권한입니다: " + value);
             }
