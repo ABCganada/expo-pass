@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import com.coderhan.lastmission.reservation.domain.OrderStatus;
 import com.coderhan.lastmission.reservation.domain.ReservationOrder;
 import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
 
@@ -26,4 +28,8 @@ public interface ReservationRepository {
     boolean checkin(String qrCodeHash, long adminUserId, OffsetDateTime now);
     /** 이 유저의 모든 주문을 최신순으로 찾는다. */
     List<ReservationOrder> findOrdersByUserId(long userId);
+    /** 이 행사의 모든 주문을 최신순으로 찾는다(관리자 예약자 명단용). */
+    List<ReservationOrder> findOrdersByEventId(long eventId);
+    /** 이 행사의 주문을 상태별로 집계한다(관리자 예약 현황용). */
+    Map<OrderStatus, Long> countOrdersByEventIdGroupedByStatus(long eventId);
 }

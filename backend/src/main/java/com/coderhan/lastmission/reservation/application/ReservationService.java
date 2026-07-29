@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import com.coderhan.lastmission.reservation.domain.OrderStatus;
 import com.coderhan.lastmission.reservation.domain.ReservationOrder;
 import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
 import com.coderhan.lastmission.shared.error.BusinessException;
@@ -84,7 +86,28 @@ public class ReservationService {
         return repository.findItemByQrCodeHash(qrCodeHash).orElseThrow();
     }
 
+    /**
+     * 관리자용 — 이 행사의 모든 주문(예약자 명단)을 최신순으로 조회한다.
+     */
+    @Transactional(readOnly = true)
+    public List<ReservationOrder> getEventOrders(long eventId) {
+        return repository.findOrdersByEventId(eventId);
+    }
+
+    /**
+     * 관리자용 — 이 행사의 예약 현황(상태별 건수)을 조회한다.
+     */
+    @Transactional(readOnly = true)
+    public EventReservationSummary getEventSummary(long eventId) {
+        Map<OrderStatus, Long> countsByStatus = repository.countOrdersByEventIdGroupedByStatus(eventId);
+        long totalOrders = countsByStatus.values().stream().mapToLong(Long::longValue).sum();
+        return new EventReservationSummary(eventId, totalOrders, countsByStatus);
+    }
+
     public record OrderItemRequest(long ticketId, BigDecimal unitPrice, int quantity) {}
 
     public record OrderDetail(ReservationOrder order, List<ReservationOrderItem> items) {}
+
+    public record EventReservationSummary(
+            long eventId, long totalOrders, Map<OrderStatus, Long> countsByStatus) {}
 }

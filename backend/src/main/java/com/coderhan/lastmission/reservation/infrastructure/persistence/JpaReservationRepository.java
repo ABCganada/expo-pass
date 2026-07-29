@@ -5,7 +5,9 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import com.coderhan.lastmission.reservation.application.ReservationRepository;
 import com.coderhan.lastmission.reservation.domain.OrderStatus;
 import com.coderhan.lastmission.reservation.domain.ReservationOrder;
@@ -73,6 +75,20 @@ class JpaReservationRepository implements ReservationRepository {
         return orderJpaRepository.findByUserIdOrderByReservedAtDesc(userId).stream()
                 .map(JpaReservationRepository::toDomain)
                 .toList();
+    }
+
+    @Override
+    public List<ReservationOrder> findOrdersByEventId(long eventId) {
+        return orderJpaRepository.findByEventIdOrderByReservedAtDesc(eventId).stream()
+                .map(JpaReservationRepository::toDomain)
+                .toList();
+    }
+
+    @Override
+    public Map<OrderStatus, Long> countOrdersByEventIdGroupedByStatus(long eventId) {
+        return orderJpaRepository.countByEventIdGroupByStatus(eventId).stream()
+                .collect(Collectors.toMap(ReservationOrderJpaRepository.StatusCount::getStatus,
+                        ReservationOrderJpaRepository.StatusCount::getCount));
     }
 
     private static ReservationOrder toDomain(ReservationOrderEntity entity) {
