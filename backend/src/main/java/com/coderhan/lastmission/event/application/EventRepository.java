@@ -10,6 +10,8 @@ import com.coderhan.lastmission.event.domain.EventStatus;
  */
 public interface EventRepository {
 
+    Event save(Event event);
+
     Optional<Event> findNotDeletedById(long id);
 
     // 고객 목록 조회용. status + start_date 순으로 정렬
