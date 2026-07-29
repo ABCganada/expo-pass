@@ -2,11 +2,13 @@ package com.coderhan.lastmission.event.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 
 import com.coderhan.lastmission.event.application.command.CreateTicketCommand;
 import com.coderhan.lastmission.event.application.command.UpdateTicketCommand;
 import com.coderhan.lastmission.event.domain.Event;
+import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.event.domain.Ticket;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
@@ -74,6 +76,28 @@ public class TicketService {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "예약 이력이 있는 티켓은 삭제할 수 없습니다.");
         }
         ticket.softDelete(Instant.now(clock));
+    }
+
+    /**
+     * 행사 티켓 목록 조회 (일반 사용자) - DRAFT 제외, 삭제된 티켓 제외.
+     */
+    @Transactional(readOnly = true)
+    public List<Ticket> getPublicTickets(long eventId) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .filter(candidate -> candidate.getStatus() != EventStatus.DRAFT)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        return ticketRepository.findAllNotDeletedByEventIdOrderByCreatedAtAsc(event.getId());
+    }
+
+    /**
+     * 행사 티켓 목록 조회 (관리자) - 삭제된 티켓 포함. ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     */
+    @Transactional(readOnly = true)
+    public List<Ticket> getAdminTickets(long eventId, long callerUserId, boolean isAdmin) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        validateEventAccess(event, callerUserId, isAdmin, "티켓 목록을 조회");
+        return ticketRepository.findAllByEventIdOrderByCreatedAtAsc(event.getId());
     }
 
     /** ADMIN은 전체 허용, 아니면 본인이 담당(manager_id)하는 행사인지 확인 */

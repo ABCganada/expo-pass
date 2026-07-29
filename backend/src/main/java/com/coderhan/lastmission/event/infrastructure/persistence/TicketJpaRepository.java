@@ -1,5 +1,6 @@
 package com.coderhan.lastmission.event.infrastructure.persistence;
 
+import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.event.application.TicketRepository;
 import com.coderhan.lastmission.event.domain.Ticket;
@@ -54,4 +55,15 @@ interface TicketJpaRepository extends JpaRepository<Ticket, Long>, TicketReposit
             AND t.quantityRemaining + :quantity <= t.quantityTotal
     """)
     int increaseTicketStock(@Param("id") long ticketId, @Param("quantity") int quantity);
+
+    @Override
+    List<Ticket> findAllByEventIdOrderByCreatedAtAsc(long eventId);
+
+    @Override
+    @Query("""
+        SELECT t FROM Ticket t
+        WHERE t.event.id = :eventId AND t.deletedAt IS NULL
+        ORDER BY t.createdAt ASC
+    """)
+    List<Ticket> findAllNotDeletedByEventIdOrderByCreatedAtAsc(@Param("eventId") long eventId);
 }
