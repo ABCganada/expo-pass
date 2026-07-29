@@ -22,4 +22,7 @@ interface BannerClickJpaRepository extends JpaRepository<BannerClickEntity, UUID
 
     @Query("SELECT COALESCE(SUM(e.count), 0) FROM BannerClickEntity e WHERE e.adId = :adId AND e.statDate BETWEEN :from AND :to")
     long sumCountByAdIdAndDateRange(@Param("adId") UUID adId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Query("SELECT e.statDate, SUM(e.count) FROM BannerClickEntity e WHERE e.adId = :adId AND e.statDate BETWEEN :from AND :to GROUP BY e.statDate ORDER BY e.statDate")
+    List<Object[]> findDailyCountByAdIdAndDateRange(@Param("adId") UUID adId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }
