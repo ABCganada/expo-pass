@@ -1,6 +1,8 @@
 package com.coderhan.lastmission.reservation.domain;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 
@@ -11,14 +13,15 @@ import com.coderhan.lastmission.shared.error.ErrorCode;
  * 독립적으로 QR 체크인이 되어야 하므로, {@code quantity} 는 이 record 에 저장하지 않는다
  * (요청 시점에만 존재 — {@link #validate}, {@code ReservationService} 참고).</p>
  *
- * <p>{@code qrCodeHash} 는 결제 완료 시 채워진다.</p>
+ * <p>{@code qrCodeHash} 는 주문 생성 시 바로 채워진다(결제 연동 전이라 결제 완료를 기다리지 않음)
  */
 public record ReservationOrderItem(
         long orderItemId,
         String orderId,
         long ticketId,
         BigDecimal unitPrice,
-        String qrCodeHash
+        String qrCodeHash,
+        OffsetDateTime checkedInAt
 ) {
     /** 요청으로 들어온 항목(티켓 종류+수량)이 유효한지 확인한다. 저장 전 서비스에서 호출한다. */
     public static void validate(long ticketId, BigDecimal unitPrice, int quantity) {
