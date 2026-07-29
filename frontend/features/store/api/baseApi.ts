@@ -17,6 +17,7 @@ export const baseApi = createApi({
     "ChatUser",
     "AdminMember",
     "Banner",
+    "Payment",
   ],
   endpoints: () => ({}),
 });

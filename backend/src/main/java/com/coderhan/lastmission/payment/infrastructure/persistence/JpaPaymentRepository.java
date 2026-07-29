@@ -2,6 +2,7 @@ package com.coderhan.lastmission.payment.infrastructure.persistence;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.application.PaymentRepository;
 import com.coderhan.lastmission.payment.domain.Payment;
@@ -15,12 +16,21 @@ class JpaPaymentRepository implements PaymentRepository {
     private final PaymentJpaRepository jpaRepository;
 
     @Override
-    public Payment save(String orderId, String idempotencyKey, BigDecimal amount, String method,
-            String pgProvider) {
+    public Payment save(String orderId, Long userId, String idempotencyKey, BigDecimal amount,
+                        String method, String pgProvider, String pgOrderId,
+                        String pgTransactionId, OffsetDateTime paidAt) {
         OffsetDateTime now = OffsetDateTime.now();
+
         PaymentEntity saved = jpaRepository.save(
-                new PaymentEntity(orderId, idempotencyKey, amount, method, pgProvider, now));
+                new PaymentEntity(orderId, userId, idempotencyKey, amount, method, pgProvider, pgOrderId,
+                        pgTransactionId, paidAt, now));
+
         return toDomain(saved);
+    }
+
+    @Override
+    public Optional<Payment> findById(long id) {
+        return jpaRepository.findById(id).map(JpaPaymentRepository::toDomain);
     }
 
     @Override
@@ -33,10 +43,18 @@ class JpaPaymentRepository implements PaymentRepository {
         return jpaRepository.findByOrderIdAndStatus(orderId, status).map(JpaPaymentRepository::toDomain);
     }
 
+    @Override
+    public List<Payment> findByUserId(long userId) {
+        return jpaRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(JpaPaymentRepository::toDomain)
+                .toList();
+    }
+
     private static Payment toDomain(PaymentEntity entity) {
         return Payment.builder()
                 .id(entity.getId())
                 .orderId(entity.getOrderId())
+                .userId(entity.getUserId())
                 .idempotencyKey(entity.getIdempotencyKey())
                 .amount(entity.getAmount())
                 .method(entity.getMethod())

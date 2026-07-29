@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, ClipboardList, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode } from "lucide-react";
+import { CalendarDays, ClipboardList, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, Receipt } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "../constants/navigation";
 import styles from "./UserSidebar.module.css";
@@ -14,7 +14,13 @@ interface UserSidebarProps {
 
 export function UserSidebar({ isCollapsed, onToggleCollapse, onLogout }: UserSidebarProps) {
   const pathname = usePathname();
-  const icons = { exhibitions: CalendarDays, reservations: ClipboardList, "qr-ticket": QrCode, "vip-ads": Megaphone };
+  const icons = {
+    exhibitions: CalendarDays,
+    reservations: ClipboardList,
+    "qr-ticket": QrCode,
+    payments: Receipt,
+    "vip-ads": Megaphone,
+  };
 
   return (
     <aside className={styles.sidebar} data-collapsed={isCollapsed}>
