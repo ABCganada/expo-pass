@@ -73,6 +73,9 @@ dependencies {
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
 
+    // XLSX 다운로드
+    implementation("org.apache.poi:poi-ooxml:5.3.0")
+
     // 도메인 모듈 경계 및 구조 검증
     implementation("org.springframework.modulith:spring-modulith-starter-core")
 
