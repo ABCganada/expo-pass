@@ -6,6 +6,8 @@ import com.coderhan.lastmission.event.domain.EventCategory;
 import com.coderhan.lastmission.shared.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,9 +26,16 @@ class EventCategoryController {
         return ApiResponse.success(categories);
     }
 
-    record CategoryResponse(String id, String code, String name) {
+    @PatchMapping("/super-admin/categories/{categoryId}/active")
+    ApiResponse<CategoryResponse> toggleActive(@PathVariable long categoryId) {
+        EventCategory category = eventCategoryService.toggleActive(categoryId);
+        return ApiResponse.success(CategoryResponse.from(category));
+    }
+
+    record CategoryResponse(String id, String code, String name, boolean active) {
         static CategoryResponse from(EventCategory category) {
-            return new CategoryResponse(Long.toString(category.getId()), category.getCode(), category.getName());
+            return new CategoryResponse(
+                    Long.toString(category.getId()), category.getCode(), category.getName(), category.isActive());
         }
     }
 }

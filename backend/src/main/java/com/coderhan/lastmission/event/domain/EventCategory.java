@@ -35,4 +35,8 @@ public class EventCategory {
         this.name = name;
         this.active = active;
     }
+
+    public void toggleActive() {
+        this.active = !this.active;
+    }
 }
