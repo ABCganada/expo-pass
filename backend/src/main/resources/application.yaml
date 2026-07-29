@@ -11,6 +11,11 @@ spring:
   application:
     name: ${SPRING_APPLICATION_NAME}
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -79,6 +84,14 @@ lastmission:
     base-url: ${TOSS_API_BASE_URL:https://api.tosspayments.com}
     # 절대 git에 실제 값을 커밋하지 않는다 — 로컬은 .env, 운영은 k8s Secret으로만 주입.
     secret-key: ${TOSS_SECRET_KEY}
+
+aws:
+  region: ${AWS_REGION}
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+  credentials:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
 
 coderhan:
   vault:
