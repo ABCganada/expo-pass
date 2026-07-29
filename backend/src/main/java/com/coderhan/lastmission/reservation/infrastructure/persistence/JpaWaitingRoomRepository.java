@@ -26,7 +26,8 @@ class JpaWaitingRoomRepository implements WaitingRoomRepository {
 
     @Override
     public Optional<WaitingTicket> findTicket(long eventId, long userId) {
-        return jpaRepository.findByEventIdAndUserId(eventId, userId).map(JpaWaitingRoomRepository::toDomain);
+        return jpaRepository.findFirstByEventIdAndUserIdOrderByTicketNoDesc(eventId, userId)
+                .map(JpaWaitingRoomRepository::toDomain);
     }
 
     @Override

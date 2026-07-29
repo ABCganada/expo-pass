@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ class WaitingRoomAdmissionConsumer {
             groupId = "${lastmission.kafka.consumer-group}",
             autoStartup = "${lastmission.kafka.enabled:false}"
     )
+    @Transactional
     public void listen(String message) {
         WaitingRoomJoinedEvent event = tryParse(message);
         if (event == null) return;

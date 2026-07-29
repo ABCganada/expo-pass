@@ -10,8 +10,9 @@ import org.springframework.data.repository.query.Param;
 
 interface WaitingTicketJpaRepository extends JpaRepository<WaitingTicketEntity, Long> {
 
-    // "event_id, user_id로 조회"하는 쿼리
-    Optional<WaitingTicketEntity> findByEventIdAndUserId(Long eventId, Long userId);
+    // "event_id, user_id로 조회"하는 쿼리. 만료된 티켓은 지우지 않고 새로 재입장하면 새 row가
+    // 쌓이는 구조라, 이 유저의 티켓이 여러 개일 수 있음 — 그중 가장 최근(ticketNo가 가장 큰) 것만 가져온다.
+    Optional<WaitingTicketEntity> findFirstByEventIdAndUserIdOrderByTicketNoDesc(Long eventId, Long userId);
 
     // "이 행사에서, 이 상태(WAITING)이고, 내 ticketNo보다 작은 것들의 개수" — 앞에 몇 명 있는지 세는 용도
     long countByEventIdAndStatusAndTicketNoLessThan(Long eventId, WaitingTicketStatus status, Long ticketNo);
