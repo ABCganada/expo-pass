@@ -55,6 +55,14 @@ public class ReservationService {
                 .collect(Collectors.groupingBy(OrderItemRequest::ticketId, Collectors.summingInt(OrderItemRequest::quantity)));
 
         quantityByTicketId.forEach((ticketId, quantity) -> {
+            TicketInfo ticketInfo = ticketInfoByTicketId.get(ticketId);
+
+            long alreadyPurchased = repository.countPurchasedQuantity(userId, ticketId);
+            if (alreadyPurchased + quantity > ticketInfo.maxPurchasePerUser()) {
+                throw new BusinessException(ErrorCode.RESERVATION_INVALID_REQUEST,
+                        "1인당 구매 가능 수량(" + ticketInfo.maxPurchasePerUser() + "장)을 초과했습니다.");
+            }
+
             boolean decreased = eventQueryPort.decreaseTicketStock(ticketId, quantity);
             if (!decreased) {
                 throw new BusinessException(ErrorCode.TICKET_SOLD_OUT, "재고가 부족합니다. ticketId=" + ticketId);
