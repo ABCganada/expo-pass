@@ -193,6 +193,45 @@ class RefundServiceTest {
         verify(paymentGateway, never()).cancel(any(), any());
     }
 
+    @Test
+    @DisplayName("REQUESTED 상태인 환불을 거절하면 토스는 호출하지 않고 REJECTED로 갱신한다")
+    void marksRefundAsRejectedWithoutCallingGateway() {
+        Refund pending = request(RefundStatus.REQUESTED);
+        Refund rejected = request(RefundStatus.REJECTED);
+        when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.of(pending));
+        when(refundRepository.reject(REFUND_ID, ADMIN_USER_ID, OffsetDateTime.now(clock))).thenReturn(rejected);
+
+        Refund result = service.reject(ADMIN_USER_ID, REFUND_ID);
+
+        assertThat(result).isSameAs(rejected);
+        verify(refundRepository).reject(REFUND_ID, ADMIN_USER_ID, OffsetDateTime.now(clock));
+        verify(paymentGateway, never()).cancel(any(), any());
+    }
+
+    @Test
+    @DisplayName("환불 신청 내역이 없으면 거절 시에도 PAYMENT_REFUND_NOT_FOUND 예외를 던진다")
+    void rejectionFailsWhenRefundNotFound() {
+        when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.reject(ADMIN_USER_ID, REFUND_ID))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_NOT_FOUND));
+
+        verify(refundRepository, never()).reject(anyLong(), anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("이미 승인/거절된 환불이면 거절 시에도 PAYMENT_REFUND_ALREADY_DECIDED 예외를 던진다")
+    void rejectionFailsWhenAlreadyDecided() {
+        when(refundRepository.findById(REFUND_ID)).thenReturn(Optional.of(request(RefundStatus.COMPLETED)));
+
+        assertThatThrownBy(() -> service.reject(ADMIN_USER_ID, REFUND_ID))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_ALREADY_DECIDED));
+
+        verify(refundRepository, never()).reject(anyLong(), anyLong(), any());
+    }
+
     private static Payment completedPayment() {
         return Payment.builder()
                 .id(PAYMENT_ID)

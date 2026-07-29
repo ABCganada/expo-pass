@@ -92,4 +92,11 @@ class RefundEntity {
         this.refundedAt = completedAt;
         this.updatedAt = completedAt;
     }
+
+    /** 이벤트 관리자가 거절 */
+    void reject(Long decidedBy, OffsetDateTime decidedAt) {
+        this.status = RefundStatus.REJECTED;
+        this.approvedBy = decidedBy;
+        this.updatedAt = decidedAt;
+    }
 }

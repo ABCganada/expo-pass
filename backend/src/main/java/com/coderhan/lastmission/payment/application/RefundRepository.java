@@ -20,4 +20,7 @@ public interface RefundRepository {
 
     /** 이벤트 관리자 승인. REQUESTED -> COMPLETED */
     Refund approve(long refundId, long approvedBy, OffsetDateTime completedAt);
+
+    /** 이벤트 관리자 거절. REQUESTED -> REJECTED */
+    Refund reject(long refundId, long decidedBy, OffsetDateTime decidedAt);
 }

@@ -89,6 +89,16 @@ public class RefundService {
         return refundRepository.approve(refundId, approverUserId, OffsetDateTime.now(clock));
     }
 
+    /** 이벤트 관리자의 환불 거절. REQUESTED 상태인 신청만 거절 가능. 실제 결제취소는 호출하지 않음 */
+    public Refund reject(long approverUserId, long refundId) {
+        Refund refund = refundRepository.findById(refundId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_REFUND_NOT_FOUND, "환불 신청 내역을 찾을 수 없습니다."));
+
+        validateStatusRequested(refund);
+
+        return refundRepository.reject(refundId, approverUserId, OffsetDateTime.now(clock));
+    }
+
     private void validateStatusRequested(Refund refund) {
         if (refund.status() != RefundStatus.REQUESTED) {
             throw new BusinessException(ErrorCode.PAYMENT_REFUND_ALREADY_DECIDED, "이미 처리된 환불 신청입니다.");

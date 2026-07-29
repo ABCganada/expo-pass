@@ -32,6 +32,15 @@ class RefundAdminController {
         return ApiResponse.success(RefundResponse.from(refund));
     }
 
+    @PatchMapping("/{refundId}/reject")
+    ApiResponse<RefundResponse> reject(
+            @PathVariable String refundId,
+            @AuthenticationPrincipal LastMissionPrincipal principal
+    ) {
+        Refund refund = refundService.reject(principal.userId(), parseRefundId(refundId));
+        return ApiResponse.success(RefundResponse.from(refund));
+    }
+
     private long parseRefundId(String value) {
         try {
             long id = Long.parseLong(value);
