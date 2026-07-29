@@ -24,4 +24,6 @@ public interface ReservationRepository {
     Optional<ReservationOrderItem> findItemByQrCodeHash(String qrCodeHash);
     /** 체크인 처리(조건부 UPDATE). 이미 체크인됐거나 존재하지 않는 QR이면 false. */
     boolean checkin(String qrCodeHash, long adminUserId, OffsetDateTime now);
+    /** 이 유저의 모든 주문을 최신순으로 찾는다. */
+    List<ReservationOrder> findOrdersByUserId(long userId);
 }

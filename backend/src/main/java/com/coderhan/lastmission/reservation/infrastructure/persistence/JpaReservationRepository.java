@@ -68,6 +68,13 @@ class JpaReservationRepository implements ReservationRepository {
         return itemJpaRepository.checkin(qrCodeHash, adminUserId, now) > 0;
     }
 
+    @Override
+    public List<ReservationOrder> findOrdersByUserId(long userId) {
+        return orderJpaRepository.findByUserIdOrderByReservedAtDesc(userId).stream()
+                .map(JpaReservationRepository::toDomain)
+                .toList();
+    }
+
     private static ReservationOrder toDomain(ReservationOrderEntity entity) {
         return new ReservationOrder(entity.getOrderId(), entity.getUserId(), entity.getEventId(),
                 entity.getStatus(), entity.getTotalAmount(), entity.getReservedAt(), entity.getUpdatedAt());

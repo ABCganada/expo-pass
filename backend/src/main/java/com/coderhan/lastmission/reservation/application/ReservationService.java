@@ -60,6 +60,14 @@ public class ReservationService {
     }
 
     /**
+     * 이 유저의 모든 주문을 최신순으로 조회한다(목록용, 아이템은 안 채움).
+     */
+    @Transactional(readOnly = true)
+    public List<ReservationOrder> getMyOrders(long userId) {
+        return repository.findOrdersByUserId(userId);
+    }
+
+    /**
      * 관리자 QR 체크인. 이미 체크인됐거나 존재하지 않는 QR이면 예외.
      */
     @Transactional
