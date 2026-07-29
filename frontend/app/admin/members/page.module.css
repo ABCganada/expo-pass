@@ -67,7 +67,7 @@
 
 .table {
   width: 100%;
-  min-width: 780px;
+  min-width: 860px;
   /* 고정 레이아웃: 셀 내용(취소 버튼 등)이 바뀌어도 열 너비가 재계산되지 않아 표 전체가 밀리지 않는다. */
   table-layout: fixed;
   border-collapse: collapse;
@@ -83,7 +83,7 @@
 }
 
 .roleCol {
-  width: 84px;
+  width: 76px;
 }
 
 .actionCol {

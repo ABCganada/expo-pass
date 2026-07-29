@@ -13,8 +13,14 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ onMenuToggle, user, onLogout, activeMode }: AdminHeaderProps) {
   const displayName = user?.name?.trim() || user?.email?.trim() || null;
-  const modeTitle = activeMode === "user" ? "박람회 예약" : activeMode === "manager" ? "박람회 운영" : "운영 대시보드";
-  const modeLabel = activeMode === "user" ? "USER" : activeMode === "manager" ? "MANAGER" : "ADMIN";
+  const modeTitle =
+    activeMode === "user" ? "박람회 예약"
+    : activeMode === "manager" ? "박람회 운영"
+    : "운영 대시보드";
+  const modeLabel =
+    activeMode === "user" ? "USER"
+    : activeMode === "manager" ? "MANAGER"
+    : "ADMIN";
 
   return (
     <header className={styles.header}>

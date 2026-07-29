@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BannerAdService {
     private final BannerAdRepository adRepository;
     private final BannerSlotRepository slotRepository;
+    private final BannerStatRepository statRepository;
     private final Clock clock;
 
     @Transactional
@@ -71,5 +72,24 @@ public class BannerAdService {
     @Transactional(readOnly = true)
     public List<BannerAd> getMyAds(String email) {
         return adRepository.findByCreatedBy(email);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BannerAd> getAllAds() {
+        return adRepository.findAll();
+    }
+
+    @Transactional
+    public void expireAds() {
+        adRepository.findExpiredApproved(OffsetDateTime.now(clock))
+                .forEach(ad -> adRepository.updateStatus(ad.id(), BannerAdStatus.EXPIRED));
+    }
+
+    @Transactional
+    public void deleteAd(UUID id) {
+        adRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
+        statRepository.deleteStatsByAdId(id);
+        adRepository.deleteById(id);
     }
 }

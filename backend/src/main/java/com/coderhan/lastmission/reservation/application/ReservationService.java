@@ -4,7 +4,10 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.IntStream;
+import com.coderhan.lastmission.reservation.domain.OrderStatus;
 import com.coderhan.lastmission.reservation.domain.ReservationOrder;
 import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
 import com.coderhan.lastmission.shared.error.BusinessException;
@@ -43,7 +46,7 @@ public class ReservationService {
         // (장마다 현장에서 독립적으로 QR 체크인되어야 하므로 하나의 row에 quantity로 뭉쳐두지 않는다).
         List<ReservationOrderItem> savedItems = items.stream()
                 .flatMap(item -> IntStream.range(0, item.quantity())
-                        .mapToObj(ignored -> repository.addItem(orderId, item.ticketId(), item.unitPrice())))
+                        .mapToObj(ignored -> repository.addItem(orderId, item.ticketId(), item.unitPrice(), UUID.randomUUID().toString())))
                 .toList();
         return new OrderDetail(order, savedItems);
     }
@@ -58,7 +61,53 @@ public class ReservationService {
         return new OrderDetail(order, repository.findItems(orderId));
     }
 
+    /**
+     * 이 유저의 모든 주문을 최신순으로 조회한다(목록용, 아이템은 안 채움).
+     */
+    @Transactional(readOnly = true)
+    public List<ReservationOrder> getMyOrders(long userId) {
+        return repository.findOrdersByUserId(userId);
+    }
+
+    /**
+     * 관리자 QR 체크인. 이미 체크인됐거나 존재하지 않는 QR이면 예외.
+     */
+    @Transactional
+    public ReservationOrderItem checkin(long adminUserId, String qrCodeHash) {
+        OffsetDateTime now = OffsetDateTime.now(clock);
+        boolean checkedIn = repository.checkin(qrCodeHash, adminUserId, now);
+        if (!checkedIn) {
+            ReservationOrderItem existing = repository.findItemByQrCodeHash(qrCodeHash)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_QR_NOT_FOUND,
+                            "존재하지 않는 QR입니다."));
+            throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CHECKED_IN,
+                    "이미 체크인된 티켓입니다. (체크인 시각: " + existing.checkedInAt() + ")");
+        }
+        return repository.findItemByQrCodeHash(qrCodeHash).orElseThrow();
+    }
+
+    /**
+     * 관리자용 — 이 행사의 모든 주문(예약자 명단)을 최신순으로 조회한다.
+     */
+    @Transactional(readOnly = true)
+    public List<ReservationOrder> getEventOrders(long eventId) {
+        return repository.findOrdersByEventId(eventId);
+    }
+
+    /**
+     * 관리자용 — 이 행사의 예약 현황(상태별 건수)을 조회한다.
+     */
+    @Transactional(readOnly = true)
+    public EventReservationSummary getEventSummary(long eventId) {
+        Map<OrderStatus, Long> countsByStatus = repository.countOrdersByEventIdGroupedByStatus(eventId);
+        long totalOrders = countsByStatus.values().stream().mapToLong(Long::longValue).sum();
+        return new EventReservationSummary(eventId, totalOrders, countsByStatus);
+    }
+
     public record OrderItemRequest(long ticketId, BigDecimal unitPrice, int quantity) {}
 
     public record OrderDetail(ReservationOrder order, List<ReservationOrderItem> items) {}
+
+    public record EventReservationSummary(
+            long eventId, long totalOrders, Map<OrderStatus, Long> countsByStatus) {}
 }
