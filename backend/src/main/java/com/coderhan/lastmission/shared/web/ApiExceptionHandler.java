@@ -30,9 +30,13 @@ class ApiExceptionHandler {
                     PAYMENT_INVALID_REQUEST, PAYMENT_CONFIRM_FAILED, PAYMENT_REFUND_NOT_ALLOWED,
                     PAYMENT_REFUND_CANCEL_FAILED, BANNER_STAT_INVALID_DATE_RANGE ->
                     HttpStatus.BAD_REQUEST;
-
-            case CHAT_PARTICIPANT_EXISTS, ADMIN_SELF_DEMOTION, PAYMENT_REFUND_ALREADY_EXISTS,
-                    PAYMENT_REFUND_ALREADY_DECIDED, RESERVATION_ALREADY_CHECKED_IN ->
+            
+            case CHAT_PARTICIPANT_EXISTS,
+                    ADMIN_SELF_DEMOTION,
+                    PAYMENT_REFUND_ALREADY_EXISTS,
+                    PAYMENT_REFUND_ALREADY_DECIDED,
+                    RESERVATION_ALREADY_CHECKED_IN,
+                    TICKET_SOLD_OUT ->
                     HttpStatus.CONFLICT;
         };
         return ResponseEntity.status(status).body(

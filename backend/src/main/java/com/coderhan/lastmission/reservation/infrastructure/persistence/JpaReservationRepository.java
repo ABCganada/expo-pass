@@ -91,6 +91,11 @@ class JpaReservationRepository implements ReservationRepository {
                         ReservationOrderJpaRepository.StatusCount::getCount));
     }
 
+    @Override
+    public long countPurchasedQuantity(long userId, long ticketId) {
+        return itemJpaRepository.countByUserIdAndTicketId(userId, ticketId);
+    }
+
     private static ReservationOrder toDomain(ReservationOrderEntity entity) {
         return new ReservationOrder(entity.getOrderId(), entity.getUserId(), entity.getEventId(),
                 entity.getStatus(), entity.getTotalAmount(), entity.getReservedAt(), entity.getUpdatedAt());

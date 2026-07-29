@@ -32,4 +32,6 @@ public interface ReservationRepository {
     List<ReservationOrder> findOrdersByEventId(long eventId);
     /** 이 행사의 주문을 상태별로 집계한다(관리자 예약 현황용). */
     Map<OrderStatus, Long> countOrdersByEventIdGroupedByStatus(long eventId);
+    /** 이 유저가 이 티켓을 지금까지 총 몇 장 샀는지(1인당 구매 제한 검증용). */
+    long countPurchasedQuantity(long userId, long ticketId);
 }

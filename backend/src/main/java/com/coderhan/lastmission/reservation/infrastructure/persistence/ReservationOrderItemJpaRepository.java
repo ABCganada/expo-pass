@@ -22,4 +22,9 @@ interface ReservationOrderItemJpaRepository extends JpaRepository<ReservationOrd
             """)
     int checkin(@Param("qrCodeHash") String qrCodeHash, @Param("adminUserId") long adminUserId,
                 @Param("now") OffsetDateTime now);
+
+    // 이 유저가 이 티켓을 지금까지(모든 주문에 걸쳐) 총 몇 장 샀는지 센다 (1인당 구매 제한 검증용)
+    @Query("SELECT COUNT(i) FROM ReservationOrderItemEntity i, ReservationOrderEntity o "
+            + "WHERE i.orderId = o.orderId AND o.userId = :userId AND i.ticketId = :ticketId")
+    long countByUserIdAndTicketId(@Param("userId") Long userId, @Param("ticketId") Long ticketId);
 }
