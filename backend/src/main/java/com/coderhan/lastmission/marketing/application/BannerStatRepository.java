@@ -8,4 +8,5 @@ public interface BannerStatRepository {
     void incrementImpression(UUID adId, LocalDate date);
     void incrementClick(UUID adId, LocalDate date);
     BannerAdStats sumStats(UUID adId);
+    BannerAdStats sumStatsByDateRange(UUID adId, LocalDate from, LocalDate to);
 }

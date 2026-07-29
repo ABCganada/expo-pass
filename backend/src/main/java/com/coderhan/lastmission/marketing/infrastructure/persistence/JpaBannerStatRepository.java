@@ -29,4 +29,11 @@ class JpaBannerStatRepository implements BannerStatRepository {
         long clicks = clickJpa.sumCountByAdId(adId);
         return BannerAdStats.of(adId, impressions, clicks);
     }
+
+    @Override
+    public BannerAdStats sumStatsByDateRange(UUID adId, LocalDate from, LocalDate to) {
+        long impressions = impressionJpa.sumCountByAdIdAndDateRange(adId, from, to);
+        long clicks = clickJpa.sumCountByAdIdAndDateRange(adId, from, to);
+        return BannerAdStats.of(adId, impressions, clicks);
+    }
 }

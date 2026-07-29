@@ -19,4 +19,7 @@ interface BannerImpressionJpaRepository extends JpaRepository<BannerImpressionEn
 
     @Query("SELECT COALESCE(SUM(e.count), 0) FROM BannerImpressionEntity e WHERE e.adId = :adId")
     long sumCountByAdId(@Param("adId") UUID adId);
+
+    @Query("SELECT COALESCE(SUM(e.count), 0) FROM BannerImpressionEntity e WHERE e.adId = :adId AND e.statDate BETWEEN :from AND :to")
+    long sumCountByAdIdAndDateRange(@Param("adId") UUID adId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }
