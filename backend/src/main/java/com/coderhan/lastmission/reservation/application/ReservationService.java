@@ -2,6 +2,7 @@ package com.coderhan.lastmission.reservation.application;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,11 @@ public class ReservationService {
 
         quantityByTicketId.forEach((ticketId, quantity) -> {
             TicketInfo ticketInfo = ticketInfoByTicketId.get(ticketId);
+
+            Instant nowInstant = now.toInstant();
+            if (nowInstant.isBefore(ticketInfo.saleStartAt()) || nowInstant.isAfter(ticketInfo.saleEndAt())) {
+                throw new BusinessException(ErrorCode.RESERVATION_INVALID_REQUEST, "지금은 판매 기간이 아닙니다.");
+            }
 
             long alreadyPurchased = repository.countPurchasedQuantity(userId, ticketId);
             if (alreadyPurchased + quantity > ticketInfo.maxPurchasePerUser()) {
