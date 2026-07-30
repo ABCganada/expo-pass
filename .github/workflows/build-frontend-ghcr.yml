@@ -15,7 +15,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: lastmission-gitops-${{ github.ref }}
+  group: lastmission-frontend-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
