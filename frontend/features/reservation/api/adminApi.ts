@@ -1,7 +1,7 @@
 import { baseApi } from "@/features/store/api/baseApi";
 import { queryResult } from "@/features/store/api/queryError";
 import { adminService } from "../services/adminService";
-import type { Attendee, CheckinResponse, EventReservationSummary } from "../types/admin";
+import type { Attendee, CheckinProgress, CheckinResponse, EventReservationSummary } from "../types/admin";
 
 const adminApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
@@ -13,6 +13,10 @@ const adminApi = baseApi.injectEndpoints({
       queryFn: (eventId, api) => queryResult(adminService.getEventSummary(eventId, api.signal)),
       providesTags: ["Reservation"],
     }),
+    getCheckinProgress: build.query<CheckinProgress, string>({
+      queryFn: (eventId, api) => queryResult(adminService.getCheckinProgress(eventId, api.signal)),
+      providesTags: ["Reservation"],
+    }),
     checkin: build.mutation<CheckinResponse, string>({
       queryFn: (qrCodeHash) => queryResult(adminService.checkin(qrCodeHash)),
       invalidatesTags: ["Reservation"],
@@ -20,4 +24,9 @@ const adminApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useGetEventAttendeesQuery, useGetEventSummaryQuery, useCheckinMutation } = adminApi;
+export const {
+  useGetEventAttendeesQuery,
+  useGetEventSummaryQuery,
+  useGetCheckinProgressQuery,
+  useCheckinMutation,
+} = adminApi;
