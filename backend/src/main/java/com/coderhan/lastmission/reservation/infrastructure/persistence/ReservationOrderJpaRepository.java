@@ -21,4 +21,11 @@ interface ReservationOrderJpaRepository extends JpaRepository<ReservationOrderEn
         OrderStatus getStatus();
         long getCount();
     }
+
+    // Event 도메인이 행사를 삭제해도 되는지 확인할 때 사용 (PENDING/CONFIRMED만 유효한 예약으로 취급)
+    @Query("SELECT COUNT(o) > 0 FROM ReservationOrderEntity o "
+            + "WHERE o.eventId = :eventId AND o.status IN "
+            + "(com.coderhan.lastmission.reservation.domain.OrderStatus.PENDING, "
+            + "com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED)")
+    boolean existsActiveByEventId(@Param("eventId") long eventId);
 }
