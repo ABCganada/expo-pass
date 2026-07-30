@@ -24,9 +24,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/admin/events/{eventId}/contents")
+@RequestMapping("/api/v1/manager/events/{eventId}/contents")
 @RequiredArgsConstructor
-class EventContentAdminController {
+class EventContentManagerController {
     private final EventContentService eventContentService;
 
     @PutMapping

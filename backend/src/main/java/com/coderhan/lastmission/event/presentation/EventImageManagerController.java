@@ -27,9 +27,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/v1/admin/events/{eventId}/images")
+@RequestMapping("/api/v1/manager/events/{eventId}/images")
 @RequiredArgsConstructor
-class EventImageAdminController {
+class EventImageManagerController {
     private final EventImageService eventImageService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -50,7 +50,7 @@ class EventImageAdminController {
             @RequestParam("imageTypes") List<String> imageTypes,
             @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
 
-        List<EventImageType> types = imageTypes.stream().map(EventImageAdminController::toImageType).toList();
+        List<EventImageType> types = imageTypes.stream().map(EventImageManagerController::toImageType).toList();
         List<EventImage> images = eventImageService.uploadAll(
                 eventId, principal.userId(), isAdmin(authentication), types, files);
 
