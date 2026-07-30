@@ -24,7 +24,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: lastmission-backend
-          image: ghcr.io/your-org/lastmission-backend:84a635c06d0ad677d26b5584ac12c82eba79e14e
+          image: ghcr.io/your-org/lastmission-backend:2cfe8b7ea3b924e8b32b031960d7f8fb5144c6e6
           imagePullPolicy: Always
           ports:
             - name: http
