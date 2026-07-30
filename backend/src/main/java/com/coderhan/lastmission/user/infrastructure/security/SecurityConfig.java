@@ -44,8 +44,6 @@ class SecurityConfig {
                         // 활성 배너 목록 및 집계는 비인증 허용
                         .requestMatchers(HttpMethod.GET, "/api/v1/banners").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks").permitAll()
-                        .requestMatchers("/api/v1/super-admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/admin/events/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/manager/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/kafka/test/**").hasAnyRole("ADMIN", "DEVELOPER")
