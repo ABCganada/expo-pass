@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,8 +29,9 @@ class EventController {
     private final EventQueryService eventQueryService;
 
     @GetMapping
-    ApiResponse<List<EventListItemResponse>> getPublishedEvents() {
-        List<EventListItemResponse> events = eventQueryService.getPublishedEvents()
+    ApiResponse<List<EventListItemResponse>> getPublishedEvents(
+            @RequestParam(required = false) Long categoryId) {
+        List<EventListItemResponse> events = eventQueryService.getPublishedEvents(categoryId)
                 .stream()
                 .map(EventListItemResponse::from)
                 .toList();

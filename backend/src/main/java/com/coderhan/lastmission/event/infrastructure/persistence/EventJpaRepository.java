@@ -32,6 +32,16 @@ interface EventJpaRepository extends JpaRepository<Event, Long>, EventRepository
     @Query("""
         SELECT e FROM Event e
         JOIN FETCH e.category
+        WHERE e.status = :status AND e.category.id = :categoryId AND e.deletedAt IS NULL
+        ORDER BY e.startDate ASC
+    """)
+    List<Event> findByStatusAndCategoryIdOrderByStartDateAsc(
+            @Param("status") EventStatus status, @Param("categoryId") long categoryId);
+
+    @Override
+    @Query("""
+        SELECT e FROM Event e
+        JOIN FETCH e.category
         WHERE e.deletedAt IS NULL
         ORDER BY e.startDate ASC
     """)
