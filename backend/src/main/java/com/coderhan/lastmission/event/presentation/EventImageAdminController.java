@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.event.presentation;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 
 import com.coderhan.lastmission.event.application.EventImageService;
@@ -41,6 +42,20 @@ class EventImageAdminController {
                 eventId, principal.userId(), isAdmin(authentication), toImageType(imageType), file);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(EventImageResponse.from(image)));
+    }
+
+    @PostMapping(path = "/batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<ApiResponse<List<EventImageResponse>>> uploadImages(@PathVariable long eventId,
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam("imageTypes") List<String> imageTypes,
+            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+
+        List<EventImageType> types = imageTypes.stream().map(EventImageAdminController::toImageType).toList();
+        List<EventImage> images = eventImageService.uploadAll(
+                eventId, principal.userId(), isAdmin(authentication), types, files);
+
+        List<EventImageResponse> response = images.stream().map(EventImageResponse::from).toList();
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
     @DeleteMapping("/{imageId}")
