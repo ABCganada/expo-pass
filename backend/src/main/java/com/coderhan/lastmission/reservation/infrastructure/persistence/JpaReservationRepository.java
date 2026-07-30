@@ -9,11 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import com.coderhan.lastmission.reservation.application.ReservationRepository;
-import com.coderhan.lastmission.reservation.domain.OrderStatus;
-import com.coderhan.lastmission.reservation.domain.QrTicketView;
-import com.coderhan.lastmission.reservation.domain.ReservationOrder;
-import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
-import com.coderhan.lastmission.reservation.domain.TicketQuantity;
+import com.coderhan.lastmission.reservation.domain.*;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -114,6 +110,13 @@ class JpaReservationRepository implements ReservationRepository {
                 .map(row -> new QrTicketView(row.getOrderId(), row.getEventId(), row.getOrderItemId(),
                         row.getTicketId(), row.getQrCodeHash(), row.getCheckedInAt()))
                 .toList();
+    }
+
+    @Override
+    public CheckinProgress countCheckinProgressByEventId(long eventId) {
+        ReservationOrderItemJpaRepository.CheckinProgressRow row =
+                itemJpaRepository.countCheckinProgressByEventId(eventId);
+        return new CheckinProgress(row.getTotalItems(), row.getCheckedInCount());
     }
 
     private static ReservationOrder toDomain(ReservationOrderEntity entity) {

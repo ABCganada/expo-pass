@@ -12,11 +12,7 @@ import java.util.stream.IntStream;
 
 import com.coderhan.lastmission.event.EventQueryPort;
 import com.coderhan.lastmission.event.TicketInfo;
-import com.coderhan.lastmission.reservation.domain.OrderStatus;
-import com.coderhan.lastmission.reservation.domain.QrTicketView;
-import com.coderhan.lastmission.reservation.domain.ReservationOrder;
-import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
-import com.coderhan.lastmission.reservation.domain.TicketQuantity;
+import com.coderhan.lastmission.reservation.domain.*;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -162,6 +158,10 @@ public class ReservationService {
         Map<OrderStatus, Long> countsByStatus = repository.countOrdersByEventIdGroupedByStatus(eventId);
         long totalOrders = countsByStatus.values().stream().mapToLong(Long::longValue).sum();
         return new EventReservationSummary(eventId, totalOrders, countsByStatus);
+    }
+
+    public CheckinProgress getCheckinProgress(long eventId) {
+        return repository.countCheckinProgressByEventId(eventId);
     }
 
     public record OrderItemRequest(long ticketId, BigDecimal unitPrice, int quantity) {}

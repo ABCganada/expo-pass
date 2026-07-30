@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.coderhan.lastmission.reservation.application.ReservationService;
+import com.coderhan.lastmission.reservation.domain.CheckinProgress;
 import com.coderhan.lastmission.reservation.domain.OrderStatus;
 import com.coderhan.lastmission.reservation.domain.ReservationOrder;
 import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
@@ -67,6 +68,13 @@ class ReservationManagerController {
         return ApiResponse.success(EventSummaryResponse.from(summary));
     }
 
+    @GetMapping("/events/{eventId}/checkin-status")
+    ApiResponse<CheckinProgressResponse> getCheckinStatus(@PathVariable String eventId){
+        CheckinProgress checkinStatus =
+                reservationService.getCheckinProgress(parseEventId(eventId));
+        return ApiResponse.success(CheckinProgressResponse.from(checkinStatus));
+    }
+
     private long parseEventId(String value) {
         try {
             return Long.parseLong(value);
@@ -102,4 +110,10 @@ class ReservationManagerController {
                     summary.countsByStatus());
         }
     }
+    record CheckinProgressResponse(long totalItems, long checkedInCount) {
+        static CheckinProgressResponse from(CheckinProgress progress) {
+            return new CheckinProgressResponse(progress.totalItems(), progress.checkedInCount());
+        }
+    }
+
 }
