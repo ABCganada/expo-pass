@@ -26,4 +26,7 @@ public interface EventRepository {
 
     // 행사 종료 감지 스케줄러용
     List<Event> findEndedEventsNotNotified(LocalDate date);
+
+    // EventManagerQueryPort용
+    List<Long> findIdsByManagerId(long managerId);
 }

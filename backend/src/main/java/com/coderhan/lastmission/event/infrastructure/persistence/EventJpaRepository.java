@@ -57,4 +57,12 @@ interface EventJpaRepository extends JpaRepository<Event, Long>, EventRepository
         AND e.endedNotifiedAt IS NULL
     """)
     List<Event> findEndedEventsNotNotified(@Param("date") LocalDate date);
+
+    @Override
+    @Query("""
+        SELECT e.id FROM Event e
+        WHERE e.managerId = :managerId 
+        AND e.deletedAt IS NULL
+    """)
+    List<Long> findIdsByManagerId(@Param("managerId") long managerId);
 }
