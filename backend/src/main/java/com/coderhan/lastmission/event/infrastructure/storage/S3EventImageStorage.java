@@ -28,21 +28,28 @@ class S3EventImageStorage implements EventImageStorage {
     }
 
     @Override
-    public String upload(long eventId, String originalFilename, String contentType, byte[] content) {
-        // S3 저장 경로
+    public String reserveUrl(long eventId, String originalFilename) {
+        // S3 저장 경로 (실제 업로드는 하지 않고 키/URL만 발급)
         String key = "events/%d/images/%s%s".formatted(eventId, UUID.randomUUID(), extensionOf(originalFilename));
+        return s3Client.utilities().getUrl(builder -> builder
+                .bucket(bucket)
+                .key(key))
+                .toString();
+    }
+
+    @Override
+    public void uploadTo(String imageUrl, String contentType, byte[] content) {
         try {
             s3Client.putObject(
                     PutObjectRequest.builder()
                             .bucket(bucket)
-                            .key(key)
+                            .key(keyFromUrl(imageUrl))
                             .contentType(contentType)
                             .build(),
                     RequestBody.fromBytes(content));
         } catch (SdkException e) {
             throw new BusinessException(ErrorCode.EVENT_IMAGE_UPLOAD_FAILED, "이미지 업로드에 실패했습니다: " + e.getMessage());
         }
-        return s3Client.utilities().getUrl(builder -> builder.bucket(bucket).key(key)).toString();
     }
 
     @Override

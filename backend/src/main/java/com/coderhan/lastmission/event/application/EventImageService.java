@@ -40,16 +40,17 @@ public class EventImageService {
         validateEventAccess(event, callerUserId, isAdmin, "이미지를 등록");
         validateImageFile(file);
 
-        String imageUrl = uploadToStorage(eventId, file);
+        String imageUrl = eventImageStorage.reserveUrl(eventId, file.getOriginalFilename());
+
         int displayOrder = (int) eventImageRepository.countByEventId(eventId);
         EventImage image = new EventImage(event, imageUrl, imageType, displayOrder);
+        EventImage saved = eventImageRepository.save(image);
 
-        try {
-            return eventImageRepository.save(image);
-        } catch (RuntimeException e) {
-            eventImageStorage.cleanup(imageUrl);
-            throw e;
-        }
+        // 실제 업로드 시도 전에 등록해야 업로드 도중 실패까지 커버됨
+        registerCleanupOnRollback(imageUrl);
+        uploadToStorage(imageUrl, file);
+
+        return saved;
     }
 
     /**
@@ -67,6 +68,18 @@ public class EventImageService {
         eventImageRepository.delete(image);
         registerCleanupAfterCommit(image.getImageUrl());
     }
+
+    private void registerCleanupOnRollback(String imageUrl) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                // STATUS_UNKNOWN은 삭제 대상에서 제외
+                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    eventImageStorage.cleanup(imageUrl);
+                }
+            }
+        });
+    }
     
     private void registerCleanupAfterCommit(String imageUrl) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -77,9 +90,10 @@ public class EventImageService {
         });
     }
 
-    private String uploadToStorage(long eventId, MultipartFile file) {
+
+    private void uploadToStorage(String imageUrl, MultipartFile file) {
         try {
-            return eventImageStorage.upload(eventId, file.getOriginalFilename(), file.getContentType(), file.getBytes());
+            eventImageStorage.uploadTo(imageUrl, file.getContentType(), file.getBytes());
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "이미지 파일을 읽을 수 없습니다.");
         }
