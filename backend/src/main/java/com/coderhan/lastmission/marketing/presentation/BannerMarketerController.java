@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.application.BannerAdService;
+import com.coderhan.lastmission.marketing.application.BannerImageStorage;
 import com.coderhan.lastmission.marketing.application.BannerPricingPolicyService;
 import com.coderhan.lastmission.marketing.application.BannerSlotService;
 import com.coderhan.lastmission.marketing.application.BannerStatService;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 마케터용 광고 등록/수정 API.
@@ -45,6 +47,15 @@ class BannerMarketerController {
     private final BannerSlotService bannerSlotService;
     private final BannerPricingPolicyService bannerPricingPolicyService;
     private final BannerStatService bannerStatService;
+    private final BannerImageStorage bannerImageStorage;
+
+    @PostMapping(path = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<ApiResponse<ImageUploadResponse>> uploadImage(
+            @RequestParam("file") MultipartFile file) throws java.io.IOException {
+        String url = bannerImageStorage.upload(
+                file.getOriginalFilename(), file.getContentType(), file.getBytes());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(new ImageUploadResponse(url)));
+    }
 
     @GetMapping("/slots")
     ApiResponse<List<SlotWithPoliciesResponse>> getAvailableSlots() {
@@ -128,6 +139,8 @@ class BannerMarketerController {
             return new PolicyResponse(p.id(), p.durationDays(), p.price());
         }
     }
+
+    record ImageUploadResponse(String imageUrl) {}
 
     record RegisterAdRequest(
             Set<UUID> slotIds,

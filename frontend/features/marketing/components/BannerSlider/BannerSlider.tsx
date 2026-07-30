@@ -58,7 +58,7 @@ export function BannerSlider() {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={current.imageUrl}
+            src={current.bannerImageUrl ?? current.adImageUrl ?? ""}
             alt={current.title}
             className={styles.image}
             draggable={false}

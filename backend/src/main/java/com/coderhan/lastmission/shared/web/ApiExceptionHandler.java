@@ -36,7 +36,8 @@ class ApiExceptionHandler {
                     ADMIN_SELF_DEMOTION,
                     PAYMENT_REFUND_ALREADY_EXISTS,
                     RESERVATION_ALREADY_CHECKED_IN,
-                    TICKET_SOLD_OUT ->
+                    TICKET_SOLD_OUT,
+                    BANNER_SLOT_HAS_ACTIVE_ADS ->
                     HttpStatus.CONFLICT;
         };
         return ResponseEntity.status(status).body(

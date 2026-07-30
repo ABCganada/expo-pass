@@ -1,4 +1,5 @@
 export type BannerAdStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
+export type BannerSlotType = "BANNER" | "TAB";
 
 export const BANNER_AD_STATUS_LABEL: Record<BannerAdStatus, string> = {
   PENDING: "검토 중",
@@ -7,11 +8,17 @@ export const BANNER_AD_STATUS_LABEL: Record<BannerAdStatus, string> = {
   EXPIRED: "종료됨",
 };
 
+export const BANNER_SLOT_TYPE_LABEL: Record<BannerSlotType, string> = {
+  BANNER: "배너형",
+  TAB: "광고탭형",
+};
+
 export interface MarketerBannerAd {
   id: string;
   slotIds: string[];
   title: string;
-  imageUrl: string;
+  bannerImageUrl?: string;
+  adImageUrl?: string;
   linkUrl: string;
   priority: number;
   status: BannerAdStatus;
@@ -26,7 +33,25 @@ export interface BannerSlot {
   id: string;
   name: string;
   maxCount: number;
-  pricePerDay: number;
+  type: BannerSlotType;
+}
+
+export interface SlotPolicy {
+  id: string;
+  durationDays: number;
+  price: number;
+}
+
+export interface BannerSlotWithPolicies extends BannerSlot {
+  policies: SlotPolicy[];
+}
+
+export interface BannerPricingPolicy {
+  id: string;
+  slotId: string;
+  durationDays: number;
+  price: number;
+  createdAt: string;
 }
 
 export interface BannerAdStats {
@@ -39,7 +64,8 @@ export interface BannerAdStats {
 export interface RegisterAdCommand {
   slotIds: string[];
   title: string;
-  imageUrl: string;
+  bannerImageUrl?: string;
+  adImageUrl?: string;
   linkUrl: string;
   priority: number;
   startsAt: string;
@@ -48,7 +74,8 @@ export interface RegisterAdCommand {
 
 export interface UpdateAdCommand {
   title: string;
-  imageUrl: string;
+  bannerImageUrl?: string;
+  adImageUrl?: string;
   linkUrl: string;
   priority: number;
   startsAt: string;

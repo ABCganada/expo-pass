@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -59,6 +60,18 @@ class BannerAdminController {
     @GetMapping("/slots/{slotId}")
     ApiResponse<BannerSlotResponse> getSlot(@PathVariable UUID slotId) {
         return ApiResponse.success(BannerSlotResponse.from(bannerSlotService.getSlot(slotId)));
+    }
+
+    @PutMapping("/slots/{slotId}")
+    ApiResponse<BannerSlotResponse> updateSlot(@PathVariable UUID slotId, @RequestBody UpdateSlotRequest request) {
+        BannerSlot slot = bannerSlotService.updateSlot(slotId, request.name(), request.maxCount(), request.type());
+        return ApiResponse.success(BannerSlotResponse.from(slot));
+    }
+
+    @DeleteMapping("/slots/{slotId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deleteSlot(@PathVariable UUID slotId) {
+        bannerSlotService.deleteSlot(slotId);
     }
 
     // --- 가격 정책 관리 ---
@@ -121,6 +134,8 @@ class BannerAdminController {
     }
 
     record CreateSlotRequest(String name, int maxCount, BannerSlotType type) {}
+
+    record UpdateSlotRequest(String name, int maxCount, BannerSlotType type) {}
 
     record CreatePolicyRequest(int durationDays, long price) {}
 

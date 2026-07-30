@@ -24,4 +24,8 @@ interface BannerAdJpaRepository extends JpaRepository<BannerAdEntity, UUID> {
     @Query("SELECT a FROM BannerAdEntity a WHERE a.status = :status AND a.endsAt < :now")
     List<BannerAdEntity> findExpiredApproved(@Param("status") BannerAdStatus status,
                                               @Param("now") OffsetDateTime now);
+
+    @Query("SELECT COUNT(a) > 0 FROM BannerAdEntity a WHERE :slotId MEMBER OF a.slotIds AND a.status IN :statuses")
+    boolean existsBySlotIdAndStatusIn(@Param("slotId") UUID slotId,
+                                      @Param("statuses") List<BannerAdStatus> statuses);
 }
