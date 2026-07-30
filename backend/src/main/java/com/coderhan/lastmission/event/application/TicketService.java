@@ -73,7 +73,7 @@ public class TicketService {
         // TODO : 예약 이력 조회 후 판단으로 변경
         // 현재 : 재고 차감 여부를 예약 발생 여부로 간주 (임시)
         if (ticket.getQuantityRemaining() != ticket.getQuantityTotal()) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "예약 이력이 있는 티켓은 삭제할 수 없습니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "예약 이력이 있는 티켓은 삭제할 수 없습니다.");
         }
         ticket.softDelete(Instant.now(clock));
     }
@@ -109,10 +109,10 @@ public class TicketService {
 
     private void validateTicketCreation(CreateTicketCommand command) {
         if (command.quantityTotal() == null) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "총 수량은 필수입니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "총 수량은 필수입니다.");
         }
         if (command.quantityTotal() <= 0) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "총 수량은 1 이상이어야 합니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "총 수량은 1 이상이어야 합니다.");
         }
         validateTicketFields(command.name(), command.price(), command.quantityTotal(),
                 command.maxPurchasePerUser(), command.saleStartAt(), command.saleEndAt());
@@ -121,25 +121,25 @@ public class TicketService {
     private void validateTicketFields(String name, Integer price, Integer quantityTotal,
             Integer maxPurchasePerUser, Instant saleStartAt, Instant saleEndAt) {
         if (name == null || name.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "티켓명은 비어 있을 수 없습니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "티켓명은 비어 있을 수 없습니다.");
         }
         if (price == null) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "가격은 필수입니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "가격은 필수입니다.");
         }
         if (price < 0) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "가격은 0 이상이어야 합니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "가격은 0 이상이어야 합니다.");
         }
         if (maxPurchasePerUser == null) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "인당 최대 구매 수량은 필수입니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "인당 최대 구매 수량은 필수입니다.");
         }
         if (maxPurchasePerUser <= 0 || maxPurchasePerUser > quantityTotal) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "인당 최대 구매 수량이 올바르지 않습니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "인당 최대 구매 수량이 올바르지 않습니다.");
         }
         if (saleStartAt == null || saleEndAt == null) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "판매 시작/종료 일시는 필수입니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "판매 시작/종료 일시는 필수입니다.");
         }
         if (!saleEndAt.isAfter(saleStartAt)) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "판매 종료 일시는 시작 일시보다 늦어야 합니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "판매 종료 일시는 시작 일시보다 늦어야 합니다.");
         }
     }
 }

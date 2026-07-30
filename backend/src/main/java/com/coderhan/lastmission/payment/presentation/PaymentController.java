@@ -75,8 +75,7 @@ class PaymentController {
         return ApiResponse.success(PaymentResponse.from(payment));
     }
 
-    /** 환불 신청 접수. REQUESTED 상태로만 접수
-     * 행사 3일 전 자동 승인, 그 외는 행사 관리자가 수동 승인하도록 한다 */
+    /** 환불 신청 접수. 모든 환불은 자동승인되며, 행사 시작까지 남은 일수에 따라 환불율이 정해진다. */
     @PostMapping("/{paymentId}/refunds")
     ResponseEntity<ApiResponse<RefundResponse>> request(
             @PathVariable String paymentId,

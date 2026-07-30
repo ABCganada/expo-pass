@@ -30,6 +30,9 @@ class BannerSlotEntity {
     @Column(name = "max_count", nullable = false)
     private int maxCount;
 
+    @Column(name = "price_per_day", nullable = false)
+    private long pricePerDay;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 }

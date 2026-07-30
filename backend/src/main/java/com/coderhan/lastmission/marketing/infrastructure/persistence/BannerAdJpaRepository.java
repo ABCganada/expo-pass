@@ -10,12 +10,12 @@ import org.springframework.data.repository.query.Param;
 
 interface BannerAdJpaRepository extends JpaRepository<BannerAdEntity, UUID> {
 
-    @Query("SELECT a FROM BannerAdEntity a WHERE a.slotId = :slotId AND a.status = :status AND a.startsAt <= :now AND a.endsAt >= :now ORDER BY a.priority ASC")
+    @Query("SELECT DISTINCT a FROM BannerAdEntity a WHERE :slotId MEMBER OF a.slotIds AND a.status = :status AND a.startsAt <= :now AND a.endsAt >= :now ORDER BY a.priority ASC")
     List<BannerAdEntity> findActiveBySlot(@Param("slotId") UUID slotId,
                                           @Param("status") BannerAdStatus status,
                                           @Param("now") OffsetDateTime now);
 
-    @Query("SELECT a FROM BannerAdEntity a WHERE a.status = :status AND a.startsAt <= :now AND a.endsAt >= :now ORDER BY a.priority ASC")
+    @Query("SELECT DISTINCT a FROM BannerAdEntity a WHERE a.status = :status AND a.startsAt <= :now AND a.endsAt >= :now ORDER BY a.priority ASC")
     List<BannerAdEntity> findAllActive(@Param("status") BannerAdStatus status,
                                        @Param("now") OffsetDateTime now);
 

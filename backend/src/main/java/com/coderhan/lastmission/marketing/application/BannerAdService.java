@@ -2,10 +2,13 @@ package com.coderhan.lastmission.marketing.application;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
+import com.coderhan.lastmission.marketing.domain.BannerSlot;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +24,19 @@ public class BannerAdService {
     private final Clock clock;
 
     @Transactional
-    public BannerAd registerAd(UUID slotId, String title, String imageUrl, String linkUrl,
+    public BannerAd registerAd(Set<UUID> slotIds, String title, String imageUrl, String linkUrl,
                                int priority, OffsetDateTime startsAt, OffsetDateTime endsAt, String createdBy) {
-        slotRepository.findById(slotId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_SLOT_NOT_FOUND, "광고 슬롯을 찾을 수 없습니다. id=" + slotId));
+        if (slotIds == null || slotIds.isEmpty()) {
+            throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "광고 슬롯을 하나 이상 선택해야 합니다.");
+        }
+        List<BannerSlot> slots = slotRepository.findAllByIds(slotIds);
+        if (slots.size() != slotIds.size()) {
+            throw new BusinessException(ErrorCode.BANNER_SLOT_NOT_FOUND, "존재하지 않는 슬롯이 포함되어 있습니다.");
+        }
         BannerAd.validate(title, imageUrl, startsAt, endsAt);
-        return adRepository.save(slotId, title, imageUrl, linkUrl, priority, startsAt, endsAt, createdBy);
+        long days = Math.max(1, ChronoUnit.DAYS.between(startsAt.toLocalDate(), endsAt.toLocalDate()));
+        long totalAmount = slots.stream().mapToLong(BannerSlot::pricePerDay).sum() * days;
+        return adRepository.save(slotIds, title, imageUrl, linkUrl, priority, startsAt, endsAt, createdBy, totalAmount);
     }
 
     @Transactional
@@ -44,6 +54,10 @@ public class BannerAdService {
         return adRepository.update(id, title, imageUrl, linkUrl, priority, startsAt, endsAt);
     }
 
+    /**
+     * 관리자가 광고를 승인한다. PENDING → APPROVED.
+     * 결제가 먼저 완료된 상태(PENDING)에서 관리자가 최종 승인하면 광고가 노출된다.
+     */
     @Transactional
     public BannerAd approve(UUID id) {
         BannerAd ad = adRepository.findById(id)
@@ -92,4 +106,11 @@ public class BannerAdService {
         statRepository.deleteStatsByAdId(id);
         adRepository.deleteById(id);
     }
+
+    @Transactional(readOnly = true)
+    public BannerAd getAd(UUID id) {
+        return adRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
+    }
+
 }

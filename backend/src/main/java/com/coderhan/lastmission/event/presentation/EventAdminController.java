@@ -3,11 +3,13 @@ package com.coderhan.lastmission.event.presentation;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Locale;
 import com.coderhan.lastmission.event.application.EventService;
 import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventCategory;
+import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.shared.error.BusinessException;
@@ -28,6 +30,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 class EventAdminController {
     private final EventService eventService;
+
+    @GetMapping("/api/v1/admin/events")
+    ApiResponse<List<AdminEventListItemResponse>> getAdminEvents(
+            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+        List<AdminEventListItemResponse> events = eventService
+                .getAdminEvents(principal.userId(), isAdmin(authentication))
+                .stream()
+                .map(AdminEventListItemResponse::from)
+                .toList();
+        return ApiResponse.success(events);
+    }
 
     @GetMapping("/api/v1/admin/events/{eventId}")
     ApiResponse<AdminEventDetailResponse> getEventDetail(@PathVariable long eventId,
@@ -60,6 +73,25 @@ class EventAdminController {
                 .stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch("ROLE_ADMIN"::equals);
+    }
+
+    record AdminEventListItemResponse(
+            String id, String title, String categoryName, String managerId,
+            EventStatus status, LocalDate startDate, LocalDate endDate, EventPhase phase, long viewCount
+    ) {
+        static AdminEventListItemResponse from(EventService.EventListItem eventItem) {
+            Event event = eventItem.event();
+            return new AdminEventListItemResponse(
+                    Long.toString(event.getId()),
+                    event.getTitle(),
+                    event.getCategory().getName(),
+                    Long.toString(event.getManagerId()),
+                    event.getStatus(),
+                    event.getStartDate(),
+                    event.getEndDate(),
+                    eventItem.phase(),
+                    event.getViewCount());
+        }
     }
 
     record AdminEventDetailResponse(
@@ -103,7 +135,7 @@ class EventAdminController {
     ) {
         UpdateEventCommand toCommand() {
             if (categoryId == null || categoryId <= 0) {
-                throw new BusinessException(ErrorCode.INVALID_REQUEST, "카테고리 id가 올바르지 않습니다.");
+                throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "카테고리 id가 올바르지 않습니다.");
             }
             return new UpdateEventCommand(title, categoryId, hostName, venueName, address, detailAddress,
                     kakaoPlaceId, legalDongCode, latitude, longitude, startDate, endDate);
@@ -115,7 +147,7 @@ class EventAdminController {
             try {
                 return EventStatus.valueOf(status.toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException | NullPointerException _) {
-                throw new BusinessException(ErrorCode.INVALID_REQUEST,
+                throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST,
                         "status 값이 올바르지 않습니다. (PUBLISHED, DRAFT, CANCELLED 중 하나여야 합니다.)");
             }
         }

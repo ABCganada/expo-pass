@@ -3,6 +3,7 @@ package com.coderhan.lastmission.marketing.presentation;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.application.BannerAdService;
 import com.coderhan.lastmission.marketing.application.BannerStatService;
@@ -51,7 +52,7 @@ class BannerMarketerController {
             @RequestBody RegisterAdRequest request,
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAd ad = bannerAdService.registerAd(
-                request.slotId(), request.title(), request.imageUrl(), request.linkUrl(),
+                request.slotIds(), request.title(), request.imageUrl(), request.linkUrl(),
                 request.priority(), request.startsAt(), request.endsAt(), principal.email());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(BannerAdResponse.from(ad)));
     }
@@ -92,7 +93,7 @@ class BannerMarketerController {
     }
 
     record RegisterAdRequest(
-            UUID slotId,
+            Set<UUID> slotIds,
             String title,
             String imageUrl,
             String linkUrl,
@@ -118,7 +119,7 @@ class BannerMarketerController {
 
     record BannerAdResponse(
             UUID id,
-            UUID slotId,
+            Set<UUID> slotIds,
             String title,
             String imageUrl,
             String linkUrl,
@@ -127,11 +128,13 @@ class BannerMarketerController {
             OffsetDateTime startsAt,
             OffsetDateTime endsAt,
             String createdBy,
-            OffsetDateTime createdAt
+            OffsetDateTime createdAt,
+            Long totalAmount
     ) {
         static BannerAdResponse from(BannerAd ad) {
-            return new BannerAdResponse(ad.id(), ad.slotId(), ad.title(), ad.imageUrl(), ad.linkUrl(),
-                    ad.priority(), ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(), ad.createdAt());
+            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(), ad.imageUrl(), ad.linkUrl(),
+                    ad.priority(), ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(),
+                    ad.createdAt(), ad.totalAmount());
         }
     }
 }

@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import com.coderhan.lastmission.marketing.domain.BannerAd;
@@ -146,8 +147,8 @@ class BannerStatServiceTest {
     // ─────────────────────────────────────────────────────────────────────────
 
     private BannerAd ad() {
-        return new BannerAd(AD_ID, UUID.randomUUID(), "여름 세일", "https://img.example.com/img.png",
+        return new BannerAd(AD_ID, Set.of(UUID.randomUUID()), "여름 세일", "https://img.example.com/img.png",
                 null, 1, BannerAdStatus.APPROVED, NOW.plusDays(1), NOW.plusDays(30),
-                "marketer@example.com", NOW);
+                "marketer@example.com", NOW, null);
     }
 }

@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventService {
     private final EventRepository eventRepository;
     private final EventCategoryRepository eventCategoryRepository;
+    private final EventBookmarkService eventBookmarkService;
     private final UserDirectory userDirectory;
     private final Clock clock;
 
@@ -36,6 +37,19 @@ public class EventService {
         LocalDate today = LocalDate.now(clock);
         return eventRepository.findByStatusOrderByStartDateAsc(EventStatus.PUBLISHED)
                 .stream()
+                .map(event -> new EventListItem(event, event.phase(today)))
+                .toList();
+    }
+
+    /**
+     * 관리자용 행사 목록 조회 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     */
+    @Transactional(readOnly = true)
+    public List<EventListItem> getAdminEvents(long callerUserId, boolean isAdmin) {
+        LocalDate today = LocalDate.now(clock);
+        return eventRepository.findAllOrderByStartDateAsc()
+                .stream()
+                .filter(event -> isAdmin || Objects.equals(event.getManagerId(), callerUserId))
                 .map(event -> new EventListItem(event, event.phase(today)))
                 .toList();
     }
@@ -57,7 +71,7 @@ public class EventService {
     @Transactional
     public Event createDraftEvent(String title, long categoryId, long managerId) {
         if (title == null || title.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "제목은 비어 있을 수 없습니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "제목은 비어 있을 수 없습니다.");
         }
         EventCategory category = eventCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_CATEGORY_NOT_FOUND, "카테고리를 찾을 수 없습니다."));
@@ -93,14 +107,14 @@ public class EventService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
         validateEventAccess(event, callerUserId, admin, "수정");
         if (command.title() == null || command.title().isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "제목은 비어 있을 수 없습니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "제목은 비어 있을 수 없습니다.");
         }
         if (command.startDate() != null && command.endDate() != null
                 && command.endDate().isBefore(command.startDate())) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "종료일은 시작일보다 빠를 수 없습니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "종료일은 시작일보다 빠를 수 없습니다.");
         }
         if (command.legalDongCode() != null && command.legalDongCode().length() > 10) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "법정동코드는 10자를 초과할 수 없습니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "법정동코드는 10자를 초과할 수 없습니다.");
         }
         EventCategory category = eventCategoryRepository.findById(command.categoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_CATEGORY_NOT_FOUND, "카테고리를 찾을 수 없습니다."));
@@ -110,14 +124,15 @@ public class EventService {
         return event;
     }
 
-    /** 
-     * 행사 삭제 - SUPER_ADMIN 전용 
+    /**
+     * 행사 삭제 - SUPER_ADMIN 전용
      */
     @Transactional
     public void deleteEvent(long eventId) {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
         event.softDelete(Instant.now(clock));
+        eventBookmarkService.removeBookmarksForEvent(eventId);
     }
 
     /**
@@ -129,7 +144,7 @@ public class EventService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
         validateEventAccess(event, callerUserId, isAdmin, "상태를 변경");
         if (event.getStatus() == EventStatus.CANCELLED) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST, "취소된 행사는 상태를 변경할 수 없습니다.");
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "취소된 행사는 상태를 변경할 수 없습니다.");
         }
         switch (targetStatus) {
             case PUBLISHED -> {
@@ -137,7 +152,7 @@ public class EventService {
                 event.publish();
             }
             case CANCELLED -> event.cancel();
-            case DRAFT -> throw new BusinessException(ErrorCode.INVALID_REQUEST, "DRAFT로는 되돌릴 수 없습니다.");
+            case DRAFT -> throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "DRAFT로는 되돌릴 수 없습니다.");
         }
         return event;
     }
@@ -153,7 +168,7 @@ public class EventService {
         if (isBlank(event.getHostName()) || isBlank(event.getVenueName()) || isBlank(event.getAddress())
                 || isBlank(event.getLegalDongCode()) || event.getLatitude() == null || event.getLongitude() == null
                 || event.getStartDate() == null || event.getEndDate() == null) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST,
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST,
                     "게시하려면 주최/장소명/주소/법정동코드/좌표/시작일/종료일이 모두 입력되어야 합니다.");
         }
     }

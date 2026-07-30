@@ -52,11 +52,11 @@ class TossPaymentGateway implements PaymentGateway {
     }
 
     @Override
-    public CancelResult cancel(String paymentKey, String reason) {
+    public CancelResult cancel(String paymentKey, String reason, BigDecimal amount) {
         try {
             TossCancelResponse response = restClient.post()
                     .uri("/v1/payments/{paymentKey}/cancel", paymentKey)
-                    .body(new TossCancelRequest(reason))
+                    .body(new TossCancelRequest(reason, toKrwAmount(amount)))
                     .retrieve()
                     .body(TossCancelResponse.class);
 
@@ -84,11 +84,11 @@ class TossPaymentGateway implements PaymentGateway {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record TossConfirmResponse(String method, OffsetDateTime approvedAt) {}
 
-    private record TossCancelRequest(String cancelReason) {}
+    private record TossCancelRequest(String cancelReason, long cancelAmount) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record TossCancelResponse(List<CancelDetail> cancels) {
-        /** 취소 이력 중 가장 최근 건 — 전액 취소만 지원하므로 항상 1건이다. */
+        /** 취소 이력 중 가장 최근 건 — 환불 1건당 취소 호출은 정확히 1번만 일어나므로 항상 마지막 항목이 이 호출의 결과다. */
         OffsetDateTime latestCancelledAt() {
             return cancels.get(cancels.size() - 1).cancelledAt();
         }

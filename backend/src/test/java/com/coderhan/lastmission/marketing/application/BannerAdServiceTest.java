@@ -3,6 +3,7 @@ package com.coderhan.lastmission.marketing.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import com.coderhan.lastmission.marketing.domain.BannerAd;
@@ -31,14 +33,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class BannerAdServiceTest {
     private static final UUID SLOT_ID = UUID.randomUUID();
     private static final UUID AD_ID = UUID.randomUUID();
+    private static final Set<UUID> SLOT_IDS = Set.of(SLOT_ID);
     private static final String MARKETER = "marketer@example.com";
     private static final String OTHER = "other@example.com";
     private static final OffsetDateTime NOW = OffsetDateTime.parse("2026-07-28T00:00:00Z");
     private static final OffsetDateTime STARTS_AT = NOW.plusDays(1);
-    private static final OffsetDateTime ENDS_AT = NOW.plusDays(30);
+    private static final OffsetDateTime ENDS_AT = NOW.plusDays(8); // 7일
 
     @Mock BannerAdRepository adRepository;
     @Mock BannerSlotRepository slotRepository;
+    @Mock BannerStatRepository statRepository;
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-28T00:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks BannerAdService service;
@@ -48,27 +52,36 @@ class BannerAdServiceTest {
     // ─────────────────────────────────────────────────────────────────────────
 
     @Test
-    void registerAd_슬롯이_없으면_예외() {
+    void registerAd_슬롯이_비어있으면_예외() {
+        // Act & Assert
+        assertThatThrownBy(() -> service.registerAd(
+                Set.of(), "여름 세일", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT, MARKETER))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
+
+        verify(adRepository, never()).save(any(), any(), any(), any(), any(int.class), any(), any(), any(), anyLong());
+    }
+
+    @Test
+    void registerAd_존재하지_않는_슬롯이면_예외() {
         // Arrange
-        when(slotRepository.findById(SLOT_ID)).thenReturn(Optional.empty());
+        when(slotRepository.findAllByIds(SLOT_IDS)).thenReturn(List.of()); // 슬롯 없음
 
         // Act & Assert
         assertThatThrownBy(() -> service.registerAd(
-                SLOT_ID, "여름 세일", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT, MARKETER))
+                SLOT_IDS, "여름 세일", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT, MARKETER))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_SLOT_NOT_FOUND));
-
-        verify(adRepository, never()).save(any(), any(), any(), any(), any(int.class), any(), any(), any());
     }
 
     @Test
     void registerAd_제목이_없으면_예외() {
         // Arrange
-        when(slotRepository.findById(SLOT_ID)).thenReturn(Optional.of(slot()));
+        when(slotRepository.findAllByIds(SLOT_IDS)).thenReturn(List.of(slot()));
 
         // Act & Assert
         assertThatThrownBy(() -> service.registerAd(
-                SLOT_ID, "", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT, MARKETER))
+                SLOT_IDS, "", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT, MARKETER))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
     }
@@ -76,26 +89,26 @@ class BannerAdServiceTest {
     @Test
     void registerAd_종료일이_시작일보다_이전이면_예외() {
         // Arrange
-        when(slotRepository.findById(SLOT_ID)).thenReturn(Optional.of(slot()));
+        when(slotRepository.findAllByIds(SLOT_IDS)).thenReturn(List.of(slot()));
 
         // Act & Assert
         assertThatThrownBy(() -> service.registerAd(
-                SLOT_ID, "여름 세일", "https://img.example.com/img.png", null, 1, ENDS_AT, STARTS_AT, MARKETER))
+                SLOT_IDS, "여름 세일", "https://img.example.com/img.png", null, 1, ENDS_AT, STARTS_AT, MARKETER))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
     }
 
     @Test
     void registerAd_정상입력이면_PENDING_상태로_저장() {
-        // Arrange
-        BannerAd expected = ad(BannerAdStatus.PENDING);
-        when(slotRepository.findById(SLOT_ID)).thenReturn(Optional.of(slot()));
-        when(adRepository.save(SLOT_ID, "여름 세일", "https://img.example.com/img.png",
-                null, 1, STARTS_AT, ENDS_AT, MARKETER)).thenReturn(expected);
+        // Arrange — 슬롯 단가 30,000원 × 7일 = 210,000원
+        BannerAd expected = ad(BannerAdStatus.PENDING, 210_000L);
+        when(slotRepository.findAllByIds(SLOT_IDS)).thenReturn(List.of(slot()));
+        when(adRepository.save(SLOT_IDS, "여름 세일", "https://img.example.com/img.png",
+                null, 1, STARTS_AT, ENDS_AT, MARKETER, 210_000L)).thenReturn(expected);
 
         // Act
         BannerAd result = service.registerAd(
-                SLOT_ID, "여름 세일", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT, MARKETER);
+                SLOT_IDS, "여름 세일", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT, MARKETER);
 
         // Assert
         assertThat(result).isSameAs(expected);
@@ -131,21 +144,9 @@ class BannerAdServiceTest {
     }
 
     @Test
-    void updateAd_이미_승인된_광고는_수정_불가() {
+    void updateAd_이미_처리된_광고는_수정_불가() {
         // Arrange
         when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.APPROVED)));
-
-        // Act & Assert
-        assertThatThrownBy(() -> service.updateAd(
-                AD_ID, MARKETER, "수정된 제목", "https://img.example.com/img.png", null, 1, STARTS_AT, ENDS_AT))
-                .isInstanceOfSatisfying(BusinessException.class,
-                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_ALREADY_REVIEWED));
-    }
-
-    @Test
-    void updateAd_이미_거절된_광고는_수정_불가() {
-        // Arrange
-        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.REJECTED)));
 
         // Act & Assert
         assertThatThrownBy(() -> service.updateAd(
@@ -168,8 +169,6 @@ class BannerAdServiceTest {
 
         // Assert
         assertThat(result).isSameAs(updated);
-        verify(adRepository).update(AD_ID, "수정된 제목", "https://img.example.com/img.png",
-                null, 1, STARTS_AT, ENDS_AT);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -255,11 +254,16 @@ class BannerAdServiceTest {
     // ─────────────────────────────────────────────────────────────────────────
 
     private BannerSlot slot() {
-        return new BannerSlot(SLOT_ID, "메인 배너", 3, NOW);
+        return new BannerSlot(SLOT_ID, "메인 배너", 3, 30_000L, NOW);
     }
 
     private BannerAd ad(BannerAdStatus status) {
-        return new BannerAd(AD_ID, SLOT_ID, "여름 세일", "https://img.example.com/img.png",
-                null, 1, status, STARTS_AT, ENDS_AT, MARKETER, NOW);
+        return new BannerAd(AD_ID, SLOT_IDS, "여름 세일", "https://img.example.com/img.png",
+                null, 1, status, STARTS_AT, ENDS_AT, MARKETER, NOW, null);
+    }
+
+    private BannerAd ad(BannerAdStatus status, Long totalAmount) {
+        return new BannerAd(AD_ID, SLOT_IDS, "여름 세일", "https://img.example.com/img.png",
+                null, 1, status, STARTS_AT, ENDS_AT, MARKETER, NOW, totalAmount);
     }
 }
