@@ -11,6 +11,7 @@ interface CreateSlotModalProps {
 export function CreateSlotModal({ onClose }: CreateSlotModalProps) {
   const [name, setName] = useState("");
   const [maxCount, setMaxCount] = useState(3);
+  const [pricePerDay, setPricePerDay] = useState(30000);
   const [error, setError] = useState("");
   const [createSlot, { isLoading }] = useCreateSlotMutation();
 
@@ -18,7 +19,7 @@ export function CreateSlotModal({ onClose }: CreateSlotModalProps) {
     e.preventDefault();
     setError("");
     try {
-      await createSlot({ name, maxCount }).unwrap();
+      await createSlot({ name, maxCount, pricePerDay }).unwrap();
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "슬롯 생성에 실패했습니다.");
@@ -49,6 +50,18 @@ export function CreateSlotModal({ onClose }: CreateSlotModalProps) {
               onChange={(e) => setMaxCount(Number(e.target.value))}
               min={1}
               max={20}
+              required
+            />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label}>일 단가 (원)</label>
+            <input
+              type="number"
+              className={styles.input}
+              value={pricePerDay}
+              onChange={(e) => setPricePerDay(Number(e.target.value))}
+              min={0}
+              step={1000}
               required
             />
           </div>
