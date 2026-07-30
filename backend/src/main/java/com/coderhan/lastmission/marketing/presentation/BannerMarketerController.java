@@ -6,10 +6,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.application.BannerAdService;
+import com.coderhan.lastmission.marketing.application.BannerPricingPolicyService;
+import com.coderhan.lastmission.marketing.application.BannerSlotService;
 import com.coderhan.lastmission.marketing.application.BannerStatService;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStats;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
+import com.coderhan.lastmission.marketing.domain.BannerPricingPolicy;
+import com.coderhan.lastmission.marketing.domain.BannerSlot;
+import com.coderhan.lastmission.marketing.domain.BannerSlotType;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +42,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 class BannerMarketerController {
     private final BannerAdService bannerAdService;
+    private final BannerSlotService bannerSlotService;
+    private final BannerPricingPolicyService bannerPricingPolicyService;
     private final BannerStatService bannerStatService;
+
+    @GetMapping("/slots")
+    ApiResponse<List<SlotWithPoliciesResponse>> getAvailableSlots() {
+        List<BannerSlot> slots = bannerSlotService.getSlots();
+        List<SlotWithPoliciesResponse> responses = slots.stream()
+                .map(slot -> SlotWithPoliciesResponse.from(
+                        slot, bannerPricingPolicyService.getPoliciesBySlot(slot.id())))
+                .toList();
+        return ApiResponse.success(responses);
+    }
 
     @GetMapping
     ApiResponse<List<BannerAdResponse>> getMyAds(@AuthenticationPrincipal LastMissionPrincipal principal) {
@@ -90,6 +107,26 @@ class BannerMarketerController {
         headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
         headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
         return ResponseEntity.ok().headers(headers).body(xlsx);
+    }
+
+    record SlotWithPoliciesResponse(
+            UUID id,
+            String name,
+            BannerSlotType type,
+            int maxCount,
+            List<PolicyResponse> policies
+    ) {
+        static SlotWithPoliciesResponse from(BannerSlot slot, List<BannerPricingPolicy> policies) {
+            return new SlotWithPoliciesResponse(
+                    slot.id(), slot.name(), slot.type(), slot.maxCount(),
+                    policies.stream().map(PolicyResponse::from).toList());
+        }
+    }
+
+    record PolicyResponse(UUID id, int durationDays, long price) {
+        static PolicyResponse from(BannerPricingPolicy p) {
+            return new PolicyResponse(p.id(), p.durationDays(), p.price());
+        }
     }
 
     record RegisterAdRequest(
