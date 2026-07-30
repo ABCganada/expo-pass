@@ -12,4 +12,6 @@ public interface BannerSlotRepository {
     List<BannerSlot> findAll();
     Optional<BannerSlot> findById(UUID id);
     List<BannerSlot> findAllByIds(Set<UUID> ids);
+    BannerSlot update(UUID id, String name, int maxCount, BannerSlotType type);
+    void deleteById(UUID id);
 }

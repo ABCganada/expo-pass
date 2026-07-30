@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Arrays;
 import com.coderhan.lastmission.marketing.application.BannerAdRepository;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
@@ -87,6 +88,12 @@ class JpaBannerAdRepository implements BannerAdRepository {
     @Override
     public void deleteById(UUID id) {
         jpaRepository.deleteById(id);
+    }
+
+    @Override
+    public boolean existsActiveOrPendingBySlotId(UUID slotId) {
+        return jpaRepository.existsBySlotIdAndStatusIn(slotId,
+                Arrays.asList(BannerAdStatus.PENDING, BannerAdStatus.APPROVED));
     }
 
     private static BannerAd toDomain(BannerAdEntity entity) {

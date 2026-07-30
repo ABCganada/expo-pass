@@ -20,6 +20,16 @@ const adminBannerApi = baseApi.injectEndpoints({
       invalidatesTags: ["BannerSlot"],
     }),
 
+    updateSlot: build.mutation<BannerSlot, { id: string; name: string; maxCount: number; type: BannerSlotType }>({
+      queryFn: ({ id, ...cmd }) => queryResult(adminBannerService.updateSlot(id, cmd)),
+      invalidatesTags: ["BannerSlot"],
+    }),
+
+    deleteSlot: build.mutation<void, string>({
+      queryFn: (id) => queryResult(adminBannerService.deleteSlot(id)),
+      invalidatesTags: ["BannerSlot"],
+    }),
+
     getPoliciesBySlot: build.query<BannerPricingPolicy[], string>({
       queryFn: (slotId, api) => queryResult(adminBannerService.getPoliciesBySlot(slotId, api.signal)),
       providesTags: (_result, _err, slotId) => [{ type: "BannerPolicy", id: slotId }],
@@ -56,6 +66,8 @@ export const {
   useGetAdminAllAdsQuery,
   useGetAdminSlotsQuery,
   useCreateSlotMutation,
+  useUpdateSlotMutation,
+  useDeleteSlotMutation,
   useGetPoliciesBySlotQuery,
   useCreatePolicyMutation,
   useDeletePolicyMutation,

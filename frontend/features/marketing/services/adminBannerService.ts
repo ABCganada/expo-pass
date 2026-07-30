@@ -19,6 +19,29 @@ export const adminBannerService = {
     fetch(`${BASE}/slots`, { credentials: "include", signal })
       .then((res) => parseData<BannerSlot[]>(res)),
 
+  updateSlot: async (id: string, cmd: { name: string; maxCount: number; type: BannerSlotType }): Promise<BannerSlot> => {
+    const csrf = await getCsrfToken();
+    return fetch(`${BASE}/slots/${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", [csrf.headerName]: csrf.token },
+      body: JSON.stringify(cmd),
+    }).then((res) => parseData<BannerSlot>(res));
+  },
+
+  deleteSlot: async (id: string): Promise<void> => {
+    const csrf = await getCsrfToken();
+    const res = await fetch(`${BASE}/slots/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { [csrf.headerName]: csrf.token },
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.message ?? "슬롯 삭제에 실패했습니다.");
+    }
+  },
+
   createSlot: async (cmd: { name: string; maxCount: number; type: BannerSlotType }): Promise<BannerSlot> => {
     const csrf = await getCsrfToken();
     return fetch(`${BASE}/slots`, {

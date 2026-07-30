@@ -1,36 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { useCreateSlotMutation } from "../../api/adminBannerApi";
-import type { BannerSlotType } from "../../types/marketerBanner";
+import { useCreateSlotMutation, useUpdateSlotMutation } from "../../api/adminBannerApi";
+import type { BannerSlot, BannerSlotType } from "../../types/marketerBanner";
 import styles from "./CreateSlotModal.module.css";
 
 interface CreateSlotModalProps {
+  editTarget?: BannerSlot;
   onClose: () => void;
 }
 
-export function CreateSlotModal({ onClose }: CreateSlotModalProps) {
-  const [name, setName] = useState("");
-  const [maxCount, setMaxCount] = useState(3);
-  const [type, setType] = useState<BannerSlotType>("BANNER");
+export function CreateSlotModal({ editTarget, onClose }: CreateSlotModalProps) {
+  const isEdit = !!editTarget;
+  const [name, setName] = useState(editTarget?.name ?? "");
+  const [maxCount, setMaxCount] = useState(editTarget?.maxCount ?? 3);
+  const [type, setType] = useState<BannerSlotType>(editTarget?.type ?? "BANNER");
   const [error, setError] = useState("");
-  const [createSlot, { isLoading }] = useCreateSlotMutation();
+  const [createSlot, { isLoading: creating }] = useCreateSlotMutation();
+  const [updateSlot, { isLoading: updating }] = useUpdateSlotMutation();
+  const isLoading = creating || updating;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     try {
-      await createSlot({ name, maxCount, type }).unwrap();
+      if (isEdit && editTarget) {
+        await updateSlot({ id: editTarget.id, name, maxCount, type }).unwrap();
+      } else {
+        await createSlot({ name, maxCount, type }).unwrap();
+      }
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "슬롯 생성에 실패했습니다.");
+      setError(err instanceof Error ? err.message : "슬롯 저장에 실패했습니다.");
     }
   };
 
   return (
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={styles.modal}>
-        <h2 className={styles.title}>슬롯 생성</h2>
+        <h2 className={styles.title}>{isEdit ? "슬롯 수정" : "슬롯 생성"}</h2>
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
             <label className={styles.label}>슬롯 이름</label>
@@ -70,7 +78,7 @@ export function CreateSlotModal({ onClose }: CreateSlotModalProps) {
           <div className={styles.actions}>
             <button type="button" className={styles.btnCancel} onClick={onClose}>취소</button>
             <button type="submit" className={styles.btnSubmit} disabled={isLoading}>
-              {isLoading ? "생성 중..." : "생성"}
+              {isLoading ? "저장 중..." : isEdit ? "수정" : "생성"}
             </button>
           </div>
         </form>

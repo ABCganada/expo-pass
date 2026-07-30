@@ -42,6 +42,19 @@ class JpaBannerSlotRepository implements BannerSlotRepository {
                 .toList();
     }
 
+    @Override
+    public BannerSlot update(UUID id, String name, int maxCount, BannerSlotType type) {
+        BannerSlotEntity entity = jpaRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("BannerSlot not found: " + id));
+        entity.update(name, maxCount, type);
+        return toDomain(jpaRepository.save(entity));
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        jpaRepository.deleteById(id);
+    }
+
     private static BannerSlot toDomain(BannerSlotEntity entity) {
         return new BannerSlot(entity.getId(), entity.getName(), entity.getMaxCount(),
                 entity.getType(), entity.getCreatedAt());

@@ -39,4 +39,10 @@ class BannerSlotEntity {
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
+
+    void update(String name, int maxCount, BannerSlotType type) {
+        this.name = name;
+        this.maxCount = maxCount;
+        this.type = type;
+    }
 }
