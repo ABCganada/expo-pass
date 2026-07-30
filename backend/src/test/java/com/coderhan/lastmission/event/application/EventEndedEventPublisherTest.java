@@ -29,7 +29,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class EventEndedEventPublisherTest {
     private static final long EVENT_ID = 1L;
     private static final long MANAGER_ID = 100L;
-    private static final LocalDate END_DATE = LocalDate.parse("2026-07-29");
+    private static final LocalDate END_DATE = LocalDate.parse("2026-07-30");
 
     @Mock EventRepository eventRepository;
     @Mock ApplicationEventPublisher eventPublisher;
@@ -38,9 +38,9 @@ class EventEndedEventPublisherTest {
     @InjectMocks EventEndedEventPublisher publisher;
 
     @Test
-    void publishEndedEvents_PUBLISHED_이고_미통지면_발행하고_통지시각을_기록한다() {
+    void publishEndedEvents_PUBLISHED_이고_미통지면_발행하고_통지시각을_기록() {
         Event event = event(EventStatus.PUBLISHED, END_DATE, null);
-        when(eventRepository.findEndedEventsNotNotified(LocalDate.parse("2026-07-29"))).thenReturn(List.of(event));
+        when(eventRepository.findEndedEventsNotNotified(LocalDate.parse("2026-07-30"))).thenReturn(List.of(event));
 
         publisher.publishEndedEvents();
 
@@ -51,12 +51,12 @@ class EventEndedEventPublisherTest {
     }
 
     @Test
-    void publishEndedEvents_어제_날짜를_기준으로_조회한다() {
+    void publishEndedEvents_어제_날짜를_기준으로_조회() {
         when(eventRepository.findEndedEventsNotNotified(any())).thenReturn(List.of());
 
         publisher.publishEndedEvents();
 
-        verify(eventRepository).findEndedEventsNotNotified(LocalDate.parse("2026-07-29"));
+        verify(eventRepository).findEndedEventsNotNotified(LocalDate.parse("2026-07-30"));
     }
 
     private Event event(EventStatus status, LocalDate endDate, Instant endedNotifiedAt) {
