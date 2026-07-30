@@ -46,8 +46,11 @@ class BannerAdEntity {
     @Column(name = "title", nullable = false)
     private String title;
 
-    @Column(name = "image_url", nullable = false)
-    private String imageUrl;
+    @Column(name = "banner_image_url")
+    private String bannerImageUrl;
+
+    @Column(name = "ad_image_url")
+    private String adImageUrl;
 
     @Column(name = "link_url")
     private String linkUrl;
@@ -77,10 +80,11 @@ class BannerAdEntity {
     @Column(name = "total_amount")
     private Long totalAmount;
 
-    void update(String title, String imageUrl, String linkUrl, int priority,
-                OffsetDateTime startsAt, OffsetDateTime endsAt) {
+    void update(String title, String bannerImageUrl, String adImageUrl, String linkUrl,
+                int priority, OffsetDateTime startsAt, OffsetDateTime endsAt) {
         this.title = title;
-        this.imageUrl = imageUrl;
+        this.bannerImageUrl = bannerImageUrl;
+        this.adImageUrl = adImageUrl;
         this.linkUrl = linkUrl;
         this.priority = priority;
         this.startsAt = startsAt;

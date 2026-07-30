@@ -19,7 +19,7 @@ export const adminBannerService = {
     fetch(`${BASE}/slots`, { credentials: "include", signal })
       .then((res) => parseData<BannerSlot[]>(res)),
 
-  createSlot: async (cmd: { name: string; maxCount: number }): Promise<BannerSlot> => {
+  createSlot: async (cmd: { name: string; maxCount: number; pricePerDay: number }): Promise<BannerSlot> => {
     const csrf = await getCsrfToken();
     return fetch(`${BASE}/slots`, {
       method: "POST",
