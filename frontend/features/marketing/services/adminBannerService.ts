@@ -1,5 +1,5 @@
 import { getCsrfToken } from "@/features/shared/api/csrf";
-import type { BannerSlot, MarketerBannerAd } from "../types/marketerBanner";
+import type { BannerPricingPolicy, BannerSlot, BannerSlotType, MarketerBannerAd } from "../types/marketerBanner";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 const BASE = `${API_BASE_URL}/api/v1/admin/banner`;
@@ -19,7 +19,7 @@ export const adminBannerService = {
     fetch(`${BASE}/slots`, { credentials: "include", signal })
       .then((res) => parseData<BannerSlot[]>(res)),
 
-  createSlot: async (cmd: { name: string; maxCount: number; pricePerDay: number }): Promise<BannerSlot> => {
+  createSlot: async (cmd: { name: string; maxCount: number; type: BannerSlotType }): Promise<BannerSlot> => {
     const csrf = await getCsrfToken();
     return fetch(`${BASE}/slots`, {
       method: "POST",
@@ -27,6 +27,33 @@ export const adminBannerService = {
       headers: { "Content-Type": "application/json", [csrf.headerName]: csrf.token },
       body: JSON.stringify(cmd),
     }).then((res) => parseData<BannerSlot>(res));
+  },
+
+  getPoliciesBySlot: (slotId: string, signal?: AbortSignal): Promise<BannerPricingPolicy[]> =>
+    fetch(`${BASE}/slots/${slotId}/policies`, { credentials: "include", signal })
+      .then((res) => parseData<BannerPricingPolicy[]>(res)),
+
+  createPolicy: async (slotId: string, cmd: { durationDays: number; price: number }): Promise<BannerPricingPolicy> => {
+    const csrf = await getCsrfToken();
+    return fetch(`${BASE}/slots/${slotId}/policies`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", [csrf.headerName]: csrf.token },
+      body: JSON.stringify(cmd),
+    }).then((res) => parseData<BannerPricingPolicy>(res));
+  },
+
+  deletePolicy: async (slotId: string, policyId: string): Promise<void> => {
+    const csrf = await getCsrfToken();
+    const res = await fetch(`${BASE}/slots/${slotId}/policies/${policyId}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { [csrf.headerName]: csrf.token },
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.message ?? "정책 삭제에 실패했습니다.");
+    }
   },
 
   approveAd: async (id: string): Promise<MarketerBannerAd> => {

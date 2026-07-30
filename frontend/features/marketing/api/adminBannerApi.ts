@@ -1,7 +1,7 @@
 import { baseApi } from "@/features/store/api/baseApi";
 import { queryResult } from "@/features/store/api/queryError";
 import { adminBannerService } from "../services/adminBannerService";
-import type { BannerSlot, MarketerBannerAd } from "../types/marketerBanner";
+import type { BannerPricingPolicy, BannerSlot, BannerSlotType, MarketerBannerAd } from "../types/marketerBanner";
 
 const adminBannerApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
@@ -15,9 +15,24 @@ const adminBannerApi = baseApi.injectEndpoints({
       providesTags: ["BannerSlot"],
     }),
 
-    createSlot: build.mutation<BannerSlot, { name: string; maxCount: number; pricePerDay: number }>({
+    createSlot: build.mutation<BannerSlot, { name: string; maxCount: number; type: BannerSlotType }>({
       queryFn: (cmd) => queryResult(adminBannerService.createSlot(cmd)),
       invalidatesTags: ["BannerSlot"],
+    }),
+
+    getPoliciesBySlot: build.query<BannerPricingPolicy[], string>({
+      queryFn: (slotId, api) => queryResult(adminBannerService.getPoliciesBySlot(slotId, api.signal)),
+      providesTags: (_result, _err, slotId) => [{ type: "BannerPolicy", id: slotId }],
+    }),
+
+    createPolicy: build.mutation<BannerPricingPolicy, { slotId: string; durationDays: number; price: number }>({
+      queryFn: ({ slotId, ...cmd }) => queryResult(adminBannerService.createPolicy(slotId, cmd)),
+      invalidatesTags: (_result, _err, { slotId }) => [{ type: "BannerPolicy", id: slotId }],
+    }),
+
+    deletePolicy: build.mutation<void, { slotId: string; policyId: string }>({
+      queryFn: ({ slotId, policyId }) => queryResult(adminBannerService.deletePolicy(slotId, policyId)),
+      invalidatesTags: (_result, _err, { slotId }) => [{ type: "BannerPolicy", id: slotId }],
     }),
 
     approveAd: build.mutation<MarketerBannerAd, string>({
@@ -41,6 +56,9 @@ export const {
   useGetAdminAllAdsQuery,
   useGetAdminSlotsQuery,
   useCreateSlotMutation,
+  useGetPoliciesBySlotQuery,
+  useCreatePolicyMutation,
+  useDeletePolicyMutation,
   useApproveAdMutation,
   useRejectAdMutation,
   useDeleteAdMutation,

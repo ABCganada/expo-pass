@@ -2,7 +2,8 @@ export interface BannerAd {
   id: string;
   slotIds: string[];
   title: string;
-  imageUrl: string;
+  bannerImageUrl?: string;
+  adImageUrl?: string;
   linkUrl: string;
   priority: number;
 }

@@ -44,7 +44,7 @@ export default function AdminBannersPage() {
             {slots.map((slot: BannerSlot) => (
               <div key={slot.id} className={styles.slotCard}>
                 <span className={styles.slotName}>{slot.name}</span>
-                <span className={styles.slotMeta}>최대 {slot.maxCount}개</span>
+                <span className={styles.slotMeta}>{slot.type === "BANNER" ? "배너형" : "광고탭형"} · 최대 {slot.maxCount}개</span>
               </div>
             ))}
           </div>

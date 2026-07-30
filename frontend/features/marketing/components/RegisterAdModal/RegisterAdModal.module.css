@@ -94,10 +94,69 @@
   accent-color: var(--color-primary);
 }
 
-.slotPrice {
+.slotTypeBadge {
   margin-left: auto;
-  color: var(--color-text-secondary);
-  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill, 9999px);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.slotTypeBadge[data-type="BANNER"] {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+}
+
+.slotTypeBadge[data-type="TAB"] {
+  background: color-mix(in srgb, var(--color-success) 15%, transparent);
+  color: var(--color-success);
+}
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fileInput {
+  display: none;
+}
+
+.btnFile {
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-content-background);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease;
+}
+
+.btnFile:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btnFile:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fileOk {
+  color: var(--color-success);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.preview {
+  width: 100%;
+  max-height: 140px;
+  object-fit: cover;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--color-border);
 }
 
 .row {
