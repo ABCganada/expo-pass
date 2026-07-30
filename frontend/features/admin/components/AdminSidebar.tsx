@@ -45,7 +45,7 @@ export function AdminSidebar({
         { href: "/manager/banner-ads", label: "광고 관리", icon: Megaphone },
       ]
     : [
-        { href: "/admin/exhibitions", label: "행사별 예약 현황", icon: BarChart3 },
+        { href: "/admin/reservations-summary", label: "행사별 예약 현황", icon: BarChart3 },
         { href: "/admin/members", label: "회원 관리", icon: Users },
         { href: "/admin/banners", label: "광고 관리", icon: Megaphone },
       ];
