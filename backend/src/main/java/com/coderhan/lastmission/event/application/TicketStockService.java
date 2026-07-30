@@ -32,7 +32,7 @@ class TicketStockService implements EventQueryPort {
     }
 
     private static TicketInfo toTicketInfo(Ticket ticket) {
-        return new TicketInfo(ticket.getId(), ticket.getPrice(), ticket.getMaxPurchasePerUser(),
+        return new TicketInfo(ticket.getId(), ticket.getName(), ticket.getPrice(), ticket.getMaxPurchasePerUser(),
                 ticket.getSaleStartAt(), ticket.getSaleEndAt());
     }
 }
