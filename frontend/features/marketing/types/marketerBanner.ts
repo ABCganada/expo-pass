@@ -9,7 +9,7 @@ export const BANNER_AD_STATUS_LABEL: Record<BannerAdStatus, string> = {
 
 export interface MarketerBannerAd {
   id: string;
-  slotId: string;
+  slotIds: string[];
   title: string;
   imageUrl: string;
   linkUrl: string;
@@ -19,12 +19,14 @@ export interface MarketerBannerAd {
   endsAt: string;
   createdBy: string;
   createdAt: string;
+  totalAmount?: number;
 }
 
 export interface BannerSlot {
   id: string;
   name: string;
   maxCount: number;
+  pricePerDay: number;
 }
 
 export interface BannerAdStats {
@@ -35,7 +37,7 @@ export interface BannerAdStats {
 }
 
 export interface RegisterAdCommand {
-  slotId: string;
+  slotIds: string[];
   title: string;
   imageUrl: string;
   linkUrl: string;

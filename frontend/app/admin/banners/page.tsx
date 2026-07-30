@@ -69,7 +69,7 @@ export default function AdminBannersPage() {
         {!adsLoading && pendingAds.length > 0 && (
           <div className={styles.adGrid}>
             {pendingAds.map((ad) => (
-              <AdminAdCard key={ad.id} ad={ad} slotName={slotMap.get(ad.slotId)} />
+              <AdminAdCard key={ad.id} ad={ad} slotName={ad.slotIds.map((id) => slotMap.get(id) ?? id).join(", ")} />
             ))}
           </div>
         )}
@@ -88,7 +88,7 @@ export default function AdminBannersPage() {
         {!adsLoading && otherAds.length > 0 && (
           <div className={styles.adGrid}>
             {otherAds.map((ad) => (
-              <AdminAdCard key={ad.id} ad={ad} slotName={slotMap.get(ad.slotId)} />
+              <AdminAdCard key={ad.id} ad={ad} slotName={ad.slotIds.map((id) => slotMap.get(id) ?? id).join(", ")} />
             ))}
           </div>
         )}

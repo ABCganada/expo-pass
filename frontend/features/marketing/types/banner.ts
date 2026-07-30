@@ -1,6 +1,6 @@
 export interface BannerAd {
   id: string;
-  slotId: string;
+  slotIds: string[];
   title: string;
   imageUrl: string;
   linkUrl: string;
