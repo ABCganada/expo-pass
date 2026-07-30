@@ -2,7 +2,7 @@ import { getCsrfToken } from "@/features/shared/api/csrf";
 import type { Attendee, CheckinResponse, EventReservationSummary } from "../types/admin";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
-const BASE = `${API_BASE_URL}/api/v1/admin`;
+const BASE = `${API_BASE_URL}/api/v1/manager`;
 
 async function parseData<T>(res: Response): Promise<T> {
   const body = await res.json();
