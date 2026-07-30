@@ -36,6 +36,16 @@ export interface BannerSlot {
   type: BannerSlotType;
 }
 
+export interface SlotPolicy {
+  id: string;
+  durationDays: number;
+  price: number;
+}
+
+export interface BannerSlotWithPolicies extends BannerSlot {
+  policies: SlotPolicy[];
+}
+
 export interface BannerPricingPolicy {
   id: string;
   slotId: string;

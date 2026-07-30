@@ -100,6 +100,7 @@
   flex-shrink: 0;
 }
 
+.btnIconPolicy,
 .btnIconEdit,
 .btnIconDelete {
   display: flex;
@@ -112,6 +113,15 @@
   background: transparent;
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.btnIconPolicy {
+  color: var(--color-text-secondary);
+}
+
+.btnIconPolicy:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .btnIconEdit {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Edit2, Plus, Trash2 } from "lucide-react";
+import { Edit2, Plus, Settings, Trash2 } from "lucide-react";
 import {
   useDeleteSlotMutation,
   useGetAdminAllAdsQuery,
@@ -9,6 +9,7 @@ import {
 } from "@/features/marketing/api/adminBannerApi";
 import { AdminAdCard } from "@/features/marketing/components/AdminAdCard/AdminAdCard";
 import { CreateSlotModal } from "@/features/marketing/components/CreateSlotModal/CreateSlotModal";
+import { SlotPolicyModal } from "@/features/marketing/components/SlotPolicyModal/SlotPolicyModal";
 import type { BannerSlot } from "@/features/marketing/types/marketerBanner";
 import styles from "./page.module.css";
 
@@ -18,6 +19,7 @@ export default function AdminBannersPage() {
   const [deleteSlot] = useDeleteSlotMutation();
 
   const [slotModalTarget, setSlotModalTarget] = useState<BannerSlot | null | "new">(null);
+  const [policyModalTarget, setPolicyModalTarget] = useState<BannerSlot | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const slotMap = new Map<string, string>(slots.map((s: BannerSlot) => [s.id, s.name]));
@@ -69,6 +71,14 @@ export default function AdminBannersPage() {
                   </span>
                 </div>
                 <div className={styles.slotActions}>
+                  <button
+                    type="button"
+                    className={styles.btnIconPolicy}
+                    onClick={() => setPolicyModalTarget(slot)}
+                    aria-label="가격 정책 관리"
+                  >
+                    <Settings size={14} />
+                  </button>
                   <button
                     type="button"
                     className={styles.btnIconEdit}
@@ -139,6 +149,12 @@ export default function AdminBannersPage() {
         <CreateSlotModal
           editTarget={slotModalTarget === "new" ? undefined : slotModalTarget}
           onClose={() => setSlotModalTarget(null)}
+        />
+      )}
+      {policyModalTarget && (
+        <SlotPolicyModal
+          slot={policyModalTarget}
+          onClose={() => setPolicyModalTarget(null)}
         />
       )}
     </div>
