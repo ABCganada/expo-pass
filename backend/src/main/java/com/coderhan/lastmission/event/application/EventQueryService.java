@@ -3,11 +3,17 @@ package com.coderhan.lastmission.event.application;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import com.coderhan.lastmission.event.domain.Event;
+import com.coderhan.lastmission.event.domain.EventContent;
+import com.coderhan.lastmission.event.domain.EventImage;
+import com.coderhan.lastmission.event.domain.EventImageType;
 import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.event.domain.EventStatus;
+import com.coderhan.lastmission.event.domain.Ticket;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.UserDirectory;
@@ -23,15 +29,21 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class EventQueryService {
     private final EventRepository eventRepository;
+    private final TicketRepository ticketRepository;
+    private final EventContentRepository eventContentRepository;
+    private final EventImageRepository eventImageRepository;
     private final UserDirectory userDirectory;
     private final Clock clock;
 
     @Transactional(readOnly = true)
     public List<EventListItem> getPublishedEvents() {
         LocalDate today = LocalDate.now(clock);
-        return eventRepository.findByStatusOrderByStartDateAsc(EventStatus.PUBLISHED)
-                .stream()
-                .map(event -> new EventListItem(event, event.phase(today)))
+
+        List<Event> events = eventRepository.findByStatusOrderByStartDateAsc(EventStatus.PUBLISHED);
+        Map<Long, String> thumbnailByEventId = thumbnailUrlsByEventIds(events);
+
+        return events.stream()
+                .map(event -> new EventListItem(event, event.phase(today), thumbnailByEventId.get(event.getId())))
                 .toList();
     }
 
@@ -41,10 +53,15 @@ public class EventQueryService {
     @Transactional(readOnly = true)
     public List<EventListItem> getAdminEvents(long callerUserId, boolean isAdmin) {
         LocalDate today = LocalDate.now(clock);
-        return eventRepository.findAllOrderByStartDateAsc()
+
+        List<Event> events = eventRepository.findAllOrderByStartDateAsc()
                 .stream()
                 .filter(event -> isAdmin || Objects.equals(event.getManagerId(), callerUserId))
-                .map(event -> new EventListItem(event, event.phase(today)))
+                .toList();
+        Map<Long, String> thumbnailByEventId = thumbnailUrlsByEventIds(events);
+
+        return events.stream()
+                .map(event -> new EventListItem(event, event.phase(today), thumbnailByEventId.get(event.getId())))
                 .toList();
     }
 
@@ -53,10 +70,17 @@ public class EventQueryService {
      */
     @Transactional(readOnly = true)
     public EventDetail getEventDetail(long id) {
+        LocalDate today = LocalDate.now(clock);
+
         Event event = eventRepository.findNotDeletedById(id)
                 .filter(candidate -> candidate.getStatus() != EventStatus.DRAFT)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        return new EventDetail(event, event.phase(LocalDate.now(clock)));
+
+        List<Ticket> tickets = ticketRepository.findAllNotDeletedByEventIdOrderByCreatedAtAsc(id);
+        List<EventContent> contents = eventContentRepository.findAllByEventId(id);
+        List<EventImage> images = eventImageRepository.findAllByEventIdOrderByDisplayOrderAsc(id);
+
+        return new EventDetail(event, event.phase(today), tickets, contents, images);
     }
 
     /**
@@ -65,14 +89,39 @@ public class EventQueryService {
      */
     @Transactional(readOnly = true)
     public AdminEventDetailResult getAdminEventDetail(long eventId, long callerUserId, boolean admin) {
+        LocalDate today = LocalDate.now(clock);
+
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
         validateEventAccess(event, callerUserId, admin, "조회");
+
         UserRef manager = userDirectory.findActiveByIds(List.of(event.getManagerId()))
                 .stream()
                 .findFirst()
                 .orElse(null);
-        return new AdminEventDetailResult(event, manager);
+
+        List<Ticket> tickets = ticketRepository.findAllByEventIdOrderByCreatedAtAsc(eventId);
+        List<EventContent> contents = eventContentRepository.findAllByEventId(eventId);
+        List<EventImage> images = eventImageRepository.findAllByEventIdOrderByDisplayOrderAsc(eventId);
+
+        return new AdminEventDetailResult(event, event.phase(today), manager, tickets, contents, images);
+    }
+
+    /** 목록 조회용 썸네일을 이벤트당 1건씩 배치로 조회 (N+1 방지). */
+    private Map<Long, String> thumbnailUrlsByEventIds(List<Event> events) {
+        if (events.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> eventIds = events
+                .stream()
+                .map(Event::getId)
+                .toList();
+        return eventImageRepository.findAllByEventIdInAndImageType(eventIds, EventImageType.THUMBNAIL)
+                .stream()
+                .collect(Collectors.toMap(
+                        image -> image.getEvent().getId(),
+                        EventImage::getImageUrl,
+                        (first, second) -> first)); // 중복 처리
     }
 
     /** ADMIN은 전체 허용, 아니면 본인이 담당(manager_id)하는 행사인지 확인 */
@@ -82,9 +131,12 @@ public class EventQueryService {
         }
     }
 
-    public record EventListItem(Event event, EventPhase phase) {}
+    public record EventListItem(Event event, EventPhase phase, String thumbnailUrl) {}
 
-    public record EventDetail(Event event, EventPhase phase) {}
+    public record EventDetail(
+            Event event, EventPhase phase, List<Ticket> tickets, List<EventContent> contents, List<EventImage> images) {}
 
-    public record AdminEventDetailResult(Event event, UserRef manager) {}
+    public record AdminEventDetailResult(
+            Event event, EventPhase phase, UserRef manager,
+            List<Ticket> tickets, List<EventContent> contents, List<EventImage> images) {}
 }

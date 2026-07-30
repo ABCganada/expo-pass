@@ -10,8 +10,13 @@ import com.coderhan.lastmission.event.application.EventService;
 import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventCategory;
+import com.coderhan.lastmission.event.domain.EventContent;
+import com.coderhan.lastmission.event.domain.EventContentType;
+import com.coderhan.lastmission.event.domain.EventImage;
+import com.coderhan.lastmission.event.domain.EventImageType;
 import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.event.domain.EventStatus;
+import com.coderhan.lastmission.event.domain.Ticket;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
@@ -79,7 +84,8 @@ class EventAdminController {
 
     record AdminEventListItemResponse(
             String id, String title, String categoryName, String managerId,
-            EventStatus status, LocalDate startDate, LocalDate endDate, EventPhase phase, long viewCount
+            EventStatus status, LocalDate startDate, LocalDate endDate, EventPhase phase, long viewCount,
+            String thumbnailUrl
     ) {
         static AdminEventListItemResponse from(EventQueryService.EventListItem eventItem) {
             Event event = eventItem.event();
@@ -92,7 +98,8 @@ class EventAdminController {
                     event.getStartDate(),
                     event.getEndDate(),
                     eventItem.phase(),
-                    event.getViewCount());
+                    event.getViewCount(),
+                    eventItem.thumbnailUrl());
         }
     }
 
@@ -100,8 +107,9 @@ class EventAdminController {
             String id, String title, String categoryName, String managerId, String managerName, String hostName,
             String venueName, String address, String detailAddress, String kakaoPlaceId,
             String legalDongCode, BigDecimal latitude, BigDecimal longitude,
-            LocalDate startDate, LocalDate endDate, EventStatus status, long viewCount,
-            Instant createdAt, Instant updatedAt
+            LocalDate startDate, LocalDate endDate, EventStatus status, EventPhase phase, long viewCount,
+            Instant createdAt, Instant updatedAt,
+            List<TicketResponse> tickets, List<EventContentResponse> contents, List<EventImageResponse> images
     ) {
         static AdminEventDetailResponse from(EventQueryService.AdminEventDetailResult detail) {
             Event event = detail.event();
@@ -124,9 +132,47 @@ class EventAdminController {
                     event.getStartDate(),
                     event.getEndDate(),
                     event.getStatus(),
+                    detail.phase(),
                     event.getViewCount(),
                     event.getCreatedAt(),
-                    event.getUpdatedAt());
+                    event.getUpdatedAt(),
+                    detail.tickets().stream().map(TicketResponse::from).toList(),
+                    detail.contents().stream().map(EventContentResponse::from).toList(),
+                    detail.images().stream().map(EventImageResponse::from).toList());
+        }
+    }
+
+    record TicketResponse(
+            String id, String eventId, String name, int price, int quantityTotal, int quantityRemaining,
+            int maxPurchasePerUser, Instant saleStartAt, Instant saleEndAt, Instant createdAt, Instant deletedAt
+    ) {
+        static TicketResponse from(Ticket ticket) {
+            return new TicketResponse(
+                    Long.toString(ticket.getId()),
+                    Long.toString(ticket.getEvent().getId()),
+                    ticket.getName(),
+                    ticket.getPrice(),
+                    ticket.getQuantityTotal(),
+                    ticket.getQuantityRemaining(),
+                    ticket.getMaxPurchasePerUser(),
+                    ticket.getSaleStartAt(),
+                    ticket.getSaleEndAt(),
+                    ticket.getCreatedAt(),
+                    ticket.getDeletedAt());
+        }
+    }
+
+    record EventContentResponse(String id, EventContentType contentType, String content, Instant updatedAt) {
+        static EventContentResponse from(EventContent content) {
+            return new EventContentResponse(
+                    Long.toString(content.getId()), content.getContentType(), content.getContent(), content.getUpdatedAt());
+        }
+    }
+
+    record EventImageResponse(String id, String imageUrl, EventImageType imageType, int displayOrder, Instant createdAt) {
+        static EventImageResponse from(EventImage image) {
+            return new EventImageResponse(Long.toString(image.getId()), image.getImageUrl(), image.getImageType(),
+                    image.getDisplayOrder(), image.getCreatedAt());
         }
     }
 

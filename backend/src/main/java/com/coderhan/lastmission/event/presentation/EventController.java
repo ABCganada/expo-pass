@@ -1,13 +1,19 @@
 package com.coderhan.lastmission.event.presentation;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import com.coderhan.lastmission.event.application.EventQueryService;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventCategory;
+import com.coderhan.lastmission.event.domain.EventContent;
+import com.coderhan.lastmission.event.domain.EventContentType;
+import com.coderhan.lastmission.event.domain.EventImage;
+import com.coderhan.lastmission.event.domain.EventImageType;
 import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.event.domain.EventStatus;
+import com.coderhan.lastmission.event.domain.Ticket;
 import com.coderhan.lastmission.shared.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +44,7 @@ class EventController {
 
     record EventListItemResponse(
             String id, String title, String categoryName, String venueName,
-            LocalDate startDate, LocalDate endDate, EventPhase phase, long viewCount
+            LocalDate startDate, LocalDate endDate, EventPhase phase, long viewCount, String thumbnailUrl
     ) {
         static EventListItemResponse from(EventQueryService.EventListItem eventItem) {
             Event event = eventItem.event();
@@ -51,7 +57,8 @@ class EventController {
                     event.getStartDate(),
                     event.getEndDate(),
                     eventItem.phase(),
-                    event.getViewCount());
+                    event.getViewCount(),
+                    eventItem.thumbnailUrl());
         }
     }
 
@@ -59,7 +66,8 @@ class EventController {
             String id, String title, String categoryName, String hostName,
             String venueName, String address, String detailAddress, String kakaoPlaceId,
             String legalDongCode, BigDecimal latitude, BigDecimal longitude,
-            LocalDate startDate, LocalDate endDate, EventStatus status, EventPhase phase, long viewCount
+            LocalDate startDate, LocalDate endDate, EventStatus status, EventPhase phase, long viewCount,
+            List<TicketSummary> tickets, List<EventContentSummary> contents, List<EventImageSummary> images
     ) {
         static EventDetailResponse from(EventQueryService.EventDetail detail) {
             Event event = detail.event();
@@ -80,7 +88,40 @@ class EventController {
                     event.getEndDate(),
                     event.getStatus(),
                     detail.phase(),
-                    event.getViewCount());
+                    event.getViewCount(),
+                    detail.tickets().stream().map(TicketSummary::from).toList(),
+                    detail.contents().stream().map(EventContentSummary::from).toList(),
+                    detail.images().stream().map(EventImageSummary::from).toList());
+        }
+    }
+
+    record TicketSummary(
+            String id, String name, int price, int quantityRemaining,
+            int maxPurchasePerUser, Instant saleStartAt, Instant saleEndAt
+    ) {
+        static TicketSummary from(Ticket ticket) {
+            return new TicketSummary(
+                    Long.toString(ticket.getId()),
+                    ticket.getName(),
+                    ticket.getPrice(),
+                    ticket.getQuantityRemaining(),
+                    ticket.getMaxPurchasePerUser(),
+                    ticket.getSaleStartAt(),
+                    ticket.getSaleEndAt());
+        }
+    }
+
+    record EventContentSummary(String id, EventContentType contentType, String content, Instant updatedAt) {
+        static EventContentSummary from(EventContent content) {
+            return new EventContentSummary(
+                    Long.toString(content.getId()), content.getContentType(), content.getContent(), content.getUpdatedAt());
+        }
+    }
+
+    record EventImageSummary(String id, String imageUrl, EventImageType imageType, int displayOrder) {
+        static EventImageSummary from(EventImage image) {
+            return new EventImageSummary(
+                    Long.toString(image.getId()), image.getImageUrl(), image.getImageType(), image.getDisplayOrder());
         }
     }
 }
