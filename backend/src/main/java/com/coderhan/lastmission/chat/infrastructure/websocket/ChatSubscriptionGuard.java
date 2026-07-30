@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.chat.infrastructure.websocket;
 
 import com.coderhan.lastmission.chat.application.ChatRepository;
+import com.coderhan.lastmission.chat.domain.ChatRoom;
 import com.coderhan.lastmission.shared.realtime.StompUser;
 import com.coderhan.lastmission.shared.realtime.SubscriptionGuard;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ class ChatSubscriptionGuard implements SubscriptionGuard {
         try {
             // 관리자 특례 없이 공개방 또는 현재 참가자인 비공개방만 허용한다.
             return chatRepository.findRoom(roomId)
-                    .filter(room -> room.active())
+                    .filter(ChatRoom::active)
                     .map(room -> room.isPublic()
                             || chatRepository.isCurrentParticipant(room.id(), user.userId()))
                     .orElse(false);

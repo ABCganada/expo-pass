@@ -10,6 +10,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
@@ -21,7 +23,7 @@ class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, AuthClient authClient,
             UserProvisioningService userProvisioningService,
-            @Value("${lastmission.security.csrf.secure-cookie:true}") boolean secureCsrfCookie) throws Exception {
+            @Value("${lastmission.security.csrf.secure-cookie:true}") boolean secureCsrfCookie) {
         CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfTokenRepository.setCookieName("LASTMISSION-XSRF-TOKEN");
         csrfTokenRepository.setHeaderName("X-LASTMISSION-XSRF-TOKEN");
@@ -33,10 +35,10 @@ class SecurityConfig {
                         // 광고 노출/클릭 집계는 공개 트래킹 엔드포인트라 CSRF 제외
                         .ignoringRequestMatchers("/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks"))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .requestCache(requestCache -> requestCache.disable())
-                .formLogin(formLogin -> formLogin.disable())
-                .httpBasic(httpBasic -> httpBasic.disable())
-                .logout(logout -> logout.disable())
+                .requestCache(RequestCacheConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/check").denyAll()
@@ -53,8 +55,8 @@ class SecurityConfig {
                         .requestMatchers("/ws/**").hasAnyRole("USER")
                         .anyRequest().denyAll())
                 .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, exception) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
-                        .accessDeniedHandler((request, response, exception) -> response.sendError(HttpServletResponse.SC_FORBIDDEN)))
+                        .authenticationEntryPoint((_, response, _) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
+                        .accessDeniedHandler((_, response, _) -> response.sendError(HttpServletResponse.SC_FORBIDDEN)))
                 .addFilterBefore(new LastMissionAuthenticationFilter(authClient, userProvisioningService),
                         AnonymousAuthenticationFilter.class);
         return http.build();

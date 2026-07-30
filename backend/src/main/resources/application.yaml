@@ -104,7 +104,6 @@ coderhan:
       log-dir: ${VAULT_LOG_DIR}
       auth-mount: ${VAULT_AUTH_MOUNT}
       uri: ${VAULT_URI}
-      authentication: ${VAULT_AUTHENTICATION}
       auth-role: ${VAULT_AUTH_ROLE}
       db-pki-path: ${VAULT_DB_PKI_PATH}
       kafka-pki-path: ${VAULT_KAFKA_PKI_PATH}
