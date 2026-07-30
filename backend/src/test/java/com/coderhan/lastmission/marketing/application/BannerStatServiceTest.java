@@ -148,7 +148,7 @@ class BannerStatServiceTest {
 
     private BannerAd ad() {
         return new BannerAd(AD_ID, Set.of(UUID.randomUUID()), "여름 세일", "https://img.example.com/img.png",
-                null, 1, BannerAdStatus.APPROVED, NOW.plusDays(1), NOW.plusDays(30),
+                null, null, 1, BannerAdStatus.APPROVED, NOW.plusDays(1), NOW.plusDays(30),
                 "marketer@example.com", NOW, null);
     }
 }

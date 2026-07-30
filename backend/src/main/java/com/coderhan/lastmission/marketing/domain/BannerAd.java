@@ -15,7 +15,8 @@ public record BannerAd(
         UUID id,
         Set<UUID> slotIds,
         String title,
-        String imageUrl,
+        String bannerImageUrl,  // BANNER 슬롯 선택 시 필요
+        String adImageUrl,      // TAB 슬롯 선택 시 필요
         String linkUrl,
         int priority,
         BannerAdStatus status,
@@ -25,12 +26,9 @@ public record BannerAd(
         OffsetDateTime createdAt,
         Long totalAmount
 ) {
-    public static void validate(String title, String imageUrl, OffsetDateTime startsAt, OffsetDateTime endsAt) {
+    public static void validate(String title, OffsetDateTime startsAt, OffsetDateTime endsAt) {
         if (title == null || title.isBlank()) {
             throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "광고 제목은 필수입니다.");
-        }
-        if (imageUrl == null || imageUrl.isBlank()) {
-            throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "광고 이미지 URL은 필수입니다.");
         }
         if (startsAt == null || endsAt == null) {
             throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "광고 기간은 필수입니다.");

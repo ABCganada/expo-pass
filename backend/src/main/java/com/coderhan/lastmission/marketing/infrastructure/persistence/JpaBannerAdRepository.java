@@ -17,10 +17,11 @@ class JpaBannerAdRepository implements BannerAdRepository {
     private final BannerAdJpaRepository jpaRepository;
 
     @Override
-    public BannerAd save(Set<UUID> slotIds, String title, String imageUrl, String linkUrl,
-                         int priority, OffsetDateTime startsAt, OffsetDateTime endsAt, String createdBy, long totalAmount) {
+    public BannerAd save(Set<UUID> slotIds, String title, String bannerImageUrl, String adImageUrl,
+                         String linkUrl, int priority, OffsetDateTime startsAt, OffsetDateTime endsAt,
+                         String createdBy, long totalAmount) {
         BannerAdEntity entity = new BannerAdEntity(
-                null, slotIds, title, imageUrl, linkUrl, priority,
+                null, slotIds, title, bannerImageUrl, adImageUrl, linkUrl, priority,
                 BannerAdStatus.PENDING, startsAt, endsAt, createdBy, OffsetDateTime.now(), totalAmount);
         return toDomain(jpaRepository.save(entity));
     }
@@ -53,11 +54,11 @@ class JpaBannerAdRepository implements BannerAdRepository {
     }
 
     @Override
-    public BannerAd update(UUID id, String title, String imageUrl, String linkUrl,
-                           int priority, OffsetDateTime startsAt, OffsetDateTime endsAt) {
+    public BannerAd update(UUID id, String title, String bannerImageUrl, String adImageUrl,
+                           String linkUrl, int priority, OffsetDateTime startsAt, OffsetDateTime endsAt) {
         BannerAdEntity entity = jpaRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("BannerAd not found: " + id));
-        entity.update(title, imageUrl, linkUrl, priority, startsAt, endsAt);
+        entity.update(title, bannerImageUrl, adImageUrl, linkUrl, priority, startsAt, endsAt);
         return toDomain(jpaRepository.save(entity));
     }
 
@@ -89,7 +90,8 @@ class JpaBannerAdRepository implements BannerAdRepository {
     }
 
     private static BannerAd toDomain(BannerAdEntity entity) {
-        return new BannerAd(entity.getId(), entity.getSlotIds(), entity.getTitle(), entity.getImageUrl(),
+        return new BannerAd(entity.getId(), entity.getSlotIds(), entity.getTitle(),
+                entity.getBannerImageUrl(), entity.getAdImageUrl(),
                 entity.getLinkUrl(), entity.getPriority(), entity.getStatus(),
                 entity.getStartsAt(), entity.getEndsAt(), entity.getCreatedBy(),
                 entity.getCreatedAt(), entity.getTotalAmount());
