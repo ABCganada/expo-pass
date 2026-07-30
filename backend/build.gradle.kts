@@ -43,6 +43,7 @@ repositories {
 dependencyManagement {
     imports {
         mavenBom("org.springframework.modulith:spring-modulith-bom:2.1.0")
+        mavenBom("software.amazon.awssdk:bom:2.47.6")
     }
 }
 
@@ -75,6 +76,10 @@ dependencies {
 
     // XLSX 다운로드
     implementation("org.apache.poi:poi-ooxml:5.3.0")
+
+    // 이미지 업로드 (S3)
+    implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:url-connection-client")
 
     // 도메인 모듈 경계 및 구조 검증
     implementation("org.springframework.modulith:spring-modulith-starter-core")
