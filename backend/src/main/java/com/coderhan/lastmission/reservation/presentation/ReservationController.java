@@ -5,8 +5,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import com.coderhan.lastmission.reservation.application.ReservationService;
 import com.coderhan.lastmission.reservation.domain.OrderStatus;
+import com.coderhan.lastmission.reservation.domain.QrTicketView;
 import com.coderhan.lastmission.reservation.domain.ReservationOrder;
 import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
+import com.coderhan.lastmission.reservation.domain.TicketQuantity;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -45,8 +47,14 @@ class ReservationController {
 
     @GetMapping("/me")
     ApiResponse<List<OrderSummary>> getMyOrders(@AuthenticationPrincipal LastMissionPrincipal principal) {
-        List<ReservationOrder> orders = reservationService.getMyOrders(principal.userId());
+        List<ReservationService.OrderWithTickets> orders = reservationService.getMyOrders(principal.userId());
         return ApiResponse.success(orders.stream().map(OrderSummary::from).toList());
+    }
+
+    @GetMapping("/me/qr-tickets")
+    ApiResponse<List<QrTicketResponse>> getMyQrTickets(@AuthenticationPrincipal LastMissionPrincipal principal) {
+        List<QrTicketView> tickets = reservationService.getMyQrTickets(principal.userId());
+        return ApiResponse.success(tickets.stream().map(QrTicketResponse::from).toList());
     }
 
     @GetMapping("/{orderId}")
@@ -64,12 +72,32 @@ class ReservationController {
 
     record CreateOrderRequest(long eventId, List<OrderItemRequest> items) {}
 
+    record TicketQuantityResponse(String ticketId, int quantity) {
+        static TicketQuantityResponse from(TicketQuantity ticketQuantity) {
+            return new TicketQuantityResponse(Long.toString(ticketQuantity.ticketId()), ticketQuantity.quantity());
+        }
+    }
+
     record OrderSummary(
-            String orderId, String eventId, OrderStatus status, BigDecimal totalAmount, OffsetDateTime reservedAt
+            String orderId, String eventId, OrderStatus status, BigDecimal totalAmount, OffsetDateTime reservedAt,
+            List<TicketQuantityResponse> ticketQuantities
     ) {
-        static OrderSummary from(ReservationOrder order) {
+        static OrderSummary from(ReservationService.OrderWithTickets orderWithTickets) {
+            ReservationOrder order = orderWithTickets.order();
             return new OrderSummary(order.orderId(), Long.toString(order.eventId()), order.status(),
-                    order.totalAmount(), order.reservedAt());
+                    order.totalAmount(), order.reservedAt(),
+                    orderWithTickets.ticketQuantities().stream().map(TicketQuantityResponse::from).toList());
+        }
+    }
+
+    record QrTicketResponse(
+            String orderId, String eventId, String orderItemId, String ticketId, String qrCodeHash,
+            OffsetDateTime checkedInAt
+    ) {
+        static QrTicketResponse from(QrTicketView view) {
+            return new QrTicketResponse(view.orderId(), Long.toString(view.eventId()),
+                    Long.toString(view.orderItemId()), Long.toString(view.ticketId()), view.qrCodeHash(),
+                    view.checkedInAt());
         }
     }
 

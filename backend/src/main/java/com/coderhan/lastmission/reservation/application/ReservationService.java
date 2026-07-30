@@ -13,8 +13,10 @@ import java.util.stream.IntStream;
 import com.coderhan.lastmission.event.EventQueryPort;
 import com.coderhan.lastmission.event.TicketInfo;
 import com.coderhan.lastmission.reservation.domain.OrderStatus;
+import com.coderhan.lastmission.reservation.domain.QrTicketView;
 import com.coderhan.lastmission.reservation.domain.ReservationOrder;
 import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
+import com.coderhan.lastmission.reservation.domain.TicketQuantity;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -106,11 +108,25 @@ public class ReservationService {
     }
 
     /**
-     * 이 유저의 모든 주문을 최신순으로 조회한다(목록용, 아이템은 안 채움).
+     * 이 유저의 모든 주문을 최신순으로 조회한다(목록용). 아이템 자체는 안 채우고,
+     * 티켓 종류별 수량만 일괄 집계해서 같이 내려준다(주문마다 상세를 또 조회하는 N+1 방지).
      */
     @Transactional(readOnly = true)
-    public List<ReservationOrder> getMyOrders(long userId) {
-        return repository.findOrdersByUserId(userId);
+    public List<OrderWithTickets> getMyOrders(long userId) {
+        List<ReservationOrder> orders = repository.findOrdersByUserId(userId);
+        Map<String, List<TicketQuantity>> quantitiesByOrderId = repository.findTicketQuantitiesByUserId(userId);
+        return orders.stream()
+                .map(order -> new OrderWithTickets(order, quantitiesByOrderId.getOrDefault(order.orderId(), List.of())))
+                .toList();
+    }
+
+    /**
+     * 이 유저의 QR 발급 대상 티켓(취소/환불 제외)을 전부 조회한다(QR 티켓 화면용).
+     * 주문마다 상세를 따로 조회하지 않고 한 번의 쿼리로 다 가져온다.
+     */
+    @Transactional(readOnly = true)
+    public List<QrTicketView> getMyQrTickets(long userId) {
+        return repository.findQrTicketsByUserId(userId);
     }
 
     /**
@@ -151,6 +167,8 @@ public class ReservationService {
     public record OrderItemRequest(long ticketId, BigDecimal unitPrice, int quantity) {}
 
     public record OrderDetail(ReservationOrder order, List<ReservationOrderItem> items) {}
+
+    public record OrderWithTickets(ReservationOrder order, List<TicketQuantity> ticketQuantities) {}
 
     public record EventReservationSummary(
             long eventId, long totalOrders, Map<OrderStatus, Long> countsByStatus) {}

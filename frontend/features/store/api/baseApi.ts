@@ -20,6 +20,8 @@ export const baseApi = createApi({
     "MarketerAd",
     "BannerSlot",
     "Payment",
+    "Event",
+    "Reservation",
   ],
   endpoints: () => ({}),
 });

@@ -1,0 +1,259 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  padding: 20px 28px 20px 20px;
+  background: var(--color-card-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 132px;
+  height: 132px;
+  flex-shrink: 0;
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-page-background));
+  color: var(--color-primary);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1.4;
+  min-width: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-page-background);
+}
+
+.badge[data-status="CONFIRMED"] {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+}
+
+.badge[data-status="CANCELLED"],
+.badge[data-status="REFUNDED"] {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+}
+
+.badge[data-status="PENDING"] {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+.eventName {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.orderIdRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.orderIdLabel {
+  color: var(--color-text-secondary);
+}
+
+.orderIdValue {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.copyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.copyButton:hover {
+  background: var(--color-page-background);
+  color: var(--color-text-primary);
+}
+
+.divider {
+  align-self: stretch;
+  width: 1px;
+  flex-shrink: 0;
+  background: var(--color-border);
+}
+
+.ticketInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ticketInfoTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.ticketLine {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.ticketLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+}
+
+.ticketCount {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.eventButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--color-primary);
+  background: var(--color-card-background);
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.eventButton:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  transform: translateY(-2px);
+}
+
+.paymentButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--color-border);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.paymentButton:hover {
+  background: var(--color-page-background);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 1023px) {
+  .card {
+    flex-wrap: wrap;
+  }
+
+  .divider {
+    display: none;
+  }
+
+  .ticketInfo {
+    flex-basis: 100%;
+    padding-left: 156px;
+  }
+
+  .actions {
+    flex-direction: row;
+    flex-basis: 100%;
+    padding-left: 156px;
+  }
+}
+
+@media (max-width: 767px) {
+  .card {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .thumbnail {
+    width: 96px;
+    height: 96px;
+  }
+
+  .ticketInfo,
+  .actions {
+    padding-left: 0;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .eventButton,
+  .paymentButton {
+    flex: 1;
+  }
+}
