@@ -1,6 +1,5 @@
 package com.coderhan.lastmission.marketing.infrastructure.storage;
 
-import java.net.URI;
 import java.util.UUID;
 
 import com.coderhan.lastmission.marketing.application.BannerImageStorage;

@@ -19,10 +19,10 @@ class JpaBannerAdRepository implements BannerAdRepository {
 
     @Override
     public BannerAd save(Set<UUID> slotIds, String title, String bannerImageUrl, String adImageUrl,
-                         String linkUrl, int priority, OffsetDateTime startsAt, OffsetDateTime endsAt,
+                         String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt,
                          String createdBy, long totalAmount) {
         BannerAdEntity entity = new BannerAdEntity(
-                null, slotIds, title, bannerImageUrl, adImageUrl, linkUrl, priority,
+                null, slotIds, title, bannerImageUrl, adImageUrl, linkUrl,
                 BannerAdStatus.PENDING, startsAt, endsAt, createdBy, OffsetDateTime.now(), totalAmount);
         return toDomain(jpaRepository.save(entity));
     }
@@ -56,10 +56,10 @@ class JpaBannerAdRepository implements BannerAdRepository {
 
     @Override
     public BannerAd update(UUID id, String title, String bannerImageUrl, String adImageUrl,
-                           String linkUrl, int priority, OffsetDateTime startsAt, OffsetDateTime endsAt) {
+                           String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt) {
         BannerAdEntity entity = jpaRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("BannerAd not found: " + id));
-        entity.update(title, bannerImageUrl, adImageUrl, linkUrl, priority, startsAt, endsAt);
+        entity.update(title, bannerImageUrl, adImageUrl, linkUrl, startsAt, endsAt);
         return toDomain(jpaRepository.save(entity));
     }
 
@@ -99,7 +99,7 @@ class JpaBannerAdRepository implements BannerAdRepository {
     private static BannerAd toDomain(BannerAdEntity entity) {
         return new BannerAd(entity.getId(), entity.getSlotIds(), entity.getTitle(),
                 entity.getBannerImageUrl(), entity.getAdImageUrl(),
-                entity.getLinkUrl(), entity.getPriority(), entity.getStatus(),
+                entity.getLinkUrl(), entity.getStatus(),
                 entity.getStartsAt(), entity.getEndsAt(), entity.getCreatedBy(),
                 entity.getCreatedAt(), entity.getTotalAmount());
     }

@@ -168,6 +168,122 @@
   }
 }
 
+.slotTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.slotTab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-content-background);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.slotTab:hover {
+  border-color: var(--color-primary);
+}
+
+.slotTabActive {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.slotTabName {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.slotTabMeta {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.slotAdsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-content-background);
+}
+
+.slotAdsPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.slotAdsTitle {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sortBtns {
+  display: flex;
+  gap: 6px;
+}
+
+.sortBtn {
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sortBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.sortBtnActive {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+
+.slotAdsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slotAdItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--radius-input);
+  background: var(--color-card-background);
+}
+
+.slotAdTitle {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.slotAdDeadline {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
 .state {
   color: var(--color-text-secondary);
   font-size: 14px;

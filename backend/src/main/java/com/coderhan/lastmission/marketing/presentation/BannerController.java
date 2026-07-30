@@ -1,5 +1,6 @@
 package com.coderhan.lastmission.marketing.presentation;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -32,15 +33,18 @@ class BannerController {
     record BannerAdResponse(
             UUID id,
             Set<UUID> slotIds,
+            Set<String> slotTypes,
             String title,
             String bannerImageUrl,
             String adImageUrl,
-            String linkUrl,
-            int priority
+            String linkUrl
     ) {
         static BannerAdResponse from(BannerAd ad) {
-            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(),
-                    ad.bannerImageUrl(), ad.adImageUrl(), ad.linkUrl(), ad.priority());
+            Set<String> slotTypes = new HashSet<>();
+            if (ad.bannerImageUrl() != null && !ad.bannerImageUrl().isBlank()) slotTypes.add("BANNER");
+            if (ad.adImageUrl() != null && !ad.adImageUrl().isBlank()) slotTypes.add("TAB");
+            return new BannerAdResponse(ad.id(), ad.slotIds(), slotTypes, ad.title(),
+                    ad.bannerImageUrl(), ad.adImageUrl(), ad.linkUrl());
         }
     }
 }

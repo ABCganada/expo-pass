@@ -3,7 +3,7 @@ import { queryResult } from "@/features/store/api/queryError";
 import { marketerBannerService } from "../services/marketerBannerService";
 import type {
   BannerAdStats,
-  BannerSlotWithPolicies,
+  BannerSlot,
   MarketerBannerAd,
   RegisterAdCommand,
   UpdateAdCommand,
@@ -16,8 +16,8 @@ const marketerBannerApi = baseApi.injectEndpoints({
       providesTags: ["MarketerAd"],
     }),
 
-    getBannerSlotsWithPolicies: build.query<BannerSlotWithPolicies[], void>({
-      queryFn: (_arg, api) => queryResult(marketerBannerService.getSlotsWithPolicies(api.signal)),
+    getBannerSlots: build.query<BannerSlot[], void>({
+      queryFn: (_arg, api) => queryResult(marketerBannerService.getSlots(api.signal)),
       providesTags: ["BannerSlot"],
     }),
 
@@ -40,7 +40,7 @@ const marketerBannerApi = baseApi.injectEndpoints({
 
 export const {
   useGetMyAdsQuery,
-  useGetBannerSlotsWithPoliciesQuery,
+  useGetBannerSlotsQuery,
   useRegisterAdMutation,
   useUpdateAdMutation,
   useGetAdStatsQuery,

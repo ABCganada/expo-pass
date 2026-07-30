@@ -34,7 +34,8 @@ export function VipAdCard({ ad }: VipAdCardProps) {
 
   const handleClick = async () => {
     await bannerService.recordClick(ad.id);
-    window.open(ad.linkUrl, "_blank", "noopener,noreferrer");
+    const url = /^https?:\/\//i.test(ad.linkUrl) ? ad.linkUrl : `https://${ad.linkUrl}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
