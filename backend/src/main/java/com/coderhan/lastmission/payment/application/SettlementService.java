@@ -5,10 +5,13 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
 import com.coderhan.lastmission.payment.domain.Settlement;
+import com.coderhan.lastmission.shared.error.BusinessException;
+import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -51,6 +54,23 @@ public class SettlementService {
     public List<Settlement> list(long userId) {
         List<Long> managedEventIds = eventManagerLookup.findEventIdsManagedBy(userId);
         return settlementRepository.findByEventIdIn(managedEventIds);
+    }
+
+    /** 정산 상세 조회. 본인이 담당하는 행사의 정산만 조회할 수 있다(정방향 조회). */
+    public Settlement get(long userId, long settlementId) {
+        Settlement settlement = settlementRepository.findById(settlementId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_SETTLEMENT_NOT_FOUND, "정산 내역을 찾을 수 없습니다."));
+
+        Long managerId = eventManagerLookup.findEventManagerId(settlement.eventId());
+        validateSettlementAccess(userId, managerId);
+
+        return settlement;
+    }
+
+    private void validateSettlementAccess(long userId, Long managerId) {
+        if (!Objects.equals(managerId, userId)) {
+            throw new BusinessException(ErrorCode.PAYMENT_SETTLEMENT_ACCESS_DENIED, "본인이 담당하는 행사의 정산만 조회할 수 있습니다.");
+        }
     }
 
     private BigDecimal calculateTotalSales(long eventId) {

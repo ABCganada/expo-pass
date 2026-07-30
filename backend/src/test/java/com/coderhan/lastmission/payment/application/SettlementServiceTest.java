@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.payment.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
@@ -20,6 +21,8 @@ import com.coderhan.lastmission.payment.domain.Refund;
 import com.coderhan.lastmission.payment.domain.RefundStatus;
 import com.coderhan.lastmission.payment.domain.Settlement;
 import com.coderhan.lastmission.payment.domain.SettlementStatus;
+import com.coderhan.lastmission.shared.error.BusinessException;
+import com.coderhan.lastmission.shared.error.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +34,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SettlementServiceTest {
     private static final long EVENT_ID = 42L;
+    private static final long SETTLEMENT_ID = 1L;
     private static final long USER_ID = 7L;
+    private static final long OTHER_USER_ID = 99L;
     private static final OffsetDateTime NOW = OffsetDateTime.parse("2026-07-23T10:00:00Z");
 
     @Mock SettlementRepository settlementRepository;
@@ -108,6 +113,52 @@ class SettlementServiceTest {
         List<Settlement> result = service.list(USER_ID);
 
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("본인이 담당하는 행사의 정산이면 상세 조회가 성공한다")
+    void getsSettlementWhenCallerManagesItsEvent() {
+        Settlement settlement = settlementFor(EVENT_ID);
+        when(settlementRepository.findById(SETTLEMENT_ID)).thenReturn(Optional.of(settlement));
+        when(eventManagerLookup.findEventManagerId(EVENT_ID)).thenReturn(USER_ID);
+
+        Settlement result = service.get(USER_ID, SETTLEMENT_ID);
+
+        assertThat(result).isSameAs(settlement);
+    }
+
+    @Test
+    @DisplayName("본인이 담당하지 않는 행사의 정산이면 PAYMENT_SETTLEMENT_ACCESS_DENIED 예외를 던진다")
+    void rejectsGetWhenCallerDoesNotManageItsEvent() {
+        Settlement settlement = settlementFor(EVENT_ID);
+        when(settlementRepository.findById(SETTLEMENT_ID)).thenReturn(Optional.of(settlement));
+        when(eventManagerLookup.findEventManagerId(EVENT_ID)).thenReturn(OTHER_USER_ID);
+
+        assertThatThrownBy(() -> service.get(USER_ID, SETTLEMENT_ID))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_SETTLEMENT_ACCESS_DENIED));
+    }
+
+    @Test
+    @DisplayName("담당 관리자를 알 수 없으면(null) NPE 없이 PAYMENT_SETTLEMENT_ACCESS_DENIED 예외를 던진다")
+    void rejectsGetWithoutNpeWhenManagerIsUnknown() {
+        Settlement settlement = settlementFor(EVENT_ID);
+        when(settlementRepository.findById(SETTLEMENT_ID)).thenReturn(Optional.of(settlement));
+        when(eventManagerLookup.findEventManagerId(EVENT_ID)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.get(USER_ID, SETTLEMENT_ID))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_SETTLEMENT_ACCESS_DENIED));
+    }
+
+    @Test
+    @DisplayName("정산 내역이 없으면 PAYMENT_SETTLEMENT_NOT_FOUND 예외를 던진다")
+    void rejectsGetWhenSettlementNotFound() {
+        when(settlementRepository.findById(SETTLEMENT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.get(USER_ID, SETTLEMENT_ID))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_SETTLEMENT_NOT_FOUND));
     }
 
     private static Settlement settlementFor(long eventId) {

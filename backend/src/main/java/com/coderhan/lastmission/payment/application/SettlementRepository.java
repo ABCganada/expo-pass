@@ -3,6 +3,7 @@ package com.coderhan.lastmission.payment.application;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import com.coderhan.lastmission.payment.domain.Settlement;
 
 public interface SettlementRepository {
@@ -16,4 +17,6 @@ public interface SettlementRepository {
 
     /** 주어진 행사 id들에 해당하는 정산 목록. 최신순(확정 시각 내림차순) */
     List<Settlement> findByEventIdIn(List<Long> eventIds);
+
+    Optional<Settlement> findById(long settlementId);
 }
