@@ -35,6 +35,8 @@ spec:
                 name: lastmission-backend-env
             - secretRef:
                 name: lastmission-backend-redis
+            - secretRef:
+                name: lastmission-backend-aws
           readinessProbe:
             tcpSocket:
               port: http
