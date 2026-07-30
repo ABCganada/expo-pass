@@ -33,12 +33,14 @@ class BannerController {
             UUID id,
             Set<UUID> slotIds,
             String title,
-            String imageUrl,
+            String bannerImageUrl,
+            String adImageUrl,
             String linkUrl,
             int priority
     ) {
         static BannerAdResponse from(BannerAd ad) {
-            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(), ad.imageUrl(), ad.linkUrl(), ad.priority());
+            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(),
+                    ad.bannerImageUrl(), ad.adImageUrl(), ad.linkUrl(), ad.priority());
         }
     }
 }

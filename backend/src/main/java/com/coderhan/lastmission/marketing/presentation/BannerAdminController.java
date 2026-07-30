@@ -5,12 +5,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.application.BannerAdService;
+import com.coderhan.lastmission.marketing.application.BannerPricingPolicyService;
 import com.coderhan.lastmission.marketing.application.BannerSlotService;
 import com.coderhan.lastmission.marketing.application.BannerStatService;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStats;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
+import com.coderhan.lastmission.marketing.domain.BannerPricingPolicy;
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
+import com.coderhan.lastmission.marketing.domain.BannerSlotType;
 import com.coderhan.lastmission.shared.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,12 +38,13 @@ class BannerAdminController {
     private final BannerSlotService bannerSlotService;
     private final BannerAdService bannerAdService;
     private final BannerStatService bannerStatService;
+    private final BannerPricingPolicyService bannerPricingPolicyService;
 
     // --- 슬롯 관리 ---
 
     @PostMapping("/slots")
     ResponseEntity<ApiResponse<BannerSlotResponse>> createSlot(@RequestBody CreateSlotRequest request) {
-        BannerSlot slot = bannerSlotService.createSlot(request.name(), request.maxCount(), request.pricePerDay());
+        BannerSlot slot = bannerSlotService.createSlot(request.name(), request.maxCount(), request.type());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(BannerSlotResponse.from(slot)));
     }
 
@@ -55,6 +59,30 @@ class BannerAdminController {
     @GetMapping("/slots/{slotId}")
     ApiResponse<BannerSlotResponse> getSlot(@PathVariable UUID slotId) {
         return ApiResponse.success(BannerSlotResponse.from(bannerSlotService.getSlot(slotId)));
+    }
+
+    // --- 가격 정책 관리 ---
+
+    @PostMapping("/slots/{slotId}/policies")
+    ResponseEntity<ApiResponse<BannerPricingPolicyResponse>> createPolicy(
+            @PathVariable UUID slotId,
+            @RequestBody CreatePolicyRequest request) {
+        BannerPricingPolicy policy = bannerPricingPolicyService.createPolicy(slotId, request.durationDays(), request.price());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(BannerPricingPolicyResponse.from(policy)));
+    }
+
+    @GetMapping("/slots/{slotId}/policies")
+    ApiResponse<List<BannerPricingPolicyResponse>> getPolicies(@PathVariable UUID slotId) {
+        List<BannerPricingPolicyResponse> responses = bannerPricingPolicyService.getPoliciesBySlot(slotId).stream()
+                .map(BannerPricingPolicyResponse::from)
+                .toList();
+        return ApiResponse.success(responses);
+    }
+
+    @DeleteMapping("/slots/{slotId}/policies/{policyId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deletePolicy(@PathVariable UUID slotId, @PathVariable UUID policyId) {
+        bannerPricingPolicyService.deletePolicy(policyId);
     }
 
     // --- 광고 목록 (전체) ---
@@ -92,7 +120,9 @@ class BannerAdminController {
         return ApiResponse.success(BannerStatsResponse.from(bannerStatService.getStats(id)));
     }
 
-    record CreateSlotRequest(String name, int maxCount, long pricePerDay) {}
+    record CreateSlotRequest(String name, int maxCount, BannerSlotType type) {}
+
+    record CreatePolicyRequest(int durationDays, long price) {}
 
     record BannerStatsResponse(UUID adId, long impressions, long clicks, double ctr) {
         static BannerStatsResponse from(BannerAdStats stats) {
@@ -100,9 +130,15 @@ class BannerAdminController {
         }
     }
 
-    record BannerSlotResponse(UUID id, String name, int maxCount, long pricePerDay, OffsetDateTime createdAt) {
+    record BannerSlotResponse(UUID id, String name, int maxCount, BannerSlotType type, OffsetDateTime createdAt) {
         static BannerSlotResponse from(BannerSlot slot) {
-            return new BannerSlotResponse(slot.id(), slot.name(), slot.maxCount(), slot.pricePerDay(), slot.createdAt());
+            return new BannerSlotResponse(slot.id(), slot.name(), slot.maxCount(), slot.type(), slot.createdAt());
+        }
+    }
+
+    record BannerPricingPolicyResponse(UUID id, UUID slotId, int durationDays, long price, OffsetDateTime createdAt) {
+        static BannerPricingPolicyResponse from(BannerPricingPolicy policy) {
+            return new BannerPricingPolicyResponse(policy.id(), policy.slotId(), policy.durationDays(), policy.price(), policy.createdAt());
         }
     }
 
@@ -110,7 +146,8 @@ class BannerAdminController {
             UUID id,
             Set<UUID> slotIds,
             String title,
-            String imageUrl,
+            String bannerImageUrl,
+            String adImageUrl,
             String linkUrl,
             int priority,
             BannerAdStatus status,
@@ -121,7 +158,8 @@ class BannerAdminController {
             Long totalAmount
     ) {
         static BannerAdResponse from(BannerAd ad) {
-            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(), ad.imageUrl(), ad.linkUrl(),
+            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(),
+                    ad.bannerImageUrl(), ad.adImageUrl(), ad.linkUrl(),
                     ad.priority(), ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(),
                     ad.createdAt(), ad.totalAmount());
         }

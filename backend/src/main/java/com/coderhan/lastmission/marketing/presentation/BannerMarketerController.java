@@ -52,8 +52,8 @@ class BannerMarketerController {
             @RequestBody RegisterAdRequest request,
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAd ad = bannerAdService.registerAd(
-                request.slotIds(), request.title(), request.imageUrl(), request.linkUrl(),
-                request.priority(), request.startsAt(), request.endsAt(), principal.email());
+                request.slotIds(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
+                request.linkUrl(), request.priority(), request.startsAt(), request.endsAt(), principal.email());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(BannerAdResponse.from(ad)));
     }
 
@@ -63,8 +63,8 @@ class BannerMarketerController {
             @RequestBody UpdateAdRequest request,
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAd ad = bannerAdService.updateAd(
-                id, principal.email(), request.title(), request.imageUrl(), request.linkUrl(),
-                request.priority(), request.startsAt(), request.endsAt());
+                id, principal.email(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
+                request.linkUrl(), request.priority(), request.startsAt(), request.endsAt());
         return ApiResponse.success(BannerAdResponse.from(ad));
     }
 
@@ -95,7 +95,8 @@ class BannerMarketerController {
     record RegisterAdRequest(
             Set<UUID> slotIds,
             String title,
-            String imageUrl,
+            String bannerImageUrl,
+            String adImageUrl,
             String linkUrl,
             int priority,
             OffsetDateTime startsAt,
@@ -104,7 +105,8 @@ class BannerMarketerController {
 
     record UpdateAdRequest(
             String title,
-            String imageUrl,
+            String bannerImageUrl,
+            String adImageUrl,
             String linkUrl,
             int priority,
             OffsetDateTime startsAt,
@@ -121,7 +123,8 @@ class BannerMarketerController {
             UUID id,
             Set<UUID> slotIds,
             String title,
-            String imageUrl,
+            String bannerImageUrl,
+            String adImageUrl,
             String linkUrl,
             int priority,
             BannerAdStatus status,
@@ -132,7 +135,8 @@ class BannerMarketerController {
             Long totalAmount
     ) {
         static BannerAdResponse from(BannerAd ad) {
-            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(), ad.imageUrl(), ad.linkUrl(),
+            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(),
+                    ad.bannerImageUrl(), ad.adImageUrl(), ad.linkUrl(),
                     ad.priority(), ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(),
                     ad.createdAt(), ad.totalAmount());
         }

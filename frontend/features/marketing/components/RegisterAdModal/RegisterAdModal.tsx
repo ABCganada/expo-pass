@@ -35,7 +35,7 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
   const [updateAd, { isLoading: updating }] = useUpdateAdMutation();
 
   const [form, setForm] = useState({
-    slotId: editTarget?.slotId ?? "",
+    slotIds: editTarget?.slotIds ?? [] as string[],
     title: editTarget?.title ?? "",
     imageUrl: editTarget?.imageUrl ?? "",
     linkUrl: editTarget?.linkUrl ?? "",
@@ -49,6 +49,14 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
+  const toggleSlot = (id: string) =>
+    setForm((prev) => ({
+      ...prev,
+      slotIds: prev.slotIds.includes(id)
+        ? prev.slotIds.filter((s) => s !== id)
+        : [...prev.slotIds, id],
+    }));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -60,7 +68,7 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
         endsAt: toOffsetDateTime(form.endsAt),
       };
       if (isEdit && editTarget) {
-        const { slotId: _, ...updatePayload } = payload;
+        const { slotIds: _, ...updatePayload } = payload;
         await updateAd({ id: editTarget.id, ...updatePayload }).unwrap();
       } else {
         await registerAd(payload).unwrap();
@@ -78,13 +86,20 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
         <form className={styles.form} onSubmit={handleSubmit}>
           {!isEdit && (
             <div className={styles.field}>
-              <label className={styles.label}>광고 슬롯</label>
-              <select className={styles.select} value={form.slotId} onChange={set("slotId")} required>
-                <option value="">슬롯 선택</option>
+              <label className={styles.label}>광고 슬롯 (복수 선택 가능)</label>
+              <div className={styles.checkboxGroup}>
                 {slots.map((slot: BannerSlot) => (
-                  <option key={slot.id} value={slot.id}>{slot.name}</option>
+                  <label key={slot.id} className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={form.slotIds.includes(slot.id)}
+                      onChange={() => toggleSlot(slot.id)}
+                    />
+                    {slot.name}
+                    <span className={styles.slotPrice}>{slot.pricePerDay.toLocaleString()}원/일</span>
+                  </label>
                 ))}
-              </select>
+              </div>
             </div>
           )}
           <div className={styles.field}>

@@ -15,7 +15,7 @@ const adminBannerApi = baseApi.injectEndpoints({
       providesTags: ["BannerSlot"],
     }),
 
-    createSlot: build.mutation<BannerSlot, { name: string; maxCount: number }>({
+    createSlot: build.mutation<BannerSlot, { name: string; maxCount: number; pricePerDay: number }>({
       queryFn: (cmd) => queryResult(adminBannerService.createSlot(cmd)),
       invalidatesTags: ["BannerSlot"],
     }),

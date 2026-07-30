@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.application.BannerSlotRepository;
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
+import com.coderhan.lastmission.marketing.domain.BannerSlotType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -16,9 +17,9 @@ class JpaBannerSlotRepository implements BannerSlotRepository {
     private final BannerSlotJpaRepository jpaRepository;
 
     @Override
-    public BannerSlot save(String name, int maxCount, long pricePerDay) {
+    public BannerSlot save(String name, int maxCount, BannerSlotType type) {
         BannerSlotEntity saved = jpaRepository.save(
-                new BannerSlotEntity(null, name, maxCount, pricePerDay, OffsetDateTime.now()));
+                new BannerSlotEntity(null, name, maxCount, type, OffsetDateTime.now()));
         return toDomain(saved);
     }
 
@@ -43,6 +44,6 @@ class JpaBannerSlotRepository implements BannerSlotRepository {
 
     private static BannerSlot toDomain(BannerSlotEntity entity) {
         return new BannerSlot(entity.getId(), entity.getName(), entity.getMaxCount(),
-                entity.getPricePerDay(), entity.getCreatedAt());
+                entity.getType(), entity.getCreatedAt());
     }
 }
