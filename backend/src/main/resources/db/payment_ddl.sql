@@ -63,23 +63,26 @@ CREATE UNIQUE INDEX idx_payment_refunds_unique_active
     ON payment_refunds (payment_id)
     WHERE status = 'COMPLETED';
 
--- 3. payment_settlements : 정산 (행사 단위)
+-- 3. payment_settlements : 정산 (행사 단위, 행사 종료 감지 즉시 확정 — 대기 상태 없음)
 CREATE TABLE payment_settlements (
     id INT8 NOT NULL DEFAULT unique_rowid() PRIMARY KEY,
     event_id INT8 NOT NULL,                 -- Event 도메인 events.id 참조 (BIGINT 잠정 가정 — Event 스키마 확정 전 재확인 필요, 논리적 참조)
     total_sales DECIMAL(14, 2) NOT NULL DEFAULT 0,
-    commission_rate DECIMAL(5, 2) NOT NULL DEFAULT 5.00,  -- 확정: 기본 수수료율 5%
+    commission_rate DECIMAL(5, 2) NOT NULL DEFAULT 5.00,  -- 확정: 수수료율 5% 고정 (관리자 설정 API 없음)
     commission_amount DECIMAL(14, 2) NOT NULL DEFAULT 0,
     net_amount DECIMAL(14, 2) NOT NULL DEFAULT 0,
-    status STRING NOT NULL DEFAULT 'PENDING'
-        CHECK (status IN ('PENDING', 'CONFIRMED', 'COMPLETED')),
-    settled_at TIMESTAMPTZ,
+    status STRING NOT NULL DEFAULT 'COMPLETED'
+        CHECK (status IN ('COMPLETED')),
+    settled_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    INDEX idx_payment_settlements_event_id (event_id),
     INDEX idx_payment_settlements_status (status)
 );
+
+-- ⭐ 행사 1건당 정산은 1건만 — 행사 종료 이벤트가 중복 발행/처리돼도 정산이 두 번 생기지 않도록 방지
+CREATE UNIQUE INDEX idx_payment_settlements_event_id
+    ON payment_settlements (event_id);
 
 -- 4. payment_logs : PG 연동 요청/응답 감사 로그 (원본 payload 그대로 JSONB 저장)
 CREATE TABLE payment_logs (
