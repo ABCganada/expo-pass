@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 public interface PaymentGateway {
 
     ConfirmResult confirm(String paymentKey, String pgOrderId, BigDecimal amount);
-    CancelResult cancel(String paymentKey, String reason);
+    CancelResult cancel(String paymentKey, String reason, BigDecimal amount);
 
     record ConfirmResult(String method, OffsetDateTime approvedAt) {}
 

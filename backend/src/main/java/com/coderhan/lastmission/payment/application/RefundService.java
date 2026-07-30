@@ -78,7 +78,7 @@ public class RefundService {
 
     private Refund refund(Payment payment, BigDecimal amount, String reason) {
         if (amount.signum() > 0) {
-            paymentGateway.cancel(payment.pgTransactionId(), reason);
+            paymentGateway.cancel(payment.pgTransactionId(), reason, amount);
         }
 
         try {
