@@ -37,12 +37,9 @@ class BannerSlotEntity {
     @Column(name = "type", nullable = false)
     private BannerSlotType type;
 
+    @Column(name = "price_per_day", nullable = false)
+    private long pricePerDay;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
-
-    void update(String name, int maxCount, BannerSlotType type) {
-        this.name = name;
-        this.maxCount = maxCount;
-        this.type = type;
-    }
 }
