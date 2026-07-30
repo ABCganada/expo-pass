@@ -1,0 +1,110 @@
+.page {
+  padding: 32px;
+  width: 100%;
+}
+
+.state {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.tableContainer {
+  background: var(--color-card-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table thead {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: color-mix(in srgb, var(--color-primary) 4%, transparent);
+}
+
+.orderId {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.name,
+.email {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+}
+
+.status {
+  font-weight: 500;
+}
+
+.status[data-status="CONFIRMED"] {
+  color: var(--color-success);
+}
+
+.status[data-status="PENDING"] {
+  color: var(--color-text-secondary);
+}
+
+.status[data-status="CANCELLED"],
+.status[data-status="REFUNDED"] {
+  color: var(--color-danger);
+}
+
+.amount {
+  text-align: right;
+  font-weight: 500;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.date {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
