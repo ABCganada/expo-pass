@@ -22,7 +22,7 @@ class ApiExceptionHandler {
                     HttpStatus.NOT_FOUND;
 
             case CHAT_ACCESS_DENIED, RESERVATION_ACCESS_DENIED, RESERVATION_WAITING_ROOM_REQUIRED,
-                    BANNER_AD_ACCESS_DENIED, EVENT_ACCESS_DENIED, PAYMENT_ACCESS_DENIED, PAYMENT_REFUND_ACCESS_DENIED ->
+                    BANNER_AD_ACCESS_DENIED, EVENT_ACCESS_DENIED, PAYMENT_ACCESS_DENIED ->
                     HttpStatus.FORBIDDEN;
 
             case INVALID_REQUEST, CHAT_MESSAGE_INVALID, CHAT_ROOM_INVALID, RESERVATION_INVALID_REQUEST,
@@ -35,7 +35,6 @@ class ApiExceptionHandler {
             case CHAT_PARTICIPANT_EXISTS,
                     ADMIN_SELF_DEMOTION,
                     PAYMENT_REFUND_ALREADY_EXISTS,
-                    PAYMENT_REFUND_ALREADY_DECIDED,
                     RESERVATION_ALREADY_CHECKED_IN,
                     TICKET_SOLD_OUT ->
                     HttpStatus.CONFLICT;
