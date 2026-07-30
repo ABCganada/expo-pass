@@ -1,0 +1,44 @@
+package com.coderhan.lastmission.payment.infrastructure.persistence;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import com.coderhan.lastmission.payment.application.SettlementRepository;
+import com.coderhan.lastmission.payment.domain.Settlement;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+
+@Repository
+@RequiredArgsConstructor
+class JpaSettlementRepository implements SettlementRepository {
+
+    private final SettlementJpaRepository jpaRepository;
+
+    @Override
+    public boolean existsByEventId(long eventId) {
+        return jpaRepository.existsByEventId(eventId);
+    }
+
+    @Override
+    public Settlement save(long eventId, BigDecimal totalSales, BigDecimal commissionRate,
+                           BigDecimal commissionAmount, BigDecimal netAmount, OffsetDateTime settledAt) {
+        SettlementEntity saved = jpaRepository.save(
+                SettlementEntity.completed(eventId, totalSales, commissionRate, commissionAmount, netAmount, settledAt));
+
+        return toDomain(saved);
+    }
+
+    private static Settlement toDomain(SettlementEntity entity) {
+        return Settlement.builder()
+                .id(entity.getId())
+                .eventId(entity.getEventId())
+                .totalSales(entity.getTotalSales())
+                .commissionRate(entity.getCommissionRate())
+                .commissionAmount(entity.getCommissionAmount())
+                .netAmount(entity.getNetAmount())
+                .status(entity.getStatus())
+                .settledAt(entity.getSettledAt())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+}
