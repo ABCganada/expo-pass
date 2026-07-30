@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import com.coderhan.lastmission.event.application.EventQueryService;
 import com.coderhan.lastmission.event.application.EventService;
 import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
 import com.coderhan.lastmission.event.domain.Event;
@@ -29,12 +30,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 class EventAdminController {
+    private final EventQueryService eventQueryService;
     private final EventService eventService;
 
     @GetMapping("/api/v1/admin/events")
     ApiResponse<List<AdminEventListItemResponse>> getAdminEvents(
             @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
-        List<AdminEventListItemResponse> events = eventService
+        List<AdminEventListItemResponse> events = eventQueryService
                 .getAdminEvents(principal.userId(), isAdmin(authentication))
                 .stream()
                 .map(AdminEventListItemResponse::from)
@@ -45,8 +47,8 @@ class EventAdminController {
     @GetMapping("/api/v1/admin/events/{eventId}")
     ApiResponse<AdminEventDetailResponse> getEventDetail(@PathVariable long eventId,
             @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
-        EventService.AdminEventDetailResult detail =
-                eventService.getAdminEventDetail(eventId, principal.userId(), isAdmin(authentication));
+        EventQueryService.AdminEventDetailResult detail =
+                eventQueryService.getAdminEventDetail(eventId, principal.userId(), isAdmin(authentication));
         return ApiResponse.success(AdminEventDetailResponse.from(detail));
     }
 
@@ -79,7 +81,7 @@ class EventAdminController {
             String id, String title, String categoryName, String managerId,
             EventStatus status, LocalDate startDate, LocalDate endDate, EventPhase phase, long viewCount
     ) {
-        static AdminEventListItemResponse from(EventService.EventListItem eventItem) {
+        static AdminEventListItemResponse from(EventQueryService.EventListItem eventItem) {
             Event event = eventItem.event();
             return new AdminEventListItemResponse(
                     Long.toString(event.getId()),
@@ -101,7 +103,7 @@ class EventAdminController {
             LocalDate startDate, LocalDate endDate, EventStatus status, long viewCount,
             Instant createdAt, Instant updatedAt
     ) {
-        static AdminEventDetailResponse from(EventService.AdminEventDetailResult detail) {
+        static AdminEventDetailResponse from(EventQueryService.AdminEventDetailResult detail) {
             Event event = detail.event();
             EventCategory category = event.getCategory();
             UserRef manager = detail.manager();

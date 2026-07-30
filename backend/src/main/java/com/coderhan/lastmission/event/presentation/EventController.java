@@ -3,7 +3,7 @@ package com.coderhan.lastmission.event.presentation;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import com.coderhan.lastmission.event.application.EventService;
+import com.coderhan.lastmission.event.application.EventQueryService;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventCategory;
 import com.coderhan.lastmission.event.domain.EventPhase;
@@ -19,11 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/events")
 @RequiredArgsConstructor
 class EventController {
-    private final EventService eventService;
+    private final EventQueryService eventQueryService;
 
     @GetMapping
     ApiResponse<List<EventListItemResponse>> getPublishedEvents() {
-        List<EventListItemResponse> events = eventService.getPublishedEvents()
+        List<EventListItemResponse> events = eventQueryService.getPublishedEvents()
                 .stream()
                 .map(EventListItemResponse::from)
                 .toList();
@@ -32,7 +32,7 @@ class EventController {
 
     @GetMapping("/{eventId}")
     ApiResponse<EventDetailResponse> getEventDetail(@PathVariable long eventId) {
-        EventService.EventDetail eventDetail = eventService.getEventDetail(eventId);
+        EventQueryService.EventDetail eventDetail = eventQueryService.getEventDetail(eventId);
         return ApiResponse.success(EventDetailResponse.from(eventDetail));
     }
 
@@ -40,7 +40,7 @@ class EventController {
             String id, String title, String categoryName, String venueName,
             LocalDate startDate, LocalDate endDate, EventPhase phase, long viewCount
     ) {
-        static EventListItemResponse from(EventService.EventListItem eventItem) {
+        static EventListItemResponse from(EventQueryService.EventListItem eventItem) {
             Event event = eventItem.event();
             EventCategory category = event.getCategory();
             return new EventListItemResponse(
@@ -61,7 +61,7 @@ class EventController {
             String legalDongCode, BigDecimal latitude, BigDecimal longitude,
             LocalDate startDate, LocalDate endDate, EventStatus status, EventPhase phase, long viewCount
     ) {
-        static EventDetailResponse from(EventService.EventDetail detail) {
+        static EventDetailResponse from(EventQueryService.EventDetail detail) {
             Event event = detail.event();
             EventCategory category = event.getCategory();
             return new EventDetailResponse(
