@@ -1,10 +1,11 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
-import { ReservationSummaryContent } from "@/features/reservation/components/ReservationSummaryContent";
+import { EventSelectContent } from "@/features/reservation/components/EventSelectContent";
 
 export default function ReservationsSummaryPage() {
-  const searchParams = useSearchParams();
-  const eventId = searchParams.get("eventId") ?? "1";
-  return <ReservationSummaryContent eventId={eventId} />;
+  return (
+    <EventSelectContent
+      basePath="/admin/reservations-summary"
+      title="행사별 예약 현황"
+      subtitle="예약 현황을 확인할 행사를 선택하세요"
+    />
+  );
 }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.coderhan.lastmission.reservation.application.ReservationService;
+import com.coderhan.lastmission.reservation.domain.CheckinProgress;
 import com.coderhan.lastmission.reservation.domain.OrderStatus;
 import com.coderhan.lastmission.reservation.domain.ReservationOrder;
 import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
@@ -27,13 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 관리자 전용 예약 관리 API — 체크인, 예약자 명단, 행사별 예약 현황.
  *
- * <p>경로가 {@code /api/v1/admin/**} 라 SecurityConfig 에서 ROLE_ADMIN 만 접근 가능하다
- * (AdminMemberController와 동일한 컨벤션 — 컨트롤러엔 별도 권한 체크 코드 없음).</p>
+ * <p>경로가 {@code /api/v1/manager/**} 라 SecurityConfig 에서 ROLE_ADMIN, ROLE_MANAGER 가 접근 가능하다
+ * (박람회관리자가 자신이 담당하는 행사의 예약을 관리하기 위한 API — 컨트롤러엔 별도 권한 체크 코드 없음).</p>
  */
 @RestController
-@RequestMapping("/api/v1/admin/reservations")
+@RequestMapping("/api/v1/manager/reservations")
 @RequiredArgsConstructor
-class ReservationAdminController {
+class ReservationManagerController {
     private final ReservationService reservationService;
     private final UserDirectory userDirectory;
 
@@ -65,6 +66,13 @@ class ReservationAdminController {
         ReservationService.EventReservationSummary summary =
                 reservationService.getEventSummary(parseEventId(eventId));
         return ApiResponse.success(EventSummaryResponse.from(summary));
+    }
+
+    @GetMapping("/events/{eventId}/checkin-status")
+    ApiResponse<CheckinProgressResponse> getCheckinStatus(@PathVariable String eventId){
+        CheckinProgress checkinStatus =
+                reservationService.getCheckinProgress(parseEventId(eventId));
+        return ApiResponse.success(CheckinProgressResponse.from(checkinStatus));
     }
 
     private long parseEventId(String value) {
@@ -102,4 +110,10 @@ class ReservationAdminController {
                     summary.countsByStatus());
         }
     }
+    record CheckinProgressResponse(long totalItems, long checkedInCount) {
+        static CheckinProgressResponse from(CheckinProgress progress) {
+            return new CheckinProgressResponse(progress.totalItems(), progress.checkedInCount());
+        }
+    }
+
 }
