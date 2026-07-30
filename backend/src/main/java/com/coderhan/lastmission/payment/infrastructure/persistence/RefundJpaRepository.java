@@ -7,5 +7,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 interface RefundJpaRepository extends JpaRepository<RefundEntity, Long> {
     Optional<RefundEntity> findFirstByPaymentIdAndStatusIn(Long paymentId, List<RefundStatus> statuses);
-    List<RefundEntity> findByStatusOrderByRequestedAtAsc(RefundStatus status);
 }

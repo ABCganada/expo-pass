@@ -42,7 +42,7 @@ class RefundEntity {
     private boolean autoApproved;
 
     @Column(name = "approved_by")
-    private Long approvedBy;  // user_accounts.id 참조, 논리적 참조. 관리자 승인 플로우에서 채워짐
+    private Long approvedBy;  // user_accounts.id 참조, 논리적 참조. 현재는 항상 null(수동 승인 플로우 없음)
 
     @Column(name = "requested_at", nullable = false)
     private OffsetDateTime requestedAt;
@@ -69,34 +69,5 @@ class RefundEntity {
         entity.createdAt = completedAt;
         entity.updatedAt = completedAt;
         return entity;
-    }
-
-    /** 수동승인(이벤트 관리자) 대상. REQUESTED 상태로만 만든다 — 승인/거절은 별도 플로우 */
-    static RefundEntity requestedByEventAdmin(Long paymentId, BigDecimal amount, String reason, OffsetDateTime now) {
-        RefundEntity entity = new RefundEntity();
-        entity.paymentId = paymentId;
-        entity.amount = amount;
-        entity.reason = reason;
-        entity.status = RefundStatus.REQUESTED;
-        entity.autoApproved = false;
-        entity.requestedAt = now;
-        entity.createdAt = now;
-        entity.updatedAt = now;
-        return entity;
-    }
-
-    /** 이벤트 관리자가 승인 */
-    void approve(Long approvedBy, OffsetDateTime completedAt) {
-        this.status = RefundStatus.COMPLETED;
-        this.approvedBy = approvedBy;
-        this.refundedAt = completedAt;
-        this.updatedAt = completedAt;
-    }
-
-    /** 이벤트 관리자가 거절 */
-    void reject(Long decidedBy, OffsetDateTime decidedAt) {
-        this.status = RefundStatus.REJECTED;
-        this.approvedBy = decidedBy;
-        this.updatedAt = decidedAt;
     }
 }
