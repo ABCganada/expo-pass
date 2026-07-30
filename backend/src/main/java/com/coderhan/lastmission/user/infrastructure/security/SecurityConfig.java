@@ -45,12 +45,12 @@ class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/banners").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/manager/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/api/kafka/test/**").hasAnyRole("ADMIN", "DEVELOPER")
-                        .requestMatchers("/api/**").hasAnyRole("ADMIN", "MANAGER", "USER", "DEVELOPER")
+                        .requestMatchers("/api/v1/manager/**").hasAnyRole("MANAGER")
+                        .requestMatchers("/api/kafka/test/**").hasAnyRole("DEVELOPER")
+                        .requestMatchers("/api/**").hasAnyRole("USER")
                         // WebSocket 핸드셰이크. CSRF 대상이 아니므로 허용 Origin 검사가 별도로 필요하다
                         // (StompConfig 의 setAllowedOrigins 참고).
-                        .requestMatchers("/ws/**").hasAnyRole("ADMIN", "MANAGER", "USER", "DEVELOPER")
+                        .requestMatchers("/ws/**").hasAnyRole("USER")
                         .anyRequest().denyAll())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
