@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.marketing.presentation;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.application.BannerAdService;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
@@ -30,14 +31,14 @@ class BannerController {
 
     record BannerAdResponse(
             UUID id,
-            UUID slotId,
+            Set<UUID> slotIds,
             String title,
             String imageUrl,
             String linkUrl,
             int priority
     ) {
         static BannerAdResponse from(BannerAd ad) {
-            return new BannerAdResponse(ad.id(), ad.slotId(), ad.title(), ad.imageUrl(), ad.linkUrl(), ad.priority());
+            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(), ad.imageUrl(), ad.linkUrl(), ad.priority());
         }
     }
 }
