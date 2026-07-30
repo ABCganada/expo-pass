@@ -4,9 +4,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.util.List;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
+import com.coderhan.lastmission.payment.domain.Settlement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,7 @@ public class SettlementService {
     private final PaymentRepository paymentRepository;
     private final RefundRepository refundRepository;
     private final EventOrderLookup eventOrderLookup;
+    private final EventManagerLookup eventManagerLookup;
     private final Clock clock;
 
     /**
@@ -42,6 +45,12 @@ public class SettlementService {
 
         settlementRepository.save(eventId, totalSales, COMMISSION_RATE_PERCENT, commissionAmount, netAmount,
                 OffsetDateTime.now(clock));
+    }
+
+    /** 정산 목록 조회. 본인이 담당하는 행사의 정산만 보인다(역방향 조회로 SQL 단에서 필터링). */
+    public List<Settlement> list(long userId) {
+        List<Long> managedEventIds = eventManagerLookup.findEventIdsManagedBy(userId);
+        return settlementRepository.findByEventIdIn(managedEventIds);
     }
 
     private BigDecimal calculateTotalSales(long eventId) {

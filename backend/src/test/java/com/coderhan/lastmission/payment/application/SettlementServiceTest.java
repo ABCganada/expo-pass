@@ -1,5 +1,6 @@
 package com.coderhan.lastmission.payment.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
@@ -17,6 +18,8 @@ import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
 import com.coderhan.lastmission.payment.domain.RefundStatus;
+import com.coderhan.lastmission.payment.domain.Settlement;
+import com.coderhan.lastmission.payment.domain.SettlementStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,12 +31,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SettlementServiceTest {
     private static final long EVENT_ID = 42L;
+    private static final long USER_ID = 7L;
     private static final OffsetDateTime NOW = OffsetDateTime.parse("2026-07-23T10:00:00Z");
 
     @Mock SettlementRepository settlementRepository;
     @Mock PaymentRepository paymentRepository;
     @Mock RefundRepository refundRepository;
     @Mock EventOrderLookup eventOrderLookup;
+    @Mock EventManagerLookup eventManagerLookup;
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks SettlementService service;
@@ -80,6 +85,44 @@ class SettlementServiceTest {
 
         verify(settlementRepository).save(EVENT_ID, BigDecimal.ZERO, new BigDecimal("5.00"),
                 BigDecimal.ZERO, BigDecimal.ZERO, OffsetDateTime.now(clock));
+    }
+
+    @Test
+    @DisplayName("본인이 담당하는 행사의 정산만 목록에 보인다")
+    void listsOnlySettlementsForOwnedEvent() {
+        Settlement owned = settlementFor(EVENT_ID);
+        when(eventManagerLookup.findEventIdsManagedBy(USER_ID)).thenReturn(List.of(EVENT_ID));
+        when(settlementRepository.findByEventIdIn(List.of(EVENT_ID))).thenReturn(List.of(owned));
+
+        List<Settlement> result = service.list(USER_ID);
+
+        assertThat(result).containsExactly(owned);
+    }
+
+    @Test
+    @DisplayName("담당하는 행사가 없으면 정산 조회 자체를 하지 않고 빈 목록을 반환한다")
+    void returnsEmptyListWhenCallerManagesNoEvents() {
+        when(eventManagerLookup.findEventIdsManagedBy(USER_ID)).thenReturn(List.of());
+        when(settlementRepository.findByEventIdIn(List.of())).thenReturn(List.of());
+
+        List<Settlement> result = service.list(USER_ID);
+
+        assertThat(result).isEmpty();
+    }
+
+    private static Settlement settlementFor(long eventId) {
+        return Settlement.builder()
+                .id(1L)
+                .eventId(eventId)
+                .totalSales(BigDecimal.valueOf(24000))
+                .commissionRate(new BigDecimal("5.00"))
+                .commissionAmount(BigDecimal.valueOf(1200))
+                .netAmount(BigDecimal.valueOf(22800))
+                .status(SettlementStatus.COMPLETED)
+                .settledAt(NOW)
+                .createdAt(NOW)
+                .updatedAt(NOW)
+                .build();
     }
 
     private static Payment paymentWithAmount(long id, String orderId, BigDecimal amount) {

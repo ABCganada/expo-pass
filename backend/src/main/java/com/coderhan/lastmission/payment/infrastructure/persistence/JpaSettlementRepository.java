@@ -2,6 +2,7 @@ package com.coderhan.lastmission.payment.infrastructure.persistence;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import com.coderhan.lastmission.payment.application.SettlementRepository;
 import com.coderhan.lastmission.payment.domain.Settlement;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,13 @@ class JpaSettlementRepository implements SettlementRepository {
                 SettlementEntity.completed(eventId, totalSales, commissionRate, commissionAmount, netAmount, settledAt));
 
         return toDomain(saved);
+    }
+
+    @Override
+    public List<Settlement> findByEventIdIn(List<Long> eventIds) {
+        return jpaRepository.findByEventIdInOrderBySettledAtDesc(eventIds).stream()
+                .map(JpaSettlementRepository::toDomain)
+                .toList();
     }
 
     private static Settlement toDomain(SettlementEntity entity) {
