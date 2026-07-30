@@ -1,5 +1,5 @@
 import { getCsrfToken } from "@/features/shared/api/csrf";
-import type { Attendee, CheckinResponse, EventReservationSummary } from "../types/admin";
+import type { Attendee, CheckinProgress, CheckinResponse, EventReservationSummary } from "../types/admin";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 const BASE = `${API_BASE_URL}/api/v1/manager`;
@@ -19,6 +19,11 @@ export const adminService = {
   getEventSummary: (eventId: string, signal?: AbortSignal): Promise<EventReservationSummary> =>
     fetch(`${BASE}/reservations/events/${eventId}/summary`, { credentials: "include", signal }).then((res) =>
       parseData<EventReservationSummary>(res),
+    ),
+
+  getCheckinProgress: (eventId: string, signal?: AbortSignal): Promise<CheckinProgress> =>
+    fetch(`${BASE}/reservations/events/${eventId}/checkin-status`, { credentials: "include", signal }).then((res) =>
+      parseData<CheckinProgress>(res),
     ),
 
   checkin: async (qrCodeHash: string, signal?: AbortSignal): Promise<CheckinResponse> => {

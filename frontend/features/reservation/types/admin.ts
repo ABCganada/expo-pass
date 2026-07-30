@@ -26,3 +26,8 @@ export interface EventReservationSummary {
   totalOrders: number;
   countsByStatus: Record<OrderStatus, number>;
 }
+
+export interface CheckinProgress {
+  totalItems: number;
+  checkedInCount: number;
+}
