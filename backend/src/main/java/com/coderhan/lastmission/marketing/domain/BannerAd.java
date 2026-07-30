@@ -1,17 +1,19 @@
 package com.coderhan.lastmission.marketing.domain;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 
 /**
  * 배너 광고 (Aggregate Root).
- * 마케터가 등록하며, 관리자 승인 후 노출 기간 내에 고객에게 노출된다.
+ * 광고주가 등록하며, 관리자 수락(CONFIRMED) 후 결제 완료 시 노출된다.
+ * 슬롯은 복수 선택 가능하며, totalAmount는 어드민 수락 시점에 확정된다.
  */
 public record BannerAd(
         UUID id,
-        UUID slotId,
+        Set<UUID> slotIds,
         String title,
         String imageUrl,
         String linkUrl,
@@ -20,7 +22,8 @@ public record BannerAd(
         OffsetDateTime startsAt,
         OffsetDateTime endsAt,
         String createdBy,
-        OffsetDateTime createdAt
+        OffsetDateTime createdAt,
+        Long totalAmount
 ) {
     public static void validate(String title, String imageUrl, OffsetDateTime startsAt, OffsetDateTime endsAt) {
         if (title == null || title.isBlank()) {

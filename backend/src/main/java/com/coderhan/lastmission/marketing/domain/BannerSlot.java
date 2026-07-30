@@ -11,5 +11,6 @@ public record BannerSlot(
         UUID id,
         String name,
         int maxCount,
+        long pricePerDay,
         OffsetDateTime createdAt
 ) {}

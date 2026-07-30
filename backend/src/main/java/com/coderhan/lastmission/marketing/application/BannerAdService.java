@@ -2,10 +2,13 @@ package com.coderhan.lastmission.marketing.application;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
+import com.coderhan.lastmission.marketing.domain.BannerSlot;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +24,17 @@ public class BannerAdService {
     private final Clock clock;
 
     @Transactional
-    public BannerAd registerAd(UUID slotId, String title, String imageUrl, String linkUrl,
+    public BannerAd registerAd(Set<UUID> slotIds, String title, String imageUrl, String linkUrl,
                                int priority, OffsetDateTime startsAt, OffsetDateTime endsAt, String createdBy) {
-        slotRepository.findById(slotId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_SLOT_NOT_FOUND, "광고 슬롯을 찾을 수 없습니다. id=" + slotId));
+        if (slotIds == null || slotIds.isEmpty()) {
+            throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "광고 슬롯을 하나 이상 선택해야 합니다.");
+        }
+        List<BannerSlot> slots = slotRepository.findAllByIds(slotIds);
+        if (slots.size() != slotIds.size()) {
+            throw new BusinessException(ErrorCode.BANNER_SLOT_NOT_FOUND, "존재하지 않는 슬롯이 포함되어 있습니다.");
+        }
         BannerAd.validate(title, imageUrl, startsAt, endsAt);
-        return adRepository.save(slotId, title, imageUrl, linkUrl, priority, startsAt, endsAt, createdBy);
+        return adRepository.save(slotIds, title, imageUrl, linkUrl, priority, startsAt, endsAt, createdBy);
     }
 
     @Transactional
@@ -44,12 +52,32 @@ public class BannerAdService {
         return adRepository.update(id, title, imageUrl, linkUrl, priority, startsAt, endsAt);
     }
 
+    /**
+     * 어드민이 광고를 수락한다. PENDING → CONFIRMED.
+     * 슬롯 단가 × 기간(일)으로 totalAmount를 계산하고 저장한다.
+     * 이후 광고주가 결제를 완료하면 approveAfterPayment()를 통해 APPROVED로 전환된다.
+     */
     @Transactional
-    public BannerAd approve(UUID id) {
+    public BannerAd confirm(UUID id) {
         BannerAd ad = adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
         if (ad.status() != BannerAdStatus.PENDING) {
             throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "이미 처리된 광고입니다.");
+        }
+        long totalAmount = calculateTotalAmount(ad);
+        return adRepository.confirm(id, totalAmount);
+    }
+
+    /**
+     * 결제 완료 후 광고를 APPROVED로 전환한다.
+     * payment 도메인 담당자가 결제 성공 콜백 시 이 메서드를 호출해야 한다.
+     */
+    @Transactional
+    public BannerAd approveAfterPayment(UUID id) {
+        BannerAd ad = adRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
+        if (ad.status() != BannerAdStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "결제 대기(CONFIRMED) 상태의 광고만 승인할 수 있습니다.");
         }
         return adRepository.updateStatus(id, BannerAdStatus.APPROVED);
     }
@@ -91,5 +119,20 @@ public class BannerAdService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
         statRepository.deleteStatsByAdId(id);
         adRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public BannerAd getAd(UUID id) {
+        return adRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
+    }
+
+    private long calculateTotalAmount(BannerAd ad) {
+        long days = Math.max(1, ChronoUnit.DAYS.between(
+                ad.startsAt().toLocalDate(), ad.endsAt().toLocalDate()));
+        long dailyTotal = slotRepository.findAllByIds(ad.slotIds()).stream()
+                .mapToLong(BannerSlot::pricePerDay)
+                .sum();
+        return dailyTotal * days;
     }
 }
