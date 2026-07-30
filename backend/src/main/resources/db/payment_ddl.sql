@@ -84,14 +84,20 @@ CREATE TABLE payment_settlements (
 CREATE UNIQUE INDEX idx_payment_settlements_event_id
     ON payment_settlements (event_id);
 
--- 4. payment_logs : PG 연동 요청/응답 감사 로그 (원본 payload 그대로 JSONB 저장)
+-- 4. payment_logs : PG 연동 요청/응답 + 토스 웹훅 수신 감사 로그 (원본 payload 그대로 JSONB 저장)
 CREATE TABLE payment_logs (
     id INT8 NOT NULL DEFAULT unique_rowid() PRIMARY KEY,
-    payment_id INT8 NOT NULL REFERENCES payments(id),
-    action STRING NOT NULL,                 -- 'REQUEST', 'APPROVE', 'CANCEL', 'REFUND' 등
+    payment_key STRING,                     -- 토스 paymentKey 그대로 저장 (FK 없음, 논리적 참조 — payments.pg_transaction_id와 조회 시점에만 조인)
+    action STRING NOT NULL,                 -- 'REQUEST'/'APPROVE'/'CANCEL'/'REFUND'(우리 쪽 호출) 또는 'PAYMENT_STATUS_CHANGED'/'CANCEL_STATUS_CHANGED'(토스 웹훅) 등
+    webhook_transmission_id STRING,         -- 토스 웹훅 tosspayments-webhook-transmission-id 헤더값. 우리 쪽 API 호출 로그는 null
     request_payload JSONB,
     response_payload JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    INDEX idx_payment_logs_payment_id (payment_id)
+    INDEX idx_payment_logs_payment_key (payment_key)
 );
+
+-- ⭐ 웹훅 재시도로 같은 이벤트가 여러 번 와도 중복 저장되지 않도록 방지 (우리 쪽 API 호출 로그는 webhook_transmission_id가 null이라 대상 아님)
+CREATE UNIQUE INDEX idx_payment_logs_webhook_transmission_id
+    ON payment_logs (webhook_transmission_id)
+    WHERE webhook_transmission_id IS NOT NULL;
