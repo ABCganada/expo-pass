@@ -19,7 +19,6 @@ import java.util.UUID;
 
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
-import com.coderhan.lastmission.marketing.domain.BannerPricingPolicy;
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
 import com.coderhan.lastmission.marketing.domain.BannerSlotType;
 import com.coderhan.lastmission.shared.error.BusinessException;
@@ -41,11 +40,11 @@ class BannerAdServiceTest {
     private static final OffsetDateTime NOW = OffsetDateTime.parse("2026-07-28T00:00:00Z");
     private static final OffsetDateTime STARTS_AT = NOW.plusDays(1);
     private static final OffsetDateTime ENDS_AT = NOW.plusDays(8); // 7일
+    private static final long PRICE_PER_DAY = 30_000L; // 7일 × 30,000 = 210,000
 
     @Mock BannerAdRepository adRepository;
     @Mock BannerSlotRepository slotRepository;
     @Mock BannerStatRepository statRepository;
-    @Mock BannerPricingPolicyRepository policyRepository;
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-28T00:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks BannerAdService service;
@@ -119,14 +118,13 @@ class BannerAdServiceTest {
     }
 
     @Test
-    void registerAd_정상입력이면_PENDING_상태로_저장() {
-        // Arrange — 배너슬롯 7일 정책 210,000원
-        BannerPricingPolicy policy = new BannerPricingPolicy(UUID.randomUUID(), SLOT_ID, 7, 210_000L, NOW);
-        BannerAd expected = ad(BannerAdStatus.PENDING, 210_000L);
+    void registerAd_정상입력이면_pricePerDay_곱셈으로_금액_계산_후_PENDING_저장() {
+        // Arrange — 배너슬롯 30,000/일 × 7일 = 210,000
+        long expectedAmount = PRICE_PER_DAY * 7;
+        BannerAd expected = ad(BannerAdStatus.PENDING, expectedAmount);
         when(slotRepository.findAllByIds(SLOT_IDS)).thenReturn(List.of(bannerSlot()));
-        when(policyRepository.findBySlotIdAndDurationDays(SLOT_ID, 7)).thenReturn(Optional.of(policy));
         when(adRepository.save(SLOT_IDS, "여름 세일", "https://img.example.com/banner.png",
-                null, null, 1, STARTS_AT, ENDS_AT, MARKETER, 210_000L)).thenReturn(expected);
+                null, null, 1, STARTS_AT, ENDS_AT, MARKETER, expectedAmount)).thenReturn(expected);
 
         // Act
         BannerAd result = service.registerAd(
@@ -136,6 +134,7 @@ class BannerAdServiceTest {
         // Assert
         assertThat(result).isSameAs(expected);
         assertThat(result.status()).isEqualTo(BannerAdStatus.PENDING);
+        assertThat(result.totalAmount()).isEqualTo(expectedAmount);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -277,7 +276,7 @@ class BannerAdServiceTest {
     // ─────────────────────────────────────────────────────────────────────────
 
     private BannerSlot bannerSlot() {
-        return new BannerSlot(SLOT_ID, "메인 배너", 3, BannerSlotType.BANNER, NOW);
+        return new BannerSlot(SLOT_ID, "메인 배너", 3, BannerSlotType.BANNER, PRICE_PER_DAY, NOW);
     }
 
     private BannerAd ad(BannerAdStatus status) {
