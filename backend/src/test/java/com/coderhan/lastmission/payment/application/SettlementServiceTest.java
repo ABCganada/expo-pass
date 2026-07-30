@@ -21,6 +21,7 @@ import com.coderhan.lastmission.payment.domain.Refund;
 import com.coderhan.lastmission.payment.domain.RefundStatus;
 import com.coderhan.lastmission.payment.domain.Settlement;
 import com.coderhan.lastmission.payment.domain.SettlementStatus;
+import com.coderhan.lastmission.payment.domain.SettlementSummary;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -159,6 +160,18 @@ class SettlementServiceTest {
         assertThatThrownBy(() -> service.get(USER_ID, SETTLEMENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_SETTLEMENT_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("전체 매출 대시보드는 담당자 구분 없이 리포지토리의 전체 합계를 그대로 반환한다")
+    void returnsRepositoryDashboardSummaryAsIs() {
+        SettlementSummary summary = new SettlementSummary(
+                BigDecimal.valueOf(100000), BigDecimal.valueOf(5000), BigDecimal.valueOf(95000), 3L);
+        when(settlementRepository.getDashboardSummary()).thenReturn(summary);
+
+        SettlementSummary result = service.getDashboardSummary();
+
+        assertThat(result).isSameAs(summary);
     }
 
     private static Settlement settlementFor(long eventId) {

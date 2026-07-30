@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.application.SettlementRepository;
 import com.coderhan.lastmission.payment.domain.Settlement;
+import com.coderhan.lastmission.payment.domain.SettlementSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -39,7 +40,16 @@ class JpaSettlementRepository implements SettlementRepository {
     @Override
     public Optional<Settlement> findById(long settlementId) {
         return jpaRepository.findById(settlementId)
-            .map(JpaSettlementRepository::toDomain);
+                .map(JpaSettlementRepository::toDomain);
+    }
+
+    @Override
+    public SettlementSummary getDashboardSummary() {
+        return new SettlementSummary(
+                jpaRepository.sumTotalSales(),
+                jpaRepository.sumCommissionAmount(),
+                jpaRepository.sumNetAmount(),
+                jpaRepository.count());
     }
 
     private static Settlement toDomain(SettlementEntity entity) {

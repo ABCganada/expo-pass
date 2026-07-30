@@ -10,6 +10,7 @@ import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
 import com.coderhan.lastmission.payment.domain.Settlement;
+import com.coderhan.lastmission.payment.domain.SettlementSummary;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +66,11 @@ public class SettlementService {
         validateSettlementAccess(userId, managerId);
 
         return settlement;
+    }
+
+    /** 전체 매출 대시보드 조회. 전체 정산을 합산한다(ADMIN 전용). */
+    public SettlementSummary getDashboardSummary() {
+        return settlementRepository.getDashboardSummary();
     }
 
     private void validateSettlementAccess(long userId, Long managerId) {

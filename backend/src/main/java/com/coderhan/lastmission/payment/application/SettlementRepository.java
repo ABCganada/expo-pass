@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.domain.Settlement;
+import com.coderhan.lastmission.payment.domain.SettlementSummary;
 
 public interface SettlementRepository {
 
@@ -19,4 +20,7 @@ public interface SettlementRepository {
     List<Settlement> findByEventIdIn(List<Long> eventIds);
 
     Optional<Settlement> findById(long settlementId);
+
+    /** 전체 정산 합계 (플랫폼 관리자 - 전체 매출 대시보드용) */
+    SettlementSummary getDashboardSummary();
 }
