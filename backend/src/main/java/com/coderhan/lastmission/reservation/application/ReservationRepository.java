@@ -42,4 +42,8 @@ public interface ReservationRepository {
     List<QrTicketView> findQrTicketsByUserId(long userId);
     /** 해당 이벤트의 현재 체크인 현황 조회. */
     CheckinProgress countCheckinProgressByEventId(long eventId);
+    /** 이 행사에 유효한(취소/환불되지 않은) 예약이 하나라도 있는지 확인 (Event 도메인 삭제 검증용). */
+    boolean hasActiveOrdersForEvent(long eventId);
+    /** 이 티켓에 유효한(취소/환불되지 않은) 예약이 하나라도 있는지 확인 (Event 도메인 삭제 검증용). */
+    boolean hasActiveOrderItemsForTicket(long ticketId);
 }

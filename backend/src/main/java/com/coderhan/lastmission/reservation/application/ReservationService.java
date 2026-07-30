@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.coderhan.lastmission.event.EventQueryPort;
+import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.TicketInfo;
 import com.coderhan.lastmission.reservation.domain.*;
 import com.coderhan.lastmission.shared.error.BusinessException;
@@ -21,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class ReservationService {
+public class ReservationService implements ReservationQueryPort {
     private final ReservationRepository repository;
     private final EventQueryPort eventQueryPort;
     private final WaitingRoomService waitingRoomService;   // ← 추가
@@ -162,6 +163,16 @@ public class ReservationService {
 
     public CheckinProgress getCheckinProgress(long eventId) {
         return repository.countCheckinProgressByEventId(eventId);
+    }
+
+    @Override
+    public boolean hasActiveReservationsForEvent(long eventId) {
+        return repository.hasActiveOrdersForEvent(eventId);
+    }
+
+    @Override
+    public boolean hasActiveReservationsForTicket(long ticketId) {
+        return repository.hasActiveOrderItemsForTicket(ticketId);
     }
 
     public record OrderItemRequest(long ticketId, BigDecimal unitPrice, int quantity) {}

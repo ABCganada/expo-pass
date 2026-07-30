@@ -119,6 +119,16 @@ class JpaReservationRepository implements ReservationRepository {
         return new CheckinProgress(row.getTotalItems(), row.getCheckedInCount());
     }
 
+    @Override
+    public boolean hasActiveOrdersForEvent(long eventId) {
+        return orderJpaRepository.existsActiveByEventId(eventId);
+    }
+
+    @Override
+    public boolean hasActiveOrderItemsForTicket(long ticketId) {
+        return itemJpaRepository.existsActiveByTicketId(ticketId);
+    }
+
     private static ReservationOrder toDomain(ReservationOrderEntity entity) {
         return new ReservationOrder(entity.getOrderId(), entity.getUserId(), entity.getEventId(),
                 entity.getStatus(), entity.getTotalAmount(), entity.getReservedAt(), entity.getUpdatedAt());
