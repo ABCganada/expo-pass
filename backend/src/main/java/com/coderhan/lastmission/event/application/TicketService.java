@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
+import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.application.command.CreateTicketCommand;
 import com.coderhan.lastmission.event.application.command.UpdateTicketCommand;
 import com.coderhan.lastmission.event.domain.Event;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TicketService {
     private final EventRepository eventRepository;
     private final TicketRepository ticketRepository;
+    private final ReservationQueryPort reservationQueryPort;
     private final Clock clock;
 
     /**
@@ -70,9 +72,8 @@ public class TicketService {
 
         Ticket ticket = ticketRepository.findNotDeletedByIdAndEventId(ticketId, event.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.TICKET_NOT_FOUND, "티켓을 찾을 수 없습니다."));
-        // TODO : 예약 이력 조회 후 판단으로 변경
-        // 현재 : 재고 차감 여부를 예약 발생 여부로 간주 (임시)
-        if (ticket.getQuantityRemaining() != ticket.getQuantityTotal()) {
+
+        if (reservationQueryPort.hasActiveReservationsForTicket(ticketId)) {
             throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "예약 이력이 있는 티켓은 삭제할 수 없습니다.");
         }
         ticket.softDelete(Instant.now(clock));
