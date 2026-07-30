@@ -58,4 +58,16 @@ interface ReservationOrderItemJpaRepository extends JpaRepository<ReservationOrd
         String getQrCodeHash();
         OffsetDateTime getCheckedInAt();
     }
+
+    // 이 행사의 CONFIRMED 주문에 속한 아이템 전체 수 / 체크인된 수를 한 번의 쿼리로 집계 (체크인 현황 화면용)
+    @Query("SELECT COUNT(i) as totalItems, COUNT(i.checkedInAt) as checkedInCount "
+            + "FROM ReservationOrderItemEntity i, ReservationOrderEntity o "
+            + "WHERE i.orderId = o.orderId AND o.eventId = :eventId "
+            + "AND o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED")
+    CheckinProgressRow countCheckinProgressByEventId(@Param("eventId") long eventId);
+
+    interface CheckinProgressRow {
+        long getTotalItems();
+        long getCheckedInCount();
+    }
 }

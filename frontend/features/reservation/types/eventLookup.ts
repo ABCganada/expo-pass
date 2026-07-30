@@ -25,3 +25,15 @@ export interface EventTicketOption {
   saleStartAt: string;
   saleEndAt: string;
 }
+
+export interface AdminEventListItem {
+  id: string;
+  title: string;
+  categoryName: string;
+  managerId: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  phase: string;
+  viewCount: number;
+}

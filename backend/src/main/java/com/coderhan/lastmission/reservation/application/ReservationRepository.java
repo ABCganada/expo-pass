@@ -6,11 +6,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import com.coderhan.lastmission.reservation.domain.OrderStatus;
-import com.coderhan.lastmission.reservation.domain.QrTicketView;
-import com.coderhan.lastmission.reservation.domain.ReservationOrder;
-import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
-import com.coderhan.lastmission.reservation.domain.TicketQuantity;
+
+import com.coderhan.lastmission.reservation.domain.*;
 
 public interface ReservationRepository {
     /** {@code ORD-yyyyMMdd-######} 형식의 새 주문 번호를 발급한다(시퀀스 기반). */
@@ -43,4 +40,6 @@ public interface ReservationRepository {
     Map<String, List<TicketQuantity>> findTicketQuantitiesByUserId(long userId);
     /** 이 유저의 QR 발급 대상(취소/환불 제외) 티켓을 전부 한 번에 조회한다(QR 화면 N+1 방지용). */
     List<QrTicketView> findQrTicketsByUserId(long userId);
+    /** 해당 이벤트의 현재 체크인 현황 조회. */
+    CheckinProgress countCheckinProgressByEventId(long eventId);
 }
