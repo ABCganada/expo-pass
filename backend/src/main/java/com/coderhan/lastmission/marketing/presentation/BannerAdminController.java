@@ -25,8 +25,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 관리자용 광고 슬롯 관리 및 광고 수락(CONFIRMED)/거절 API.
- * 수락 시 totalAmount가 계산되며, 이후 광고주의 결제 완료 시 APPROVED로 전환된다.
+ * 관리자용 광고 슬롯 관리 및 광고 승인(APPROVED)/거절 API.
+ * 광고주가 결제를 완료하면 PENDING 상태가 되고, 관리자가 승인하면 APPROVED로 전환되어 광고가 노출된다.
  */
 @RestController
 @RequestMapping("/api/v1/admin/banner")
@@ -69,9 +69,9 @@ class BannerAdminController {
 
     // --- 광고 수락/거절 ---
 
-    @PostMapping("/ads/{id}/confirm")
-    ApiResponse<BannerAdResponse> confirm(@PathVariable UUID id) {
-        return ApiResponse.success(BannerAdResponse.from(bannerAdService.confirm(id)));
+    @PostMapping("/ads/{id}/approve")
+    ApiResponse<BannerAdResponse> approve(@PathVariable UUID id) {
+        return ApiResponse.success(BannerAdResponse.from(bannerAdService.approve(id)));
     }
 
     @PostMapping("/ads/{id}/reject")

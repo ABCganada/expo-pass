@@ -8,8 +8,8 @@ import com.coderhan.lastmission.shared.error.ErrorCode;
 
 /**
  * 배너 광고 (Aggregate Root).
- * 광고주가 등록하며, 관리자 수락(CONFIRMED) 후 결제 완료 시 노출된다.
- * 슬롯은 복수 선택 가능하며, totalAmount는 어드민 수락 시점에 확정된다.
+ * 광고주가 등록·결제(PENDING) 후 관리자가 승인하면 노출된다(APPROVED).
+ * 슬롯은 복수 선택 가능하며, totalAmount는 등록 시점에 확정된다.
  */
 public record BannerAd(
         UUID id,

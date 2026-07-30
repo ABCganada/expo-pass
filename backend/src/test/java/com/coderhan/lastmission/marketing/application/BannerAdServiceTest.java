@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,7 +59,7 @@ class BannerAdServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
 
-        verify(adRepository, never()).save(any(), any(), any(), any(), any(int.class), any(), any(), any());
+        verify(adRepository, never()).save(any(), any(), any(), any(), any(int.class), any(), any(), any(), anyLong());
     }
 
     @Test
@@ -101,11 +100,11 @@ class BannerAdServiceTest {
 
     @Test
     void registerAd_정상입력이면_PENDING_상태로_저장() {
-        // Arrange
-        BannerAd expected = ad(BannerAdStatus.PENDING);
+        // Arrange — 슬롯 단가 30,000원 × 7일 = 210,000원
+        BannerAd expected = ad(BannerAdStatus.PENDING, 210_000L);
         when(slotRepository.findAllByIds(SLOT_IDS)).thenReturn(List.of(slot()));
         when(adRepository.save(SLOT_IDS, "여름 세일", "https://img.example.com/img.png",
-                null, 1, STARTS_AT, ENDS_AT, MARKETER)).thenReturn(expected);
+                null, 1, STARTS_AT, ENDS_AT, MARKETER, 210_000L)).thenReturn(expected);
 
         // Act
         BannerAd result = service.registerAd(
@@ -147,7 +146,7 @@ class BannerAdServiceTest {
     @Test
     void updateAd_이미_처리된_광고는_수정_불가() {
         // Arrange
-        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.CONFIRMED)));
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.APPROVED)));
 
         // Act & Assert
         assertThatThrownBy(() -> service.updateAd(
@@ -173,75 +172,44 @@ class BannerAdServiceTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // confirm
+    // approve
     // ─────────────────────────────────────────────────────────────────────────
 
     @Test
-    void confirm_광고가_없으면_예외() {
+    void approve_광고가_없으면_예외() {
         // Arrange
         when(adRepository.findById(AD_ID)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> service.confirm(AD_ID))
+        assertThatThrownBy(() -> service.approve(AD_ID))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_NOT_FOUND));
     }
 
     @Test
-    void confirm_이미_처리된_광고면_예외() {
+    void approve_이미_처리된_광고면_예외() {
         // Arrange
-        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.CONFIRMED)));
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.APPROVED)));
 
         // Act & Assert
-        assertThatThrownBy(() -> service.confirm(AD_ID))
+        assertThatThrownBy(() -> service.approve(AD_ID))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_ALREADY_REVIEWED));
     }
 
     @Test
-    void confirm_PENDING_광고면_totalAmount_계산_후_CONFIRMED() {
-        // Arrange — 슬롯 단가 30,000원 × 7일 = 210,000원
-        BannerAd confirmed = ad(BannerAdStatus.CONFIRMED, 210_000L);
-        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
-        when(slotRepository.findAllByIds(SLOT_IDS)).thenReturn(List.of(slot())); // pricePerDay = 30,000
-        when(adRepository.confirm(eq(AD_ID), anyLong())).thenReturn(confirmed);
-
-        // Act
-        BannerAd result = service.confirm(AD_ID);
-
-        // Assert
-        assertThat(result.status()).isEqualTo(BannerAdStatus.CONFIRMED);
-        verify(adRepository).confirm(AD_ID, 210_000L);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // approveAfterPayment
-    // ─────────────────────────────────────────────────────────────────────────
-
-    @Test
-    void approveAfterPayment_CONFIRMED_광고면_APPROVED로_변경() {
+    void approve_PENDING_광고면_APPROVED로_변경() {
         // Arrange
         BannerAd approved = ad(BannerAdStatus.APPROVED);
-        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.CONFIRMED, 210_000L)));
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
         when(adRepository.updateStatus(AD_ID, BannerAdStatus.APPROVED)).thenReturn(approved);
 
         // Act
-        BannerAd result = service.approveAfterPayment(AD_ID);
+        BannerAd result = service.approve(AD_ID);
 
         // Assert
         assertThat(result.status()).isEqualTo(BannerAdStatus.APPROVED);
         verify(adRepository).updateStatus(AD_ID, BannerAdStatus.APPROVED);
-    }
-
-    @Test
-    void approveAfterPayment_PENDING_광고면_예외() {
-        // Arrange
-        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
-
-        // Act & Assert
-        assertThatThrownBy(() -> service.approveAfterPayment(AD_ID))
-                .isInstanceOfSatisfying(BusinessException.class,
-                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_ALREADY_REVIEWED));
     }
 
     // ─────────────────────────────────────────────────────────────────────────

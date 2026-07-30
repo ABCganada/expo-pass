@@ -34,7 +34,9 @@ public class BannerAdService {
             throw new BusinessException(ErrorCode.BANNER_SLOT_NOT_FOUND, "존재하지 않는 슬롯이 포함되어 있습니다.");
         }
         BannerAd.validate(title, imageUrl, startsAt, endsAt);
-        return adRepository.save(slotIds, title, imageUrl, linkUrl, priority, startsAt, endsAt, createdBy);
+        long days = Math.max(1, ChronoUnit.DAYS.between(startsAt.toLocalDate(), endsAt.toLocalDate()));
+        long totalAmount = slots.stream().mapToLong(BannerSlot::pricePerDay).sum() * days;
+        return adRepository.save(slotIds, title, imageUrl, linkUrl, priority, startsAt, endsAt, createdBy, totalAmount);
     }
 
     @Transactional
@@ -53,31 +55,15 @@ public class BannerAdService {
     }
 
     /**
-     * 어드민이 광고를 수락한다. PENDING → CONFIRMED.
-     * 슬롯 단가 × 기간(일)으로 totalAmount를 계산하고 저장한다.
-     * 이후 광고주가 결제를 완료하면 approveAfterPayment()를 통해 APPROVED로 전환된다.
+     * 관리자가 광고를 승인한다. PENDING → APPROVED.
+     * 결제가 먼저 완료된 상태(PENDING)에서 관리자가 최종 승인하면 광고가 노출된다.
      */
     @Transactional
-    public BannerAd confirm(UUID id) {
+    public BannerAd approve(UUID id) {
         BannerAd ad = adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
         if (ad.status() != BannerAdStatus.PENDING) {
             throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "이미 처리된 광고입니다.");
-        }
-        long totalAmount = calculateTotalAmount(ad);
-        return adRepository.confirm(id, totalAmount);
-    }
-
-    /**
-     * 결제 완료 후 광고를 APPROVED로 전환한다.
-     * payment 도메인 담당자가 결제 성공 콜백 시 이 메서드를 호출해야 한다.
-     */
-    @Transactional
-    public BannerAd approveAfterPayment(UUID id) {
-        BannerAd ad = adRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
-        if (ad.status() != BannerAdStatus.CONFIRMED) {
-            throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "결제 대기(CONFIRMED) 상태의 광고만 승인할 수 있습니다.");
         }
         return adRepository.updateStatus(id, BannerAdStatus.APPROVED);
     }
@@ -127,12 +113,4 @@ public class BannerAdService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
     }
 
-    private long calculateTotalAmount(BannerAd ad) {
-        long days = Math.max(1, ChronoUnit.DAYS.between(
-                ad.startsAt().toLocalDate(), ad.endsAt().toLocalDate()));
-        long dailyTotal = slotRepository.findAllByIds(ad.slotIds()).stream()
-                .mapToLong(BannerSlot::pricePerDay)
-                .sum();
-        return dailyTotal * days;
-    }
 }

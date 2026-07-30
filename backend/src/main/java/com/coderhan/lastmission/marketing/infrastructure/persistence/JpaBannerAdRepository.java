@@ -18,10 +18,10 @@ class JpaBannerAdRepository implements BannerAdRepository {
 
     @Override
     public BannerAd save(Set<UUID> slotIds, String title, String imageUrl, String linkUrl,
-                         int priority, OffsetDateTime startsAt, OffsetDateTime endsAt, String createdBy) {
+                         int priority, OffsetDateTime startsAt, OffsetDateTime endsAt, String createdBy, long totalAmount) {
         BannerAdEntity entity = new BannerAdEntity(
                 null, slotIds, title, imageUrl, linkUrl, priority,
-                BannerAdStatus.PENDING, startsAt, endsAt, createdBy, OffsetDateTime.now(), null);
+                BannerAdStatus.PENDING, startsAt, endsAt, createdBy, OffsetDateTime.now(), totalAmount);
         return toDomain(jpaRepository.save(entity));
     }
 
@@ -49,15 +49,6 @@ class JpaBannerAdRepository implements BannerAdRepository {
         BannerAdEntity entity = jpaRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("BannerAd not found: " + id));
         entity.setStatus(status);
-        return toDomain(jpaRepository.save(entity));
-    }
-
-    @Override
-    public BannerAd confirm(UUID id, long totalAmount) {
-        BannerAdEntity entity = jpaRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("BannerAd not found: " + id));
-        entity.setStatus(BannerAdStatus.CONFIRMED);
-        entity.setTotalAmount(totalAmount);
         return toDomain(jpaRepository.save(entity));
     }
 

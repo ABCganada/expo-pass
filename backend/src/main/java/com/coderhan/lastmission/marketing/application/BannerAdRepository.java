@@ -10,12 +10,11 @@ import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 
 public interface BannerAdRepository {
     BannerAd save(Set<UUID> slotIds, String title, String imageUrl, String linkUrl,
-                  int priority, OffsetDateTime startsAt, OffsetDateTime endsAt, String createdBy);
+                  int priority, OffsetDateTime startsAt, OffsetDateTime endsAt, String createdBy, long totalAmount);
     Optional<BannerAd> findById(UUID id);
     List<BannerAd> findActiveBySlot(UUID slotId, OffsetDateTime now);
     List<BannerAd> findAllActive(OffsetDateTime now);
     BannerAd updateStatus(UUID id, BannerAdStatus status);
-    BannerAd confirm(UUID id, long totalAmount);
     BannerAd update(UUID id, String title, String imageUrl, String linkUrl,
                     int priority, OffsetDateTime startsAt, OffsetDateTime endsAt);
     List<BannerAd> findByCreatedBy(String email);

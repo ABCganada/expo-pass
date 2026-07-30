@@ -72,7 +72,7 @@ class BannerAdEntity {
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
-    // 어드민 수락(CONFIRMED) 시점에 확정. PENDING 상태에서는 null.
+    // 등록 시점에 확정 (슬롯 단가 × 기간). null은 레거시 데이터만 해당.
     @Setter
     @Column(name = "total_amount")
     private Long totalAmount;
