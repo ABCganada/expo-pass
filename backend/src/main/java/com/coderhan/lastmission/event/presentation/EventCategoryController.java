@@ -26,7 +26,7 @@ class EventCategoryController {
         return ApiResponse.success(categories);
     }
 
-    @GetMapping("/super-admin/events/categories")
+    @GetMapping("/admin/events/categories")
     ApiResponse<List<CategoryResponse>> getAllCategories() {
         List<CategoryResponse> categories = eventCategoryService.getAllCategories()
                 .stream()
@@ -35,7 +35,7 @@ class EventCategoryController {
         return ApiResponse.success(categories);
     }
 
-    @PatchMapping("/super-admin/events/categories/{categoryId}/active")
+    @PatchMapping("/admin/events/categories/{categoryId}/active")
     ApiResponse<CategoryResponse> toggleActive(@PathVariable long categoryId) {
         EventCategory category = eventCategoryService.toggleActive(categoryId);
         return ApiResponse.success(CategoryResponse.from(category));
