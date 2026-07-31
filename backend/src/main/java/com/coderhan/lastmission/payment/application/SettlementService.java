@@ -11,6 +11,7 @@ import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
 import com.coderhan.lastmission.payment.domain.Settlement;
 import com.coderhan.lastmission.payment.domain.SettlementSummary;
+import com.coderhan.lastmission.reservation.ReservationOrderDirectory;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ public class SettlementService {
     private final SettlementRepository settlementRepository;
     private final PaymentRepository paymentRepository;
     private final RefundRepository refundRepository;
-    private final EventOrderLookup eventOrderLookup;
+    private final ReservationOrderDirectory reservationOrderDirectory;
     private final EventManagerLookup eventManagerLookup;
     private final Clock clock;
 
@@ -80,7 +81,7 @@ public class SettlementService {
     }
 
     private BigDecimal calculateTotalSales(long eventId) {
-        return eventOrderLookup.findOrderIdsByEventId(eventId).stream()
+        return reservationOrderDirectory.findOrderIdsByEventId(eventId).stream()
                 .flatMap(orderId -> paymentRepository.findByOrderIdAndStatus(orderId, PaymentStatus.COMPLETED).stream())
                 .map(this::netAmountAfterRefund)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

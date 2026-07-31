@@ -22,6 +22,7 @@ import com.coderhan.lastmission.payment.domain.RefundStatus;
 import com.coderhan.lastmission.payment.domain.Settlement;
 import com.coderhan.lastmission.payment.domain.SettlementStatus;
 import com.coderhan.lastmission.payment.domain.SettlementSummary;
+import com.coderhan.lastmission.reservation.ReservationOrderDirectory;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -43,7 +44,7 @@ class SettlementServiceTest {
     @Mock SettlementRepository settlementRepository;
     @Mock PaymentRepository paymentRepository;
     @Mock RefundRepository refundRepository;
-    @Mock EventOrderLookup eventOrderLookup;
+    @Mock ReservationOrderDirectory reservationOrderDirectory;
     @Mock EventManagerLookup eventManagerLookup;
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
@@ -57,7 +58,7 @@ class SettlementServiceTest {
         Payment payment2 = paymentWithAmount(2L, "ORD-2", BigDecimal.valueOf(20000));
 
         when(settlementRepository.existsByEventId(EVENT_ID)).thenReturn(false);
-        when(eventOrderLookup.findOrderIdsByEventId(EVENT_ID)).thenReturn(List.of("ORD-1", "ORD-2"));
+        when(reservationOrderDirectory.findOrderIdsByEventId(EVENT_ID)).thenReturn(List.of("ORD-1", "ORD-2"));
         when(paymentRepository.findByOrderIdAndStatus("ORD-1", PaymentStatus.COMPLETED)).thenReturn(Optional.of(payment1));
         when(paymentRepository.findByOrderIdAndStatus("ORD-2", PaymentStatus.COMPLETED)).thenReturn(Optional.of(payment2));
         when(refundRepository.findActiveByPaymentId(1L)).thenReturn(Optional.empty());
@@ -77,7 +78,7 @@ class SettlementServiceTest {
 
         service.create(EVENT_ID);
 
-        verify(eventOrderLookup, never()).findOrderIdsByEventId(anyLong());
+        verify(reservationOrderDirectory, never()).findOrderIdsByEventId(anyLong());
         verify(settlementRepository, never()).save(anyLong(), any(), any(), any(), any(), any());
     }
 
@@ -85,7 +86,7 @@ class SettlementServiceTest {
     @DisplayName("행사에 속한 주문이 없으면 매출 0원으로 정산을 생성한다")
     void createsZeroSettlementWhenNoOrdersFound() {
         when(settlementRepository.existsByEventId(EVENT_ID)).thenReturn(false);
-        when(eventOrderLookup.findOrderIdsByEventId(EVENT_ID)).thenReturn(List.of());
+        when(reservationOrderDirectory.findOrderIdsByEventId(EVENT_ID)).thenReturn(List.of());
 
         service.create(EVENT_ID);
 
