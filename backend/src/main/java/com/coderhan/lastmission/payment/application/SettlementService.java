@@ -6,6 +6,7 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import com.coderhan.lastmission.event.EventManagerQueryPort;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
@@ -28,7 +29,7 @@ public class SettlementService {
     private final PaymentRepository paymentRepository;
     private final RefundRepository refundRepository;
     private final ReservationOrderDirectory reservationOrderDirectory;
-    private final EventManagerLookup eventManagerLookup;
+    private final EventManagerQueryPort eventManagerQueryPort;
     private final Clock clock;
 
     /**
@@ -54,7 +55,7 @@ public class SettlementService {
 
     /** 정산 목록 조회. 본인이 담당하는 행사의 정산만 보인다(역방향 조회로 SQL 단에서 필터링). */
     public List<Settlement> list(long userId) {
-        List<Long> managedEventIds = eventManagerLookup.findEventIdsManagedBy(userId);
+        List<Long> managedEventIds = eventManagerQueryPort.findEventIdsManagedBy(userId);
         return settlementRepository.findByEventIdIn(managedEventIds);
     }
 
@@ -63,7 +64,7 @@ public class SettlementService {
         Settlement settlement = settlementRepository.findById(settlementId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_SETTLEMENT_NOT_FOUND, "정산 내역을 찾을 수 없습니다."));
 
-        Long managerId = eventManagerLookup.findEventManagerId(settlement.eventId());
+        Long managerId = eventManagerQueryPort.findEventManagerId(settlement.eventId()).orElse(null);
         validateSettlementAccess(userId, managerId);
 
         return settlement;
