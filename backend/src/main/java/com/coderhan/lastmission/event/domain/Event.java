@@ -80,6 +80,9 @@ public class Event {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    @Column(name = "ended_notified_at")
+    private Instant endedNotifiedAt;
+
     public Event(String title, EventCategory category, Long managerId) {
         this.title = title;
         this.category = category;
@@ -126,6 +129,10 @@ public class Event {
 
     public void softDelete(Instant now) {
         this.deletedAt = now;
+    }
+
+    public void markEndedNotified(Instant now) {
+        this.endedNotifiedAt = now;
     }
 
     public void increaseViewCount() {

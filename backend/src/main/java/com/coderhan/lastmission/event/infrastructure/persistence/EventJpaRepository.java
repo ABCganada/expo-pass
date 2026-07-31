@@ -1,5 +1,6 @@
 package com.coderhan.lastmission.event.infrastructure.persistence;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.event.application.EventRepository;
@@ -32,8 +33,36 @@ interface EventJpaRepository extends JpaRepository<Event, Long>, EventRepository
     @Query("""
         SELECT e FROM Event e
         JOIN FETCH e.category
+        WHERE e.status = :status AND e.category.id = :categoryId AND e.deletedAt IS NULL
+        ORDER BY e.startDate ASC
+    """)
+    List<Event> findByStatusAndCategoryIdOrderByStartDateAsc(
+            @Param("status") EventStatus status, @Param("categoryId") long categoryId);
+
+    @Override
+    @Query("""
+        SELECT e FROM Event e
+        JOIN FETCH e.category
         WHERE e.deletedAt IS NULL
         ORDER BY e.startDate ASC
     """)
     List<Event> findAllOrderByStartDateAsc();
+
+    @Override
+    @Query("""
+        SELECT e FROM Event e
+        WHERE e.status = com.coderhan.lastmission.event.domain.EventStatus.PUBLISHED
+        AND e.deletedAt IS NULL
+        AND e.endDate < :date
+        AND e.endedNotifiedAt IS NULL
+    """)
+    List<Event> findEndedEventsNotNotified(@Param("date") LocalDate date);
+
+    @Override
+    @Query("""
+        SELECT e.id FROM Event e
+        WHERE e.managerId = :managerId 
+        AND e.deletedAt IS NULL
+    """)
+    List<Long> findIdsByManagerId(@Param("managerId") long managerId);
 }

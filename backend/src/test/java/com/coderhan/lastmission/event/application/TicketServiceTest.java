@@ -10,6 +10,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
+import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.application.command.CreateTicketCommand;
 import com.coderhan.lastmission.event.application.command.UpdateTicketCommand;
 import com.coderhan.lastmission.event.domain.Event;
@@ -37,6 +38,7 @@ class TicketServiceTest {
 
     @Mock EventRepository eventRepository;
     @Mock TicketRepository ticketRepository;
+    @Mock ReservationQueryPort reservationQueryPort;
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks TicketService service;
@@ -119,9 +121,10 @@ class TicketServiceTest {
     @Test
     void deleteTicket_예약_이력이_있으면_거부되고_삭제되지_않음() {
         Event event = event(EventStatus.PUBLISHED);
-        Ticket ticket = ticket(event, 100, 1); // 1장 판매되어 재고가 총수량과 다름
+        Ticket ticket = ticket(event, 100, 0);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(ticketRepository.findNotDeletedByIdAndEventId(TICKET_ID, EVENT_ID)).thenReturn(Optional.of(ticket));
+        when(reservationQueryPort.hasActiveReservationsForTicket(TICKET_ID)).thenReturn(true);
 
         assertThatThrownBy(() -> service.deleteTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false))
                 .isInstanceOfSatisfying(BusinessException.class,

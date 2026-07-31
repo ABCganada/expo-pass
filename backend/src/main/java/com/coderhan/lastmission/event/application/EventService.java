@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
 
+import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventCategory;
@@ -25,6 +26,7 @@ public class EventService {
     private final EventRepository eventRepository;
     private final EventCategoryRepository eventCategoryRepository;
     private final EventBookmarkService eventBookmarkService;
+    private final ReservationQueryPort reservationQueryPort;
     private final UserDirectory userDirectory;
     private final Clock clock;
 
@@ -78,8 +80,11 @@ public class EventService {
     public void deleteEvent(long eventId) {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        event.softDelete(Instant.now(clock));
+        if (reservationQueryPort.hasActiveReservationsForEvent(eventId)) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "예약 이력이 있는 행사는 삭제할 수 없습니다.");
+        }
         eventBookmarkService.removeBookmarksForEvent(eventId);
+        event.softDelete(Instant.now(clock));
     }
 
     /**

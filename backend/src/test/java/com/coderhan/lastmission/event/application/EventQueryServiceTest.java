@@ -80,10 +80,22 @@ class EventQueryServiceTest {
                 List.of(EVENT_ID, OTHER_EVENT_ID), EventImageType.THUMBNAIL))
                 .thenReturn(List.of(thumbnail));
 
-        List<EventQueryService.EventListItem> events = service.getPublishedEvents();
+        List<EventQueryService.EventListItem> events = service.getPublishedEvents(null);
 
         assertThat(events).extracting(EventQueryService.EventListItem::thumbnailUrl)
                 .containsExactly("https://bucket/thumb.png", null);
+    }
+
+    @Test
+    void getPublishedEvents_categoryId가_있으면_카테고리로_필터링() {
+        long categoryId = 5L;
+        Event matched = event(EVENT_ID, MANAGER_ID);
+        when(eventRepository.findByStatusAndCategoryIdOrderByStartDateAsc(EventStatus.PUBLISHED, categoryId))
+                .thenReturn(List.of(matched));
+
+        List<EventQueryService.EventListItem> events = service.getPublishedEvents(categoryId);
+
+        assertThat(events).extracting(EventQueryService.EventListItem::event).containsExactly(matched);
     }
 
     @Test

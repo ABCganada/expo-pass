@@ -36,10 +36,12 @@ public class EventQueryService {
     private final Clock clock;
 
     @Transactional(readOnly = true)
-    public List<EventListItem> getPublishedEvents() {
+    public List<EventListItem> getPublishedEvents(Long categoryId) {
         LocalDate today = LocalDate.now(clock);
 
-        List<Event> events = eventRepository.findByStatusOrderByStartDateAsc(EventStatus.PUBLISHED);
+        List<Event> events = categoryId == null
+                ? eventRepository.findByStatusOrderByStartDateAsc(EventStatus.PUBLISHED)
+                : eventRepository.findByStatusAndCategoryIdOrderByStartDateAsc(EventStatus.PUBLISHED, categoryId);
         Map<Long, String> thumbnailByEventId = thumbnailUrlsByEventIds(events);
 
         return events.stream()
