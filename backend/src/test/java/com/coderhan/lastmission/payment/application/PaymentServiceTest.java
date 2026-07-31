@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
+import com.coderhan.lastmission.reservation.ReservationOrderDirectory;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +36,7 @@ class PaymentServiceTest {
 
     @Mock PaymentRepository repository;
     @Mock PaymentGateway paymentGateway;
+    @Mock ReservationOrderDirectory reservationOrderDirectory;
 
     @InjectMocks PaymentService service;
 
@@ -42,6 +44,7 @@ class PaymentServiceTest {
     @DisplayName("동일한 paymentKey로 이미 승인된 결제가 있으면 토스를 다시 호출하지 않고 기존 결제를 반환한다")
     void returnsExistingPaymentWithoutCallingGatewayWhenIdempotencyKeyAlreadyProcessed() {
         Payment existing = completedPayment();
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(AMOUNT));
         when(repository.findByIdempotencyKey(PAYMENT_KEY)).thenReturn(Optional.of(existing));
 
         Payment result = service.confirm(USER_ID, ORDER_ID, PG_ORDER_ID, PAYMENT_KEY, AMOUNT);
@@ -55,6 +58,7 @@ class PaymentServiceTest {
     @DisplayName("신규 결제면 토스 승인을 호출하고 그 결과를 그대로 저장한다")
     void confirmsWithGatewayAndSavesResultForNewPayment() {
         Payment saved = completedPayment();
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(AMOUNT));
         when(repository.findByIdempotencyKey(PAYMENT_KEY)).thenReturn(Optional.empty());
         when(paymentGateway.confirm(PAYMENT_KEY, PG_ORDER_ID, AMOUNT))
                 .thenReturn(new PaymentGateway.ConfirmResult("CARD", APPROVED_AT));
@@ -70,6 +74,7 @@ class PaymentServiceTest {
     @DisplayName("저장 시점에 idempotency_key 경합이 나면 먼저 커밋된 결제를 반환한다(토스 이중 승인 방지)")
     void returnsAlreadyCommittedPaymentWhenSaveRacesOnIdempotencyKey() {
         Payment committedByOtherRequest = completedPayment();
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(AMOUNT));
         when(repository.findByIdempotencyKey(PAYMENT_KEY))
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(committedByOtherRequest));
@@ -86,6 +91,7 @@ class PaymentServiceTest {
     @Test
     @DisplayName("저장 실패가 idempotency_key 경합이 아니면(order_id 중복 등) 원래 예외를 그대로 던진다")
     void rethrowsOriginalExceptionWhenSaveFailsForReasonOtherThanIdempotencyKeyRace() {
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(AMOUNT));
         when(repository.findByIdempotencyKey(PAYMENT_KEY)).thenReturn(Optional.empty());
         when(paymentGateway.confirm(PAYMENT_KEY, PG_ORDER_ID, AMOUNT))
                 .thenReturn(new PaymentGateway.ConfirmResult("CARD", APPROVED_AT));
@@ -98,9 +104,34 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("결제 금액이 올바르지 않으면 게이트웨이를 호출하기 전에 PAYMENT_INVALID_REQUEST 예외를 던진다")
+    @DisplayName("결제 금액이 올바르지 않으면 주문 조회 전에 PAYMENT_INVALID_REQUEST 예외를 던진다")
     void rejectsInvalidAmountBeforeCallingGateway() {
         assertThatThrownBy(() -> service.confirm(USER_ID, ORDER_ID, PG_ORDER_ID, PAYMENT_KEY, BigDecimal.ZERO))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
+
+        verify(reservationOrderDirectory, never()).findOrderAmount(any());
+        verify(paymentGateway, never()).confirm(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("결제 금액이 주문 금액과 다르면 게이트웨이를 호출하기 전에 PAYMENT_INVALID_REQUEST 예외를 던진다")
+    void rejectsAmountMismatchWithOrderBeforeCallingGateway() {
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(BigDecimal.valueOf(9000)));
+
+        assertThatThrownBy(() -> service.confirm(USER_ID, ORDER_ID, PG_ORDER_ID, PAYMENT_KEY, AMOUNT))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
+
+        verify(paymentGateway, never()).confirm(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("주문 내역을 찾을 수 없으면 게이트웨이를 호출하기 전에 PAYMENT_INVALID_REQUEST 예외를 던진다")
+    void rejectsWhenOrderNotFound() {
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.confirm(USER_ID, ORDER_ID, PG_ORDER_ID, PAYMENT_KEY, AMOUNT))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
 

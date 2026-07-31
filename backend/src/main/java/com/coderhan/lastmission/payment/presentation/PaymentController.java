@@ -37,7 +37,6 @@ class PaymentController {
      * 완료 후 successUrl로 돌려주는 값 3개를 그대로 받는다 — orderId는 우리가 위젯을 열 때
      * 토스에 넘긴 값이라 reservationOrderId와 다를 수 있다(재시도 시 접미사 등).
      *
-     * TODO amount는 Reservation과 대조/검증 로직 추가 필요
      * TODO 결제 승인/실패에 대한 알림 reservation에 줘야 PENDING 변경 가능
      * TODO 결제 - 오더 간 정합성 스케줄링
      */

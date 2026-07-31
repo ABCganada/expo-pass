@@ -3,6 +3,7 @@ package com.coderhan.lastmission.payment.application;
 import java.math.BigDecimal;
 import java.util.List;
 import com.coderhan.lastmission.payment.domain.Payment;
+import com.coderhan.lastmission.reservation.ReservationOrderDirectory;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +16,14 @@ public class PaymentService {
 
     private final PaymentRepository repository;
     private final PaymentGateway paymentGateway;
+    private final ReservationOrderDirectory reservationOrderDirectory;
 
     /**
      * 결제 승인. Payment 도메인의 유일한 쓰기 로직이다 — 별도의 "결제 신청" 흐름은 없다.
      *
-     * Reservation 조회 없이 클라이언트가 보낸 amount를 그대로 신뢰한다(팀 결정).
+     * amount는 클라이언트가 보낸 값을 그대로 신뢰하지 않고, Reservation의 주문 금액과
+     * 대조해 검증한다(불일치 시 PG 승인 호출 전에 거부) — 클라이언트가 amount를 조작해
+     * 실제 주문 금액보다 적게 결제를 시도하는 것을 막기 위함.
      * paymentKey를 idempotency_key로 재사용
      * 토스가 이미 결제 시도 1건당 고유하게 발급하는 값이라, 클라이언트가 별도로 idempotency key를 만들어 보낼 필요가 없다.
      *
@@ -30,9 +34,19 @@ public class PaymentService {
     public Payment confirm(long userId, String reservationOrderId, String pgOrderId,
                            String paymentKey, BigDecimal amount) {
         Payment.validate(reservationOrderId, pgOrderId, paymentKey, amount);
+        validateAmountMatchesOrder(reservationOrderId, amount);
 
         return repository.findByIdempotencyKey(paymentKey)
                 .orElseGet(() -> confirmAndSave(userId, reservationOrderId, pgOrderId, paymentKey, amount));
+    }
+
+    private void validateAmountMatchesOrder(String orderId, BigDecimal amount) {
+        BigDecimal orderAmount = reservationOrderDirectory.findOrderAmount(orderId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_INVALID_REQUEST, "주문 내역을 찾을 수 없습니다."));
+
+        if (amount.compareTo(orderAmount) != 0) {
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_REQUEST, "결제 금액이 주문 금액과 일치하지 않습니다.");
+        }
     }
 
     private Payment confirmAndSave(long userId, String reservationOrderId, String pgOrderId,

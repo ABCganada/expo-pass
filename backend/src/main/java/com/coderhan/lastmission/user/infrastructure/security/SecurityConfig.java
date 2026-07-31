@@ -33,7 +33,9 @@ class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
                         // 광고 노출/클릭 집계는 공개 트래킹 엔드포인트라 CSRF 제외
-                        .ignoringRequestMatchers("/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks"))
+                        // 토스 웹훅도 외부 서버가 직접 호출하는 콜백이라 CSRF 토큰을 보낼 수 없음
+                        .ignoringRequestMatchers("/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks",
+                                "/webhooks/payments/toss"))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .requestCache(RequestCacheConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -43,6 +45,8 @@ class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/check").denyAll()
                         .requestMatchers("/auth/**", "/error").permitAll()
+                        // 토스 웹훅 수신 — 인증 없이 열려있음. 발신 IP 검증은 별도 작업(TODO)
+                        .requestMatchers("/webhooks/payments/toss").permitAll()
                         // 활성 배너 목록 및 집계는 비인증 허용
                         .requestMatchers(HttpMethod.GET, "/api/v1/banners").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks").permitAll()
