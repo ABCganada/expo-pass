@@ -17,6 +17,9 @@ public interface EventRepository {
     // 고객 목록 조회용. status + start_date 순으로 정렬
     List<Event> findByStatusOrderByStartDateAsc(EventStatus status);
 
+    // 고객 목록 조회용(카테고리 필터). status + category_id + start_date 순으로 정렬
+    List<Event> findByStatusAndCategoryIdOrderByStartDateAsc(EventStatus status, long categoryId);
+
     // 관리자 목록 조회용. start_date 순으로 정렬
     List<Event> findAllOrderByStartDateAsc();
 }

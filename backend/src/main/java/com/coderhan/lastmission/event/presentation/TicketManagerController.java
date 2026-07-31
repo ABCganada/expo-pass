@@ -24,9 +24,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/admin/events/{eventId}/tickets")
+@RequestMapping("/api/v1/manager/events/{eventId}/tickets")
 @RequiredArgsConstructor
-class TicketAdminController {
+class TicketManagerController {
     private final TicketService ticketService;
 
     @PostMapping

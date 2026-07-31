@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.user.presentation;
 
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import org.springframework.security.core.Authentication;
@@ -22,7 +23,7 @@ public class MeController {
     @GetMapping("/me")
     public MeResponse me(@AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
         Set<String> roles = new LinkedHashSet<>(authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
+                .map(GrantedAuthority::getAuthority).filter(Objects::nonNull)
                 .filter(authority -> authority.startsWith("ROLE_"))
                 .map(authority -> authority.substring("ROLE_".length()))
                 .toList());

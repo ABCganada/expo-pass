@@ -22,7 +22,6 @@ public class BannerAdService {
     private final BannerAdRepository adRepository;
     private final BannerSlotRepository slotRepository;
     private final BannerStatRepository statRepository;
-    private final BannerPricingPolicyRepository policyRepository;
     private final Clock clock;
 
     @Transactional
@@ -61,9 +60,6 @@ public class BannerAdService {
         return adRepository.update(id, title, bannerImageUrl, adImageUrl, linkUrl, priority, startsAt, endsAt);
     }
 
-    /**
-     * 관리자가 광고를 승인한다. PENDING → APPROVED.
-     */
     @Transactional
     public BannerAd approve(UUID id) {
         BannerAd ad = adRepository.findById(id)
@@ -132,10 +128,7 @@ public class BannerAdService {
 
     private long calculateTotalAmount(List<BannerSlot> slots, int days) {
         return slots.stream()
-                .mapToLong(slot -> policyRepository.findBySlotIdAndDurationDays(slot.id(), days)
-                        .map(p -> p.price())
-                        .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST,
-                                "해당 슬롯(" + slot.name() + ")에 " + days + "일 가격 정책이 없습니다.")))
+                .mapToLong(slot -> slot.pricePerDay() * days)
                 .sum();
     }
 }

@@ -9,11 +9,10 @@ import static org.mockito.Mockito.when;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Optional;
 
+import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventCategory;
 import com.coderhan.lastmission.shared.error.BusinessException;
@@ -31,37 +30,15 @@ import org.springframework.test.util.ReflectionTestUtils;
 class EventServiceTest {
     private static final long EVENT_ID = 1L;
     private static final long MANAGER_ID = 100L;
-    private static final long OTHER_MANAGER_ID = 200L;
 
     @Mock EventRepository eventRepository;
     @Mock EventCategoryRepository eventCategoryRepository;
     @Mock EventBookmarkService eventBookmarkService;
+    @Mock ReservationQueryPort reservationQueryPort;
     @Mock UserDirectory userDirectory;
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks EventService service;
-
-    @Test
-    void getAdminEvents_ADMIN은_전체_조회() {
-        Event own = event(MANAGER_ID);
-        Event other = event(OTHER_MANAGER_ID);
-        when(eventRepository.findAllOrderByStartDateAsc()).thenReturn(List.of(own, other));
-
-        List<EventService.EventListItem> events = service.getAdminEvents(MANAGER_ID, true);
-
-        assertThat(events).extracting(EventService.EventListItem::event).containsExactly(own, other);
-    }
-
-    @Test
-    void getAdminEvents_MANAGER는_본인_담당_행사만_조회() {
-        Event own = event(MANAGER_ID);
-        Event other = event(OTHER_MANAGER_ID);
-        when(eventRepository.findAllOrderByStartDateAsc()).thenReturn(List.of(own, other));
-
-        List<EventService.EventListItem> events = service.getAdminEvents(MANAGER_ID, false);
-
-        assertThat(events).extracting(EventService.EventListItem::event).containsExactly(own);
-    }
 
     @Test
     void deleteEvent_소프트삭제_후_북마크_삭제() {
@@ -72,6 +49,19 @@ class EventServiceTest {
 
         assertThat(event.isDeleted()).isTrue();
         verify(eventBookmarkService).removeBookmarksForEvent(EVENT_ID);
+    }
+
+    @Test
+    void deleteEvent_예약_이력이_있으면_거부되고_삭제되지_않음() {
+        Event event = event(MANAGER_ID);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+        when(reservationQueryPort.hasActiveReservationsForEvent(EVENT_ID)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.deleteEvent(EVENT_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+        assertThat(event.isDeleted()).isFalse();
+        verify(eventBookmarkService, never()).removeBookmarksForEvent(anyLong());
     }
 
     @Test
@@ -88,8 +78,6 @@ class EventServiceTest {
         EventCategory category = new EventCategory("MUSIC", "음악", true);
         Event event = new Event("테스트 행사", category, managerId);
         ReflectionTestUtils.setField(event, "id", EVENT_ID);
-        ReflectionTestUtils.setField(event, "startDate", LocalDate.parse("2026-08-01"));
-        ReflectionTestUtils.setField(event, "endDate", LocalDate.parse("2026-08-31"));
         return event;
     }
 }

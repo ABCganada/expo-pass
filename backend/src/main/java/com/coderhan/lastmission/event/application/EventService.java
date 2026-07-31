@@ -2,26 +2,23 @@ package com.coderhan.lastmission.event.application;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.util.List;
 import java.util.Objects;
 
+import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventCategory;
-import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.UserDirectory;
-import com.coderhan.lastmission.user.UserRef;
 import com.coderhan.lastmission.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 행사 목록 조회 - PUBLISHED만 조회
+ * 행사 생성/수정/삭제/상태 변경 전담 서비스
  */
 @Service
 @RequiredArgsConstructor
@@ -29,41 +26,9 @@ public class EventService {
     private final EventRepository eventRepository;
     private final EventCategoryRepository eventCategoryRepository;
     private final EventBookmarkService eventBookmarkService;
+    private final ReservationQueryPort reservationQueryPort;
     private final UserDirectory userDirectory;
     private final Clock clock;
-
-    @Transactional(readOnly = true)
-    public List<EventListItem> getPublishedEvents() {
-        LocalDate today = LocalDate.now(clock);
-        return eventRepository.findByStatusOrderByStartDateAsc(EventStatus.PUBLISHED)
-                .stream()
-                .map(event -> new EventListItem(event, event.phase(today)))
-                .toList();
-    }
-
-    /**
-     * 관리자용 행사 목록 조회 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
-     */
-    @Transactional(readOnly = true)
-    public List<EventListItem> getAdminEvents(long callerUserId, boolean isAdmin) {
-        LocalDate today = LocalDate.now(clock);
-        return eventRepository.findAllOrderByStartDateAsc()
-                .stream()
-                .filter(event -> isAdmin || Objects.equals(event.getManagerId(), callerUserId))
-                .map(event -> new EventListItem(event, event.phase(today)))
-                .toList();
-    }
-
-    /**
-     * 행사 상세 조회
-     */
-    @Transactional(readOnly = true)
-    public EventDetail getEventDetail(long id) {
-        Event event = eventRepository.findNotDeletedById(id)
-                .filter(candidate -> candidate.getStatus() != EventStatus.DRAFT)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        return new EventDetail(event, event.phase(LocalDate.now(clock)));
-    }
 
     /**
      * 행사 생성 - SUPER_ADMIN 전용
@@ -80,22 +45,6 @@ public class EventService {
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.EVENT_MANAGER_NOT_FOUND, "MANAGER 권한을 가진 담당자를 찾을 수 없습니다."));
         return eventRepository.save(new Event(title, category, managerId));
-    }
-
-    /**
-     * 관리자용 행사 상세 조회 - DRAFT도 조회 가능
-     * ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
-     */
-    @Transactional(readOnly = true)
-    public AdminEventDetailResult getAdminEventDetail(long eventId, long callerUserId, boolean admin) {
-        Event event = eventRepository.findNotDeletedById(eventId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        validateEventAccess(event, callerUserId, admin, "조회");
-        UserRef manager = userDirectory.findActiveByIds(List.of(event.getManagerId()))
-                .stream()
-                .findFirst()
-                .orElse(null);
-        return new AdminEventDetailResult(event, manager);
     }
 
     /**
@@ -131,8 +80,11 @@ public class EventService {
     public void deleteEvent(long eventId) {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        event.softDelete(Instant.now(clock));
+        if (reservationQueryPort.hasActiveReservationsForEvent(eventId)) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "예약 이력이 있는 행사는 삭제할 수 없습니다.");
+        }
         eventBookmarkService.removeBookmarksForEvent(eventId);
+        event.softDelete(Instant.now(clock));
     }
 
     /**
@@ -176,10 +128,4 @@ public class EventService {
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
-
-    public record EventListItem(Event event, EventPhase phase) {}
-
-    public record EventDetail(Event event, EventPhase phase) {}
-    
-    public record AdminEventDetailResult(Event event, UserRef manager) {}
 }

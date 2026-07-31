@@ -10,6 +10,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
@@ -21,7 +23,7 @@ class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, AuthClient authClient,
             UserProvisioningService userProvisioningService,
-            @Value("${lastmission.security.csrf.secure-cookie:true}") boolean secureCsrfCookie) throws Exception {
+            @Value("${lastmission.security.csrf.secure-cookie:true}") boolean secureCsrfCookie) {
         CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfTokenRepository.setCookieName("LASTMISSION-XSRF-TOKEN");
         csrfTokenRepository.setHeaderName("X-LASTMISSION-XSRF-TOKEN");
@@ -31,16 +33,20 @@ class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
                         // 광고 노출/클릭 집계는 공개 트래킹 엔드포인트라 CSRF 제외
-                        .ignoringRequestMatchers("/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks"))
+                        // 토스 웹훅도 외부 서버가 직접 호출하는 콜백이라 CSRF 토큰을 보낼 수 없음
+                        .ignoringRequestMatchers("/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks",
+                                "/webhooks/payments/toss"))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .requestCache(requestCache -> requestCache.disable())
-                .formLogin(formLogin -> formLogin.disable())
-                .httpBasic(httpBasic -> httpBasic.disable())
-                .logout(logout -> logout.disable())
+                .requestCache(RequestCacheConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/check").denyAll()
                         .requestMatchers("/auth/**", "/error").permitAll()
+                        // 토스 웹훅 수신 — 인증 없이 열려있음. 발신 IP 검증은 별도 작업(TODO)
+                        .requestMatchers("/webhooks/payments/toss").permitAll()
                         // 활성 배너 목록 및 집계는 비인증 허용
                         .requestMatchers(HttpMethod.GET, "/api/v1/banners").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks").permitAll()
@@ -53,8 +59,8 @@ class SecurityConfig {
                         .requestMatchers("/ws/**").hasAnyRole("USER")
                         .anyRequest().denyAll())
                 .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, exception) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
-                        .accessDeniedHandler((request, response, exception) -> response.sendError(HttpServletResponse.SC_FORBIDDEN)))
+                        .authenticationEntryPoint((_, response, _) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
+                        .accessDeniedHandler((_, response, _) -> response.sendError(HttpServletResponse.SC_FORBIDDEN)))
                 .addFilterBefore(new LastMissionAuthenticationFilter(authClient, userProvisioningService),
                         AnonymousAuthenticationFilter.class);
         return http.build();

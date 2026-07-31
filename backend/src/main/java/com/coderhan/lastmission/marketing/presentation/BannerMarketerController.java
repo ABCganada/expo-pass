@@ -6,13 +6,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.application.BannerAdService;
-import com.coderhan.lastmission.marketing.application.BannerPricingPolicyService;
+import com.coderhan.lastmission.marketing.application.BannerImageStorage;
 import com.coderhan.lastmission.marketing.application.BannerSlotService;
 import com.coderhan.lastmission.marketing.application.BannerStatService;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStats;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
-import com.coderhan.lastmission.marketing.domain.BannerPricingPolicy;
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
 import com.coderhan.lastmission.marketing.domain.BannerSlotType;
 import com.coderhan.lastmission.shared.ApiResponse;
@@ -32,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 마케터용 광고 등록/수정 API.
@@ -43,25 +43,29 @@ import org.springframework.web.bind.annotation.RestController;
 class BannerMarketerController {
     private final BannerAdService bannerAdService;
     private final BannerSlotService bannerSlotService;
-    private final BannerPricingPolicyService bannerPricingPolicyService;
     private final BannerStatService bannerStatService;
+    private final BannerImageStorage bannerImageStorage;
+
+    @PostMapping(path = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<ApiResponse<ImageUploadResponse>> uploadImage(
+            @RequestParam("file") MultipartFile file) throws java.io.IOException {
+        String url = bannerImageStorage.upload(
+                file.getOriginalFilename(), file.getContentType(), file.getBytes());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(new ImageUploadResponse(url)));
+    }
 
     @GetMapping("/slots")
-    ApiResponse<List<SlotWithPoliciesResponse>> getAvailableSlots() {
-        List<BannerSlot> slots = bannerSlotService.getSlots();
-        List<SlotWithPoliciesResponse> responses = slots.stream()
-                .map(slot -> SlotWithPoliciesResponse.from(
-                        slot, bannerPricingPolicyService.getPoliciesBySlot(slot.id())))
-                .toList();
-        return ApiResponse.success(responses);
+    ApiResponse<List<SlotResponse>> getAvailableSlots() {
+        return ApiResponse.success(bannerSlotService.getSlots().stream()
+                .map(SlotResponse::from)
+                .toList());
     }
 
     @GetMapping
     ApiResponse<List<BannerAdResponse>> getMyAds(@AuthenticationPrincipal LastMissionPrincipal principal) {
-        List<BannerAdResponse> responses = bannerAdService.getMyAds(principal.email()).stream()
+        return ApiResponse.success(bannerAdService.getMyAds(principal.email()).stream()
                 .map(BannerAdResponse::from)
-                .toList();
-        return ApiResponse.success(responses);
+                .toList());
     }
 
     @PostMapping
@@ -109,25 +113,13 @@ class BannerMarketerController {
         return ResponseEntity.ok().headers(headers).body(xlsx);
     }
 
-    record SlotWithPoliciesResponse(
-            UUID id,
-            String name,
-            BannerSlotType type,
-            int maxCount,
-            List<PolicyResponse> policies
-    ) {
-        static SlotWithPoliciesResponse from(BannerSlot slot, List<BannerPricingPolicy> policies) {
-            return new SlotWithPoliciesResponse(
-                    slot.id(), slot.name(), slot.type(), slot.maxCount(),
-                    policies.stream().map(PolicyResponse::from).toList());
+    record SlotResponse(UUID id, String name, BannerSlotType type, int maxCount, long pricePerDay) {
+        static SlotResponse from(BannerSlot slot) {
+            return new SlotResponse(slot.id(), slot.name(), slot.type(), slot.maxCount(), slot.pricePerDay());
         }
     }
 
-    record PolicyResponse(UUID id, int durationDays, long price) {
-        static PolicyResponse from(BannerPricingPolicy p) {
-            return new PolicyResponse(p.id(), p.durationDays(), p.price());
-        }
-    }
+    record ImageUploadResponse(String imageUrl) {}
 
     record RegisterAdRequest(
             Set<UUID> slotIds,

@@ -1,7 +1,7 @@
 import { getCsrfToken } from "@/features/shared/api/csrf";
 import type {
   BannerAdStats,
-  BannerSlot,
+  BannerSlotWithPolicies,
   MarketerBannerAd,
   RegisterAdCommand,
   UpdateAdCommand,
@@ -21,9 +21,24 @@ export const marketerBannerService = {
     fetch(`${BASE}/manager/banner-ads`, { credentials: "include", signal })
       .then((res) => parseData<MarketerBannerAd[]>(res)),
 
-  getSlots: (signal?: AbortSignal): Promise<BannerSlot[]> =>
-    fetch(`${BASE}/admin/banner/slots`, { credentials: "include", signal })
-      .then((res) => parseData<BannerSlot[]>(res)),
+  getSlotsWithPolicies: (signal?: AbortSignal): Promise<BannerSlotWithPolicies[]> =>
+    fetch(`${BASE}/manager/banner-ads/slots`, { credentials: "include", signal })
+      .then((res) => parseData<BannerSlotWithPolicies[]>(res)),
+
+  uploadImage: async (file: File): Promise<string> => {
+    const csrf = await getCsrfToken();
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${BASE}/manager/banner-ads/images`, {
+      method: "POST",
+      credentials: "include",
+      headers: { [csrf.headerName]: csrf.token },
+      body: form,
+    });
+    const body = await res.json();
+    if (!res.ok || !body.success) throw new Error(body.message ?? "이미지 업로드에 실패했습니다.");
+    return body.data.imageUrl as string;
+  },
 
   registerAd: async (cmd: RegisterAdCommand): Promise<MarketerBannerAd> => {
     const csrf = await getCsrfToken();

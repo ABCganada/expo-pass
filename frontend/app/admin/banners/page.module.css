@@ -59,23 +59,95 @@
 
 .slotCard {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-content-background);
+  transition: border-color 0.15s ease;
+}
+
+.slotCard:hover {
+  border-color: var(--color-primary);
+}
+
+.slotInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
 }
 
 .slotName {
   color: var(--color-text-primary);
   font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .slotMeta {
   color: var(--color-text-secondary);
   font-size: 12px;
+}
+
+.slotActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.btnIconPolicy,
+.btnIconEdit,
+.btnIconDelete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnIconPolicy {
+  color: var(--color-text-secondary);
+}
+
+.btnIconPolicy:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btnIconEdit {
+  color: var(--color-text-secondary);
+}
+
+.btnIconEdit:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btnIconDelete {
+  color: var(--color-text-secondary);
+}
+
+.btnIconDelete:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.errorMsg {
+  padding: 10px 14px;
+  border-radius: var(--radius-button);
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  color: var(--color-danger);
+  font-size: 13px;
 }
 
 .adGrid {
