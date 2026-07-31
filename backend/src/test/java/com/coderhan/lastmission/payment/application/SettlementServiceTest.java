@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
-import com.coderhan.lastmission.event.EventManagerQueryPort;
+import com.coderhan.lastmission.event.PaymentEventQueryPort;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
@@ -46,7 +46,7 @@ class SettlementServiceTest {
     @Mock PaymentRepository paymentRepository;
     @Mock RefundRepository refundRepository;
     @Mock ReservationOrderDirectory reservationOrderDirectory;
-    @Mock EventManagerQueryPort eventManagerQueryPort;
+    @Mock PaymentEventQueryPort paymentEventQueryPort;
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks SettlementService service;
@@ -99,7 +99,7 @@ class SettlementServiceTest {
     @DisplayName("본인이 담당하는 행사의 정산만 목록에 보인다")
     void listsOnlySettlementsForOwnedEvent() {
         Settlement owned = settlementFor(EVENT_ID);
-        when(eventManagerQueryPort.findEventIdsManagedBy(USER_ID)).thenReturn(List.of(EVENT_ID));
+        when(paymentEventQueryPort.findEventIdsManagedBy(USER_ID)).thenReturn(List.of(EVENT_ID));
         when(settlementRepository.findByEventIdIn(List.of(EVENT_ID))).thenReturn(List.of(owned));
 
         List<Settlement> result = service.list(USER_ID);
@@ -110,7 +110,7 @@ class SettlementServiceTest {
     @Test
     @DisplayName("담당하는 행사가 없으면 정산 조회 자체를 하지 않고 빈 목록을 반환한다")
     void returnsEmptyListWhenCallerManagesNoEvents() {
-        when(eventManagerQueryPort.findEventIdsManagedBy(USER_ID)).thenReturn(List.of());
+        when(paymentEventQueryPort.findEventIdsManagedBy(USER_ID)).thenReturn(List.of());
         when(settlementRepository.findByEventIdIn(List.of())).thenReturn(List.of());
 
         List<Settlement> result = service.list(USER_ID);
@@ -123,7 +123,7 @@ class SettlementServiceTest {
     void getsSettlementWhenCallerManagesItsEvent() {
         Settlement settlement = settlementFor(EVENT_ID);
         when(settlementRepository.findById(SETTLEMENT_ID)).thenReturn(Optional.of(settlement));
-        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(USER_ID));
+        when(paymentEventQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(USER_ID));
 
         Settlement result = service.get(USER_ID, SETTLEMENT_ID);
 
@@ -135,7 +135,7 @@ class SettlementServiceTest {
     void rejectsGetWhenCallerDoesNotManageItsEvent() {
         Settlement settlement = settlementFor(EVENT_ID);
         when(settlementRepository.findById(SETTLEMENT_ID)).thenReturn(Optional.of(settlement));
-        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(OTHER_USER_ID));
+        when(paymentEventQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(OTHER_USER_ID));
 
         assertThatThrownBy(() -> service.get(USER_ID, SETTLEMENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
@@ -147,7 +147,7 @@ class SettlementServiceTest {
     void rejectsGetWithoutNpeWhenManagerIsUnknown() {
         Settlement settlement = settlementFor(EVENT_ID);
         when(settlementRepository.findById(SETTLEMENT_ID)).thenReturn(Optional.of(settlement));
-        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.empty());
+        when(paymentEventQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.get(USER_ID, SETTLEMENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
