@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -62,7 +65,7 @@ class BannerAdServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
 
-        verify(adRepository, never()).save(any(), any(), any(), any(), any(), any(), any(), any(), anyLong());
+        verify(adRepository, never()).save(any(), any(), any(), any(), any(), any(), any(), any(), any(), anyLong());
     }
 
     @Test
@@ -123,8 +126,8 @@ class BannerAdServiceTest {
         long expectedAmount = PRICE_PER_DAY * 7;
         BannerAd expected = ad(BannerAdStatus.PENDING, expectedAmount);
         when(slotRepository.findAllByIds(SLOT_IDS)).thenReturn(List.of(bannerSlot()));
-        when(adRepository.save(SLOT_IDS, "여름 세일", "https://img.example.com/banner.png",
-                null, null, STARTS_AT, ENDS_AT, MARKETER, expectedAmount)).thenReturn(expected);
+        when(adRepository.save(eq(SLOT_IDS), anyString(), eq("여름 세일"), eq("https://img.example.com/banner.png"),
+                isNull(), isNull(), eq(STARTS_AT), eq(ENDS_AT), eq(MARKETER), eq(expectedAmount))).thenReturn(expected);
 
         // Act
         BannerAd result = service.registerAd(
@@ -280,13 +283,13 @@ class BannerAdServiceTest {
     }
 
     private BannerAd ad(BannerAdStatus status) {
-        return new BannerAd(AD_ID, SLOT_IDS, "여름 세일",
+        return new BannerAd(AD_ID, SLOT_IDS, null, "여름 세일",
                 "https://img.example.com/banner.png", null,
                 null, status, STARTS_AT, ENDS_AT, MARKETER, NOW, null);
     }
 
     private BannerAd ad(BannerAdStatus status, Long totalAmount) {
-        return new BannerAd(AD_ID, SLOT_IDS, "여름 세일",
+        return new BannerAd(AD_ID, SLOT_IDS, null, "여름 세일",
                 "https://img.example.com/banner.png", null,
                 null, status, STARTS_AT, ENDS_AT, MARKETER, NOW, totalAmount);
     }

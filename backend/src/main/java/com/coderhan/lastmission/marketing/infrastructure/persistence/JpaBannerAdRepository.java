@@ -18,11 +18,11 @@ class JpaBannerAdRepository implements BannerAdRepository {
     private final BannerAdJpaRepository jpaRepository;
 
     @Override
-    public BannerAd save(Set<UUID> slotIds, String title, String bannerImageUrl, String adImageUrl,
+    public BannerAd save(Set<UUID> slotIds, String orderId, String title, String bannerImageUrl, String adImageUrl,
                          String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt,
                          String createdBy, long totalAmount) {
         BannerAdEntity entity = new BannerAdEntity(
-                null, slotIds, title, bannerImageUrl, adImageUrl, linkUrl,
+                null, slotIds, orderId, title, bannerImageUrl, adImageUrl, linkUrl,
                 BannerAdStatus.PENDING, startsAt, endsAt, createdBy, OffsetDateTime.now(), totalAmount);
         return toDomain(jpaRepository.save(entity));
     }
@@ -97,7 +97,7 @@ class JpaBannerAdRepository implements BannerAdRepository {
     }
 
     private static BannerAd toDomain(BannerAdEntity entity) {
-        return new BannerAd(entity.getId(), entity.getSlotIds(), entity.getTitle(),
+        return new BannerAd(entity.getId(), entity.getSlotIds(), entity.getOrderId(), entity.getTitle(),
                 entity.getBannerImageUrl(), entity.getAdImageUrl(),
                 entity.getLinkUrl(), entity.getStatus(),
                 entity.getStartsAt(), entity.getEndsAt(), entity.getCreatedBy(),

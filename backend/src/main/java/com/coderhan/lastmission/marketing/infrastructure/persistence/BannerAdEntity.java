@@ -43,6 +43,9 @@ class BannerAdEntity {
     @Column(name = "slot_id")
     private Set<UUID> slotIds = new HashSet<>();
 
+    @Column(name = "order_id", unique = true)
+    private String orderId;
+
     @Column(name = "title", nullable = false)
     private String title;
 

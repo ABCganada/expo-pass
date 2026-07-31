@@ -40,8 +40,9 @@ public class BannerAdService {
 
         int days = (int) Math.max(1, ChronoUnit.DAYS.between(startsAt.toLocalDate(), endsAt.toLocalDate()));
         long totalAmount = calculateTotalAmount(slots, days);
+        String orderId = UUID.randomUUID().toString();
 
-        return adRepository.save(slotIds, title, bannerImageUrl, adImageUrl, linkUrl,
+        return adRepository.save(slotIds, orderId, title, bannerImageUrl, adImageUrl, linkUrl,
                 startsAt, endsAt, createdBy, totalAmount);
     }
 
