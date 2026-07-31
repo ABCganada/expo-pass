@@ -6,8 +6,11 @@ import com.coderhan.lastmission.payment.application.PaymentLogPage;
 import com.coderhan.lastmission.payment.application.PaymentLogService;
 import com.coderhan.lastmission.payment.domain.PaymentLog;
 import com.coderhan.lastmission.shared.ApiResponse;
+import com.coderhan.lastmission.shared.error.BusinessException;
+import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,6 +31,23 @@ class PaymentLogController {
     ) {
         PaymentLogPage result = paymentLogService.list(page, size);
         return ApiResponse.success(PaymentLogPageResponse.from(result));
+    }
+
+    /** 결제 로그 상세 조회. */
+    @GetMapping("/{id}")
+    ApiResponse<PaymentLogResponse> get(@PathVariable String id) {
+        PaymentLog log = paymentLogService.get(parseId(id));
+        return ApiResponse.success(PaymentLogResponse.from(log));
+    }
+
+    private long parseId(String value) {
+        try {
+            long id = Long.parseLong(value);
+            if (id <= 0) throw new NumberFormatException();
+            return id;
+        } catch (NumberFormatException exception) {
+            throw new BusinessException(ErrorCode.PAYMENT_LOG_NOT_FOUND, "결제 로그를 찾을 수 없습니다.");
+        }
     }
 
     record PaymentLogResponse(
