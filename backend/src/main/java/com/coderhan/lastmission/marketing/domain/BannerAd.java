@@ -18,7 +18,6 @@ public record BannerAd(
         String bannerImageUrl,  // BANNER 슬롯 선택 시 필요
         String adImageUrl,      // TAB 슬롯 선택 시 필요
         String linkUrl,
-        int priority,
         BannerAdStatus status,
         OffsetDateTime startsAt,
         OffsetDateTime endsAt,

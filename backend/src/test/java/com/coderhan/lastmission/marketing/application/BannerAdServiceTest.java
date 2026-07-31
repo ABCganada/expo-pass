@@ -58,11 +58,11 @@ class BannerAdServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> service.registerAd(
                 Set.of(), "여름 세일", "https://img.example.com/banner.png", null,
-                null, 1, STARTS_AT, ENDS_AT, MARKETER))
+                null, STARTS_AT, ENDS_AT, MARKETER))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
 
-        verify(adRepository, never()).save(any(), any(), any(), any(), any(), any(int.class), any(), any(), any(), anyLong());
+        verify(adRepository, never()).save(any(), any(), any(), any(), any(), any(), any(), any(), anyLong());
     }
 
     @Test
@@ -73,7 +73,7 @@ class BannerAdServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> service.registerAd(
                 SLOT_IDS, "여름 세일", "https://img.example.com/banner.png", null,
-                null, 1, STARTS_AT, ENDS_AT, MARKETER))
+                null, STARTS_AT, ENDS_AT, MARKETER))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_SLOT_NOT_FOUND));
     }
@@ -86,7 +86,7 @@ class BannerAdServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> service.registerAd(
                 SLOT_IDS, "", "https://img.example.com/banner.png", null,
-                null, 1, STARTS_AT, ENDS_AT, MARKETER))
+                null, STARTS_AT, ENDS_AT, MARKETER))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
     }
@@ -99,7 +99,7 @@ class BannerAdServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> service.registerAd(
                 SLOT_IDS, "여름 세일", "https://img.example.com/banner.png", null,
-                null, 1, ENDS_AT, STARTS_AT, MARKETER))
+                null, ENDS_AT, STARTS_AT, MARKETER))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
     }
@@ -112,7 +112,7 @@ class BannerAdServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> service.registerAd(
                 SLOT_IDS, "여름 세일", null, null,
-                null, 1, STARTS_AT, ENDS_AT, MARKETER))
+                null, STARTS_AT, ENDS_AT, MARKETER))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
     }
@@ -124,12 +124,12 @@ class BannerAdServiceTest {
         BannerAd expected = ad(BannerAdStatus.PENDING, expectedAmount);
         when(slotRepository.findAllByIds(SLOT_IDS)).thenReturn(List.of(bannerSlot()));
         when(adRepository.save(SLOT_IDS, "여름 세일", "https://img.example.com/banner.png",
-                null, null, 1, STARTS_AT, ENDS_AT, MARKETER, expectedAmount)).thenReturn(expected);
+                null, null, STARTS_AT, ENDS_AT, MARKETER, expectedAmount)).thenReturn(expected);
 
         // Act
         BannerAd result = service.registerAd(
                 SLOT_IDS, "여름 세일", "https://img.example.com/banner.png", null,
-                null, 1, STARTS_AT, ENDS_AT, MARKETER);
+                null, STARTS_AT, ENDS_AT, MARKETER);
 
         // Assert
         assertThat(result).isSameAs(expected);
@@ -148,7 +148,7 @@ class BannerAdServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> service.updateAd(
-                AD_ID, MARKETER, "수정된 제목", "https://img.example.com/banner.png", null, null, 1, STARTS_AT, ENDS_AT))
+                AD_ID, MARKETER, "수정된 제목", "https://img.example.com/banner.png", null, null, STARTS_AT, ENDS_AT))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_NOT_FOUND));
     }
@@ -160,7 +160,7 @@ class BannerAdServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> service.updateAd(
-                AD_ID, OTHER, "수정된 제목", "https://img.example.com/banner.png", null, null, 1, STARTS_AT, ENDS_AT))
+                AD_ID, OTHER, "수정된 제목", "https://img.example.com/banner.png", null, null, STARTS_AT, ENDS_AT))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_ACCESS_DENIED));
     }
@@ -172,7 +172,7 @@ class BannerAdServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> service.updateAd(
-                AD_ID, MARKETER, "수정된 제목", "https://img.example.com/banner.png", null, null, 1, STARTS_AT, ENDS_AT))
+                AD_ID, MARKETER, "수정된 제목", "https://img.example.com/banner.png", null, null, STARTS_AT, ENDS_AT))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_ALREADY_REVIEWED));
     }
@@ -183,11 +183,11 @@ class BannerAdServiceTest {
         BannerAd updated = ad(BannerAdStatus.PENDING);
         when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
         when(adRepository.update(AD_ID, "수정된 제목", "https://img.example.com/banner.png",
-                null, null, 1, STARTS_AT, ENDS_AT)).thenReturn(updated);
+                null, null, STARTS_AT, ENDS_AT)).thenReturn(updated);
 
         // Act
         BannerAd result = service.updateAd(
-                AD_ID, MARKETER, "수정된 제목", "https://img.example.com/banner.png", null, null, 1, STARTS_AT, ENDS_AT);
+                AD_ID, MARKETER, "수정된 제목", "https://img.example.com/banner.png", null, null, STARTS_AT, ENDS_AT);
 
         // Assert
         assertThat(result).isSameAs(updated);
@@ -281,13 +281,13 @@ class BannerAdServiceTest {
 
     private BannerAd ad(BannerAdStatus status) {
         return new BannerAd(AD_ID, SLOT_IDS, "여름 세일",
-                "https://img.example.com/banner.png", null, null,
-                1, status, STARTS_AT, ENDS_AT, MARKETER, NOW, null);
+                "https://img.example.com/banner.png", null,
+                null, status, STARTS_AT, ENDS_AT, MARKETER, NOW, null);
     }
 
     private BannerAd ad(BannerAdStatus status, Long totalAmount) {
         return new BannerAd(AD_ID, SLOT_IDS, "여름 세일",
-                "https://img.example.com/banner.png", null, null,
-                1, status, STARTS_AT, ENDS_AT, MARKETER, NOW, totalAmount);
+                "https://img.example.com/banner.png", null,
+                null, status, STARTS_AT, ENDS_AT, MARKETER, NOW, totalAmount);
     }
 }

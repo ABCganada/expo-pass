@@ -6,7 +6,10 @@ import { VipAdCard } from "../VipAdCard";
 import styles from "./VipAdsContent.module.css";
 
 export function VipAdsContent() {
-  const { data: banners = [], isLoading } = useGetActiveBannersQuery();
+  const { data: allBanners = [], isLoading } = useGetActiveBannersQuery();
+  const banners = allBanners.filter((b) =>
+    b.slotTypes?.length ? b.slotTypes.includes("TAB") : !!b.adImageUrl,
+  );
 
   return (
     <div className={styles.page}>

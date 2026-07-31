@@ -74,7 +74,7 @@ class BannerMarketerController {
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAd ad = bannerAdService.registerAd(
                 request.slotIds(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
-                request.linkUrl(), request.priority(), request.startsAt(), request.endsAt(), principal.email());
+                request.linkUrl(), request.startsAt(), request.endsAt(), principal.email());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(BannerAdResponse.from(ad)));
     }
 
@@ -85,7 +85,7 @@ class BannerMarketerController {
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAd ad = bannerAdService.updateAd(
                 id, principal.email(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
-                request.linkUrl(), request.priority(), request.startsAt(), request.endsAt());
+                request.linkUrl(), request.startsAt(), request.endsAt());
         return ApiResponse.success(BannerAdResponse.from(ad));
     }
 
@@ -127,7 +127,6 @@ class BannerMarketerController {
             String bannerImageUrl,
             String adImageUrl,
             String linkUrl,
-            int priority,
             OffsetDateTime startsAt,
             OffsetDateTime endsAt
     ) {}
@@ -137,7 +136,6 @@ class BannerMarketerController {
             String bannerImageUrl,
             String adImageUrl,
             String linkUrl,
-            int priority,
             OffsetDateTime startsAt,
             OffsetDateTime endsAt
     ) {}
@@ -155,7 +153,6 @@ class BannerMarketerController {
             String bannerImageUrl,
             String adImageUrl,
             String linkUrl,
-            int priority,
             BannerAdStatus status,
             OffsetDateTime startsAt,
             OffsetDateTime endsAt,
@@ -166,7 +163,7 @@ class BannerMarketerController {
         static BannerAdResponse from(BannerAd ad) {
             return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(),
                     ad.bannerImageUrl(), ad.adImageUrl(), ad.linkUrl(),
-                    ad.priority(), ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(),
+                    ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(),
                     ad.createdAt(), ad.totalAmount());
         }
     }

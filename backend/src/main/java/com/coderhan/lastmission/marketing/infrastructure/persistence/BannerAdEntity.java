@@ -55,9 +55,6 @@ class BannerAdEntity {
     @Column(name = "link_url")
     private String linkUrl;
 
-    @Column(name = "priority", nullable = false)
-    private int priority;
-
     @Enumerated(EnumType.STRING)
     @Setter
     @Column(name = "status", nullable = false)
@@ -81,12 +78,11 @@ class BannerAdEntity {
     private Long totalAmount;
 
     void update(String title, String bannerImageUrl, String adImageUrl, String linkUrl,
-                int priority, OffsetDateTime startsAt, OffsetDateTime endsAt) {
+                OffsetDateTime startsAt, OffsetDateTime endsAt) {
         this.title = title;
         this.bannerImageUrl = bannerImageUrl;
         this.adImageUrl = adImageUrl;
         this.linkUrl = linkUrl;
-        this.priority = priority;
         this.startsAt = startsAt;
         this.endsAt = endsAt;
     }
