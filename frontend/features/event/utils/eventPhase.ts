@@ -36,3 +36,7 @@ export function computeDdayLabel(startDate: string, endDate: string): string {
   const days = diffDays(todayDateString(), startDate);
   return days === 0 ? "D-DAY" : `D-${days}`;
 }
+
+export function formatPeriod(startDate: string, endDate: string): string {
+  return `${startDate.replaceAll("-", ".")} ~ ${endDate.replaceAll("-", ".")}`;
+}
