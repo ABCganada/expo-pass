@@ -28,4 +28,6 @@ interface BannerAdJpaRepository extends JpaRepository<BannerAdEntity, UUID> {
     @Query("SELECT COUNT(a) > 0 FROM BannerAdEntity a WHERE :slotId MEMBER OF a.slotIds AND a.status IN :statuses")
     boolean existsBySlotIdAndStatusIn(@Param("slotId") UUID slotId,
                                       @Param("statuses") List<BannerAdStatus> statuses);
+
+    java.util.Optional<BannerAdEntity> findByOrderId(String orderId);
 }

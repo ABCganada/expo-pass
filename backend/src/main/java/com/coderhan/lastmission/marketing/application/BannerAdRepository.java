@@ -9,7 +9,7 @@ import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 
 public interface BannerAdRepository {
-    BannerAd save(Set<UUID> slotIds, String title, String bannerImageUrl, String adImageUrl,
+    BannerAd save(Set<UUID> slotIds, String orderId, String title, String bannerImageUrl, String adImageUrl,
                   String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt,
                   String createdBy, long totalAmount);
     Optional<BannerAd> findById(UUID id);

@@ -149,6 +149,7 @@ class BannerMarketerController {
     record BannerAdResponse(
             UUID id,
             Set<UUID> slotIds,
+            String orderId,
             String title,
             String bannerImageUrl,
             String adImageUrl,
@@ -161,7 +162,7 @@ class BannerMarketerController {
             Long totalAmount
     ) {
         static BannerAdResponse from(BannerAd ad) {
-            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(),
+            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.orderId(), ad.title(),
                     ad.bannerImageUrl(), ad.adImageUrl(), ad.linkUrl(),
                     ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(),
                     ad.createdAt(), ad.totalAmount());

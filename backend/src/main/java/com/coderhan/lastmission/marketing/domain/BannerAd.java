@@ -14,6 +14,7 @@ import com.coderhan.lastmission.shared.error.ErrorCode;
 public record BannerAd(
         UUID id,
         Set<UUID> slotIds,
+        String orderId,         // 토스 결제 orderId (UUID 문자열)
         String title,
         String bannerImageUrl,  // BANNER 슬롯 선택 시 필요
         String adImageUrl,      // TAB 슬롯 선택 시 필요
