@@ -28,8 +28,7 @@ function diffDays(from: string, to: string): number {
 }
 
 /** UPCOMING만 시작일까지 남은 일수로 D-day 표기, ONGOING은 "진행중", ENDED는 "종료". */
-export function computeDdayLabel(startDate: string, endDate: string): string {
-  const phase = computeEventPhase(startDate, endDate);
+export function computeDdayLabel(phase: EventDisplayPhase, startDate: string): string {
   if (phase === "ENDED") return "종료";
   if (phase === "ONGOING") return "진행중";
 
