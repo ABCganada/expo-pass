@@ -1,11 +1,8 @@
 package com.coderhan.lastmission.event.application;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
+import java.io.InputStream;
+import java.util.*;
 
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventImage;
@@ -23,8 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class EventImageService {
     private static final long MAX_FILE_SIZE_BYTES = 5L * 1024 * 1024;
-    private static final Set<String> ALLOWED_CONTENT_TYPES =
-            Set.of("image/jpeg", "image/png", "image/gif", "image/webp");
+    private static final int MAX_BATCH_SIZE = 5;
 
     private final EventRepository eventRepository;
     private final EventImageRepository eventImageRepository;
@@ -40,10 +36,11 @@ public class EventImageService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
 
         validateEventAccess(event, callerUserId, isAdmin, "이미지를 등록");
-        validateImageFile(file);
 
         int displayOrder = (int) eventImageRepository.countByEventId(eventId);
-        return registerAndUpload(event, imageType, displayOrder, file);
+        EventImageContentType contentType = validateImageFile(file);
+
+        return registerAndUpload(event, imageType, displayOrder, file, contentType);
     }
 
     /**
@@ -57,13 +54,14 @@ public class EventImageService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
 
         validateEventAccess(event, callerUserId, isAdmin, "이미지를 등록");
-        validateImageFiles(imageTypes, files);
+        List<EventImageContentType> contentTypes = validateImageFiles(imageTypes, files);
 
         int displayOrder = (int) eventImageRepository.countByEventId(eventId);
 
         List<EventImage> saved = new ArrayList<>();
         for (int i = 0; i < files.size(); i++) {
-            saved.add(registerAndUpload(event, imageTypes.get(i), displayOrder + i, files.get(i)));
+            saved.add(
+                    registerAndUpload(event, imageTypes.get(i), displayOrder + i, files.get(i), contentTypes.get(i)));
         }
         return saved;
     }
@@ -71,14 +69,14 @@ public class EventImageService {
     /**
      * URL 발급(reserveUrl) -> DB save -> 롤백 정리 콜백 등록 -> 실제 업로드(uploadTo, 마지막) 순서의 공통 로직.
      */
-    private EventImage registerAndUpload(Event event, EventImageType imageType, int displayOrder, MultipartFile file) {
-        String imageUrl = eventImageStorage.reserveUrl(event.getId(), file.getOriginalFilename());
+    private EventImage registerAndUpload(Event event, EventImageType imageType, int displayOrder, MultipartFile file, EventImageContentType contentType) {
+        String imageUrl = eventImageStorage.reserveUrl(event.getId(), contentType);
         EventImage image = new EventImage(event, imageUrl, imageType, displayOrder);
         EventImage saved = eventImageRepository.save(image);
 
         // 실제 업로드 시도 전에 등록해야 업로드 도중 실패까지 커버됨
         registerCleanupOnRollback(imageUrl);
-        uploadToStorage(imageUrl, file);
+        uploadToStorage(imageUrl, file, contentType);
 
         return saved;
     }
@@ -121,9 +119,9 @@ public class EventImageService {
     }
 
 
-    private void uploadToStorage(String imageUrl, MultipartFile file) {
+    private void uploadToStorage(String imageUrl, MultipartFile file, EventImageContentType contentType) {
         try {
-            eventImageStorage.uploadTo(imageUrl, file.getContentType(), file.getBytes());
+            eventImageStorage.uploadTo(imageUrl, contentType, file.getBytes());
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "이미지 파일을 읽을 수 없습니다.");
         }
@@ -136,27 +134,49 @@ public class EventImageService {
         }
     }
 
-    private void validateImageFile(MultipartFile file) {
+    private EventImageContentType validateImageFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "이미지 파일은 필수입니다.");
         }
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
-            throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST,
-                    "이미지 파일 형식은 JPEG, PNG, GIF, WEBP만 허용됩니다.");
-        }
+
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
             throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "이미지 파일은 5MB를 초과할 수 없습니다.");
         }
+
+        byte[] header = readHeader(file);
+        return EventImageContentType.detect(header)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST,
+                        "이미지 파일 형식은 JPEG, PNG, GIF, WEBP만 허용됩니다."));
     }
 
-    private void validateImageFiles(List<EventImageType> imageTypes, List<MultipartFile> files) {
+    private List<EventImageContentType> validateImageFiles(List<EventImageType> imageTypes, List<MultipartFile> files) {
         if (files == null || files.isEmpty()) {
             throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "이미지 파일은 최소 1개 이상 필요합니다.");
         }
+
+        if (files.size() > MAX_BATCH_SIZE) {
+            throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "이미지는 최대 10개까지 등록할 수 있습니다.");
+        }
+
         if (imageTypes == null || imageTypes.size() != files.size()) { // 파일마다 대응되는 타입 정보 반드시 하나씩
             throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "imageType과 파일 개수가 일치하지 않습니다.");
         }
-        files.forEach(this::validateImageFile);
+
+        return files
+                .stream()
+                .map(this::validateImageFile)
+                .toList();
     }
+
+    private byte[] readHeader(MultipartFile file) {
+        try (InputStream inputStream = file.getInputStream()) {
+            return inputStream.readNBytes(EventImageContentType.HEADER_PROBE_BYTES);
+        } catch (IOException e) {
+            throw new BusinessException(
+                    ErrorCode.EVENT_IMAGE_INVALID_REQUEST,
+                    "이미지 파일을 읽을 수 없습니다."
+            );
+        }
+    }
+
 }
