@@ -1,7 +1,6 @@
 package com.coderhan.lastmission.payment.application;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.domain.PaymentLog;
 
@@ -15,8 +14,8 @@ public interface PaymentLogRepository {
     PaymentLog save(String paymentKey, String action, String requestPayload, String responsePayload,
                     String webhookTransmissionId, OffsetDateTime createdAt);
 
-    /** 전체 로그 목록. 최신순 */
-    List<PaymentLog> findAll();
+    /** 로그 목록 페이지 조회. 최신순 */
+    PaymentLogPage findAll(int page, int size);
 
     Optional<PaymentLog> findById(long id);
 }
