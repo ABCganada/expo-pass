@@ -3,6 +3,7 @@ package com.coderhan.lastmission.event.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,13 +17,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class EventManagerQueryServiceTest {
+class PaymentEventQueryServiceTest {
     private static final long EVENT_ID = 1L;
     private static final long MANAGER_ID = 100L;
 
     @Mock EventRepository eventRepository;
 
-    @InjectMocks EventManagerQueryService service;
+    @InjectMocks PaymentEventQueryService service;
 
     @Test
     void findEventManagerId_존재하면_매니저id_반환() {
@@ -45,5 +46,19 @@ class EventManagerQueryServiceTest {
         when(eventRepository.findIdsByManagerId(MANAGER_ID)).thenReturn(List.of(1L, 2L, 3L));
 
         assertThat(service.findEventIdsManagedBy(MANAGER_ID)).containsExactly(1L, 2L, 3L);
+    }
+
+    @Test
+    void findEventStartDate_존재하면_시작일_반환() {
+        when(eventRepository.findStartDateByEventId(EVENT_ID)).thenReturn(Optional.of(LocalDate.of(2026, 8, 15)));
+
+        assertThat(service.findEventStartDate(EVENT_ID)).contains(LocalDate.of(2026, 8, 15));
+    }
+
+    @Test
+    void findEventStartDate_없거나_삭제됐으면_빈값() {
+        when(eventRepository.findStartDateByEventId(EVENT_ID)).thenReturn(Optional.empty());
+
+        assertThat(service.findEventStartDate(EVENT_ID)).isEmpty();
     }
 }
