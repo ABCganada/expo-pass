@@ -1,5 +1,6 @@
 package com.coderhan.lastmission.event.application;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.event.domain.Event;
@@ -22,4 +23,10 @@ public interface EventRepository {
 
     // 관리자 목록 조회용. start_date 순으로 정렬
     List<Event> findAllOrderByStartDateAsc();
+
+    // 행사 종료 감지 스케줄러용
+    List<Event> findEndedEventsNotNotified(LocalDate date);
+
+    // EventManagerQueryPort용
+    List<Long> findIdsByManagerId(long managerId);
 }
