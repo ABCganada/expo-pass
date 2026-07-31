@@ -12,6 +12,9 @@ interface ReservationOrderJpaRepository extends JpaRepository<ReservationOrderEn
     // 관리자 예약자 명단 조회용
     List<ReservationOrderEntity> findByEventIdOrderByReservedAtDesc(Long eventId);
 
+    // Payment 도메인 정산 매출 계산용 — orderId 필드만 뽑아온다 (메서드 이름만으로 JPA가 자동 생성)
+    List<String> findOrderIdByEventId(Long eventId);
+
     // 관리자 예약 현황(상태별 건수) 조회용
     @Query("SELECT o.status as status, COUNT(o) as count FROM ReservationOrderEntity o "
             + "WHERE o.eventId = :eventId GROUP BY o.status")
