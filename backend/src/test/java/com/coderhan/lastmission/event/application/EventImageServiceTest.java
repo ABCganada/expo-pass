@@ -61,15 +61,18 @@ class EventImageServiceTest {
         TransactionSynchronizationManager.clearSynchronization();
     }
 
+    private static final byte[] PNG_BYTES =
+            {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 0, 0, 0, 0};
+
     @Test
     void uploadImage_성공하면_reserveUrl_save_uploadTo_순서로_수행() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventImageRepository.countByEventId(EVENT_ID)).thenReturn(0L);
-        when(eventImageStorage.reserveUrl(EVENT_ID, "a.png")).thenReturn("https://bucket/a-key.png");
+        when(eventImageStorage.reserveUrl(EVENT_ID, EventImageContentType.PNG)).thenReturn("https://bucket/a-key.png");
         when(eventImageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", "data".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", PNG_BYTES);
 
         EventImage saved = service.uploadImage(EVENT_ID, MANAGER_ID, true, EventImageType.GENERAL, file);
 
@@ -78,9 +81,9 @@ class EventImageServiceTest {
 
         // reserveUrl -> save -> uploadTo 순서로 호출되었는지 검증
         InOrder order = inOrder(eventImageStorage, eventImageRepository);
-        order.verify(eventImageStorage).reserveUrl(EVENT_ID, "a.png");
+        order.verify(eventImageStorage).reserveUrl(EVENT_ID, EventImageContentType.PNG);
         order.verify(eventImageRepository).save(any());
-        order.verify(eventImageStorage).uploadTo("https://bucket/a-key.png", "image/png", "data".getBytes());
+        order.verify(eventImageStorage).uploadTo("https://bucket/a-key.png", EventImageContentType.PNG, PNG_BYTES);
 
         // 커밋되었으므로 cleanup은 절대 호출되면 X
         assertNoCleanupOnCommit("https://bucket/a-key.png");
@@ -91,12 +94,12 @@ class EventImageServiceTest {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventImageRepository.countByEventId(EVENT_ID)).thenReturn(0L);
-        when(eventImageStorage.reserveUrl(EVENT_ID, "a.png")).thenReturn("https://bucket/a-key.png");
+        when(eventImageStorage.reserveUrl(EVENT_ID, EventImageContentType.PNG)).thenReturn("https://bucket/a-key.png");
         when(eventImageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         doThrow(new BusinessException(ErrorCode.EVENT_IMAGE_UPLOAD_FAILED, "S3 장애"))
-                .when(eventImageStorage).uploadTo(anyString(), anyString(), any());
+                .when(eventImageStorage).uploadTo(anyString(), any(EventImageContentType.class), any());
 
-        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", "data".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", PNG_BYTES);
 
         assertThatThrownBy(() ->
                 service.uploadImage(EVENT_ID, MANAGER_ID, true, EventImageType.GENERAL, file))
@@ -112,17 +115,17 @@ class EventImageServiceTest {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventImageRepository.countByEventId(EVENT_ID)).thenReturn(0L);
-        when(eventImageStorage.reserveUrl(EVENT_ID, "a.png")).thenReturn("https://bucket/a-key.png");
+        when(eventImageStorage.reserveUrl(EVENT_ID, EventImageContentType.PNG)).thenReturn("https://bucket/a-key.png");
         when(eventImageRepository.save(any())).thenThrow(new RuntimeException("DB 장애"));
 
-        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", "data".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", PNG_BYTES);
 
         assertThatThrownBy(() ->
                 service.uploadImage(EVENT_ID, MANAGER_ID, true, EventImageType.GENERAL, file))
                 .isInstanceOf(RuntimeException.class);
 
         // save 자체가 실패했으므로 아직 파일을 올리지 않은 상태 -> uploadTo가 호출되면 X
-        verify(eventImageStorage, never()).uploadTo(anyString(), anyString(), any());
+        verify(eventImageStorage, never()).uploadTo(anyString(), any(EventImageContentType.class), any());
 
         simulateRollback();
 
@@ -135,13 +138,13 @@ class EventImageServiceTest {
         Event event = event(OTHER_MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
-        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", "data".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", PNG_BYTES);
 
         assertThatThrownBy(() ->
                 service.uploadImage(EVENT_ID, MANAGER_ID, false, EventImageType.GENERAL, file))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
-        verify(eventImageStorage, never()).reserveUrl(anyLong(), anyString());
+        verify(eventImageStorage, never()).reserveUrl(anyLong(), any(EventImageContentType.class));
     }
 
     @Test
@@ -158,24 +161,39 @@ class EventImageServiceTest {
     }
 
     @Test
+    void uploadImage_확장자는_이미지지만_내용이_다른_형식이면_거부() {
+        Event event = event(MANAGER_ID);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        // 파일명/Content-Type 헤더는 image/png로 위장했지만 실제 바이트는 PNG 시그니처가 아님
+        MockMultipartFile file = new MockMultipartFile("file", "fake.png", "image/png", "not-a-real-image".getBytes());
+
+        assertThatThrownBy(() ->
+                service.uploadImage(EVENT_ID, MANAGER_ID, true, EventImageType.GENERAL, file))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_IMAGE_INVALID_REQUEST));
+        verify(eventImageStorage, never()).reserveUrl(anyLong(), any(EventImageContentType.class));
+    }
+
+    @Test
     void uploadAll_전체_성공하면_모두_저장되고_displayOrder가_이어짐() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventImageRepository.countByEventId(EVENT_ID)).thenReturn(3L); // 기존 3장 존재
-        when(eventImageStorage.reserveUrl(eq(EVENT_ID), anyString()))
+        when(eventImageStorage.reserveUrl(eq(EVENT_ID), any(EventImageContentType.class)))
                 .thenReturn("https://bucket/1.png", "https://bucket/2.png");
         when(eventImageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         List<MultipartFile> files = List.of(
-                new MockMultipartFile("files", "1.png", "image/png", "d1".getBytes()),
-                new MockMultipartFile("files", "2.png", "image/png", "d2".getBytes()));
+                new MockMultipartFile("files", "1.png", "image/png", PNG_BYTES),
+                new MockMultipartFile("files", "2.png", "image/png", PNG_BYTES));
         List<EventImageType> types = List.of(EventImageType.THUMBNAIL, EventImageType.GENERAL);
 
         List<EventImage> saved = service.uploadAll(EVENT_ID, MANAGER_ID, true, types, files);
 
         assertThat(saved).extracting(EventImage::getDisplayOrder).containsExactly(3, 4);
-        verify(eventImageStorage).uploadTo("https://bucket/1.png", "image/png", "d1".getBytes());
-        verify(eventImageStorage).uploadTo("https://bucket/2.png", "image/png", "d2".getBytes());
+        verify(eventImageStorage).uploadTo("https://bucket/1.png", EventImageContentType.PNG, PNG_BYTES);
+        verify(eventImageStorage).uploadTo("https://bucket/2.png", EventImageContentType.PNG, PNG_BYTES);
     }
 
     @Test
@@ -183,16 +201,16 @@ class EventImageServiceTest {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventImageRepository.countByEventId(EVENT_ID)).thenReturn(0L);
-        when(eventImageStorage.reserveUrl(eq(EVENT_ID), anyString()))
+        when(eventImageStorage.reserveUrl(eq(EVENT_ID), any(EventImageContentType.class)))
                 .thenReturn("https://bucket/1.png", "https://bucket/2.png");
         when(eventImageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        doNothing().when(eventImageStorage).uploadTo(eq("https://bucket/1.png"), anyString(), any());
+        doNothing().when(eventImageStorage).uploadTo(eq("https://bucket/1.png"), any(EventImageContentType.class), any());
         doThrow(new BusinessException(ErrorCode.EVENT_IMAGE_UPLOAD_FAILED, "S3 장애"))
-                .when(eventImageStorage).uploadTo(eq("https://bucket/2.png"), anyString(), any());
+                .when(eventImageStorage).uploadTo(eq("https://bucket/2.png"), any(EventImageContentType.class), any());
 
         List<MultipartFile> files = List.of(
-                new MockMultipartFile("files", "1.png", "image/png", "d1".getBytes()),
-                new MockMultipartFile("files", "2.png", "image/png", "d2".getBytes()));
+                new MockMultipartFile("files", "1.png", "image/png", PNG_BYTES),
+                new MockMultipartFile("files", "2.png", "image/png", PNG_BYTES));
         List<EventImageType> types = List.of(EventImageType.GENERAL, EventImageType.GENERAL);
 
         assertThatThrownBy(() -> service.uploadAll(EVENT_ID, MANAGER_ID, true, types, files))
@@ -217,7 +235,7 @@ class EventImageServiceTest {
         assertThatThrownBy(() -> service.uploadAll(EVENT_ID, MANAGER_ID, true, types, files))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_IMAGE_INVALID_REQUEST));
-        verify(eventImageStorage, never()).reserveUrl(anyLong(), anyString());
+        verify(eventImageStorage, never()).reserveUrl(anyLong(), any(EventImageContentType.class));
     }
 
     @Test
