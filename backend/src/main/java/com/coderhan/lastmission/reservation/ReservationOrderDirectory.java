@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.reservation;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -11,4 +12,10 @@ import java.util.Optional;
 public interface ReservationOrderDirectory {
     /** orderId에 해당하는 주문의 총액을 조회한다. 존재하지 않는 주문이면 빈 Optional. */
     Optional<BigDecimal> findOrderAmount(String orderId);
+    /**
+     * 이 행사에 속한 모든 주문 ID를 조회한다(Payment 도메인이 정산 대상 매출을 계산할 때 사용).
+     * 상태(PENDING/CONFIRMED/CANCELLED/REFUNDED) 구분 없이 전부 반환한다 — 실제 결제 여부는
+     * Payment 자신의 결제 기록으로 판단해야 하므로, 여기서는 필터링하지 않는다.
+     */
+    List<String> findOrderIdsByEventId(long eventId);
 }
