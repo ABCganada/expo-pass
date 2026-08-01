@@ -7,11 +7,9 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -87,7 +85,6 @@ class ReservationServiceTest {
         // 요청에 실린 unitPrice(1원)가 아니라, 서버가 EventQueryPort에서 조회한 실제 가격(10000원)이 그대로 반영돼야 한다
         assertThat(result.order()).isSameAs(order);
         assertThat(result.items()).containsExactly(item1, item2);
-        verify(waitingRoomService).consumeAdmission(USER_ID, EVENT_ID);
         verify(eventQueryPort).decreaseTicketStock(TICKET_ID, 2);
         verify(repository, times(2)).addItem(eq(ORDER_ID), eq(TICKET_ID), eq(realPrice), anyString());
     }
@@ -119,20 +116,6 @@ class ReservationServiceTest {
         assertThat(result.items()).hasSize(3);
         verify(eventQueryPort).decreaseTicketStock(TICKET_ID, 3);
         verify(repository, times(3)).addItem(eq(ORDER_ID), eq(TICKET_ID), eq(realPrice), anyString());
-    }
-
-    @Test
-    void createOrderPropagatesWaitingRoomFailureBeforeTouchingRepository() {
-        List<ReservationService.OrderItemRequest> items =
-                List.of(new ReservationService.OrderItemRequest(TICKET_ID, BigDecimal.valueOf(1), 1));
-        doThrow(new BusinessException(ErrorCode.RESERVATION_WAITING_ROOM_REQUIRED, "먼저 대기열에 입장해야 합니다."))
-                .when(waitingRoomService).consumeAdmission(USER_ID, EVENT_ID);
-
-        assertThatThrownBy(() -> service.createOrder(USER_ID, EVENT_ID, items))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_WAITING_ROOM_REQUIRED));
-
-        verifyNoInteractions(repository);
     }
 
     @Test

@@ -59,6 +59,24 @@
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
+.thumbnail {
+  width: 100%;
+  height: 132px;
+  border-radius: var(--radius-button);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
