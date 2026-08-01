@@ -160,6 +160,34 @@ class PaymentServiceTest {
     }
 
     @Test
+    @DisplayName("광고 주문의 결제 금액이 주문 금액과 다르면 BannerOrderDirectory 기준으로 PAYMENT_INVALID_REQUEST 예외를 던진다")
+    void rejectsAdvertisementAmountMismatchWithOrderBeforeCallingGateway() {
+        when(bannerOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(BigDecimal.valueOf(9000)));
+
+        assertThatThrownBy(() -> service.confirm(USER_ID, ORDER_ID, OrderType.ADVERTISEMENT, PG_ORDER_ID,
+                PAYMENT_KEY, AMOUNT))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
+
+        verify(reservationOrderDirectory, never()).findOrderAmount(any());
+        verify(paymentGateway, never()).confirm(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("광고 주문 내역을 찾을 수 없으면 BannerOrderDirectory 기준으로 PAYMENT_INVALID_REQUEST 예외를 던진다")
+    void rejectsWhenAdvertisementOrderNotFound() {
+        when(bannerOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.confirm(USER_ID, ORDER_ID, OrderType.ADVERTISEMENT, PG_ORDER_ID,
+                PAYMENT_KEY, AMOUNT))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
+
+        verify(reservationOrderDirectory, never()).findOrderAmount(any());
+        verify(paymentGateway, never()).confirm(any(), any(), any());
+    }
+
+    @Test
     @DisplayName("본인 결제가 아니면 PAYMENT_ACCESS_DENIED 예외를 던진다")
     void rejectsGetPaymentForAnotherUsersPayment() {
         when(repository.findById(PAYMENT_ID)).thenReturn(Optional.of(completedPayment()));
