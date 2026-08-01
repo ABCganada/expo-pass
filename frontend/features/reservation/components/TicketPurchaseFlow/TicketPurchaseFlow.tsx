@@ -1,55 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Ticket as TicketIcon } from "lucide-react";
-import { WaitingRoomPanel } from "../WaitingRoomPanel";
+import { CheckCircle2, Ticket as TicketIcon, Users } from "lucide-react";
 import { TicketSelectionPanel } from "../TicketSelectionPanel";
 import type { TicketSelection, TicketTypeOption } from "../TicketSelectionPanel";
-import {
-  useCreateReservationOrderMutation,
-  useEnterWaitingRoomMutation,
-  useGetWaitingRoomStatusQuery,
-} from "../../api/reservationApi";
+import { useCreateReservationOrderMutation } from "../../api/reservationApi";
+import { useWaitingRoom } from "../../hooks/useWaitingRoom";
 import type { OrderDetail } from "../../types/reservation";
 import styles from "./TicketPurchaseFlow.module.css";
 
-type Phase = "idle" | "waiting" | "submitting" | "success";
+type Phase = "idle" | "waiting" | "selecting" | "submitting" | "success";
 
 interface TicketPurchaseFlowProps {
   eventId: string;
   ticketTypes: TicketTypeOption[];
 }
 
-// 서버가 30초 넘게 폴링 없으면 대기 티켓을 자동 만료시키므로(WaitingRoomService.expireStaleTickets),
-// 그보다 훨씬 짧은 주기로 폴링해야 한다.
-const POLL_INTERVAL_MS = 4000;
-
 export function TicketPurchaseFlow({ eventId, ticketTypes }: TicketPurchaseFlowProps) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<OrderDetail | null>(null);
 
-  const [enterWaitingRoom, { isLoading: isEntering }] = useEnterWaitingRoomMutation();
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateReservationOrderMutation();
-
-  // waiting/submitting 동안은 구독을 계속 살려둬서(스킵하지 않아서) 폴링 결과가 항상 최신 상태를 반영하게 한다.
-  const { data: waitingStatus } = useGetWaitingRoomStatusQuery(eventId, {
-    skip: phase === "idle" || phase === "success",
-    pollingInterval: POLL_INTERVAL_MS,
-  });
-
-  const isAdmitted = waitingStatus?.status === "ADMITTED";
-  const isExpired = phase === "waiting" && waitingStatus?.status === "EXPIRED";
-
-  async function handleStart() {
-    setError(null);
-    try {
-      await enterWaitingRoom(eventId).unwrap();
-      setPhase("waiting");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "대기열 입장에 실패했습니다.");
-    }
-  }
+  const { rank, error: waitingError } = useWaitingRoom(eventId, phase === "waiting", () =>
+    setPhase("selecting"),
+  );
 
   async function handleSubmit(selections: TicketSelection[]) {
     setError(null);
@@ -64,7 +39,7 @@ export function TicketPurchaseFlow({ eventId, ticketTypes }: TicketPurchaseFlowP
       setPhase("success");
     } catch (e) {
       setError(e instanceof Error ? e.message : "주문 생성에 실패했습니다.");
-      setPhase("waiting");
+      setPhase("selecting");
     }
   }
 
@@ -79,28 +54,26 @@ export function TicketPurchaseFlow({ eventId, ticketTypes }: TicketPurchaseFlowP
       {error && <p className={styles.error}>{error}</p>}
 
       {phase === "idle" && (
-        <button type="button" className={styles.purchaseButton} onClick={handleStart} disabled={isEntering}>
+        <button type="button" className={styles.purchaseButton} onClick={() => setPhase("waiting")}>
           <TicketIcon size={18} />
-          {isEntering ? "입장 중..." : "티켓 구매하기"}
+          티켓 구매하기
         </button>
       )}
 
-      {phase === "waiting" && !isAdmitted && (
+      {phase === "waiting" && (
         <div className={styles.card}>
-          {isExpired ? (
-            <div className={styles.expiredPanel}>
-              <p className={styles.expiredText}>대기가 만료되었습니다. 다시 시도해주세요.</p>
-              <button type="button" className={styles.resetButton} onClick={() => setPhase("idle")}>
-                처음으로
-              </button>
-            </div>
-          ) : (
-            <WaitingRoomPanel position={waitingStatus?.position ?? null} />
-          )}
+          <div className={styles.waitingPanel}>
+            <Users size={40} className={styles.waitingIcon} />
+            <p className={styles.waitingTitle}>대기열에 접속 중입니다</p>
+            <p className={styles.waitingRank}>
+              {rank !== null ? `현재 순번: ${rank}번째` : "순번 확인 중..."}
+            </p>
+            {waitingError && <p className={styles.waitingError}>{waitingError}</p>}
+          </div>
         </div>
       )}
 
-      {((phase === "waiting" && isAdmitted) || phase === "submitting") && (
+      {(phase === "selecting" || phase === "submitting") && (
         <div className={styles.card}>
           <TicketSelectionPanel
             ticketTypes={ticketTypes}
