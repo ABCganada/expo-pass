@@ -4,8 +4,6 @@ import type {
   OrderDetail,
   OrderSummary,
   QrTicket,
-  WaitingStatusResult,
-  WaitingTicketResult,
 } from "../types/reservation";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
@@ -26,22 +24,6 @@ export const reservationService = {
   getMyQrTickets: (signal?: AbortSignal): Promise<QrTicket[]> =>
     fetch(`${BASE}/reservations/me/qr-tickets`, { credentials: "include", signal }).then((res) =>
       parseData<QrTicket[]>(res),
-    ),
-
-  enterWaitingRoom: async (eventId: string, signal?: AbortSignal): Promise<WaitingTicketResult> => {
-    const csrf = await getCsrfToken();
-    const res = await fetch(`${BASE}/waiting-room/${eventId}/enter`, {
-      method: "POST",
-      credentials: "include",
-      headers: { [csrf.headerName]: csrf.token },
-      signal,
-    });
-    return parseData<WaitingTicketResult>(res);
-  },
-
-  getWaitingRoomStatus: (eventId: string, signal?: AbortSignal): Promise<WaitingStatusResult> =>
-    fetch(`${BASE}/waiting-room/${eventId}/status`, { credentials: "include", signal }).then((res) =>
-      parseData<WaitingStatusResult>(res),
     ),
 
   createOrder: async (

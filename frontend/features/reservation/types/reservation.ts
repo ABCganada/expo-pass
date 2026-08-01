@@ -1,7 +1,5 @@
 export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED";
 
-export type WaitingTicketStatus = "WAITING" | "ADMITTED" | "USED" | "EXPIRED";
-
 export interface OrderItem {
   orderItemId: string;
   ticketId: string;
@@ -32,16 +30,6 @@ export interface OrderDetail {
   totalAmount: number;
   reservedAt: string;
   items: OrderItem[];
-}
-
-export interface WaitingTicketResult {
-  ticketNo: string;
-  status: WaitingTicketStatus;
-}
-
-export interface WaitingStatusResult {
-  status: WaitingTicketStatus;
-  position: number | null;
 }
 
 export interface CreateOrderItemInput {

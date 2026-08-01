@@ -1,1 +1,0 @@
-export { WaitingRoomPanel } from "./WaitingRoomPanel";
