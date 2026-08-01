@@ -14,4 +14,9 @@ public class WaitingRoomScheduler {
     public void admit() {
         waitingRoomService.admitAll();
     }
+
+    @Scheduled(fixedRate = 3000)
+    public void broadcastRank() {
+        waitingRoomService.broadcastRanks();
+    }
 }

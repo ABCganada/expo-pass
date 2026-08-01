@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.reservation.application;
 
 import java.util.List;
+import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,13 @@ public class WaitingRoomService {
 
     public void consumeTicket(long userId, long eventId) {
         waitingRoomQueue.consumeTicket(userId, eventId);
+    }
+
+    public void broadcastRanks() {
+        for (Long eventId : waitingRoomQueue.getActiveEventIds()) {
+            Map<Long, Long> ranks = waitingRoomQueue.getAllRanks(eventId);
+            ranks.forEach((userId, rank) -> emitterManager.send(userId, "rank", rank));
+        }
     }
 
     private void leaveIfCurrent(long userId, long eventId, SseEmitter emitter) {

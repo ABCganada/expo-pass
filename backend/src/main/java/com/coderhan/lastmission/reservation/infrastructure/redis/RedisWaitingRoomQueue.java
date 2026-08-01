@@ -7,9 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import org.springframework.data.redis.core.ZSetOperations;
+
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,6 +44,20 @@ public class RedisWaitingRoomQueue implements WaitingRoomQueue {
         }
         return rank + 1;
     }
+    @Override
+    public Map<Long, Long> getAllRanks(long eventId) {
+        Set<ZSetOperations.TypedTuple<String>> all =
+                redisTemplate.opsForZSet().rangeWithScores(QUEUE_KEY + eventId, 0, -1);
+        if (all == null) return Map.of();
+
+        Map<Long, Long> ranks = new LinkedHashMap<>();
+        long rank = 1;
+        for (ZSetOperations.TypedTuple<String> tuple : all) {
+            ranks.put(Long.parseLong(tuple.getValue()), rank++);
+        }
+        return ranks;
+    }
+
     // 일단 단일 서버 가정하고 synchronized 적용, 추후 다중 서버일 때는 분산락이 Lua Script 적용 고려
     @Override
     public synchronized List<Long> allowEntry(long eventId, int count) {
