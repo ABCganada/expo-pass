@@ -60,6 +60,7 @@ public class RedisWaitingRoomQueue implements WaitingRoomQueue {
             );
             admittedUserIds.add(Long.parseLong(userId));
         }
+        removeFromActiveEventsIfEmpty(eventId);
         return admittedUserIds;
     }
 
