@@ -6,7 +6,9 @@
 -- 1. payments : 결제
 CREATE TABLE payments (
     id INT8 NOT NULL DEFAULT unique_rowid() PRIMARY KEY,
-    order_id STRING NOT NULL,               -- Reservation 도메인 reservation_orders.order_id 참조 (String, "ORD-yyyyMMdd-######", 논리적 참조, FK 미설정)
+    order_id STRING NOT NULL,               -- Reservation 도메인 reservation_orders.order_id 또는 Marketing 도메인 marketing_banner_ads.order_id 참조 (String, 논리적 참조, FK 미설정)
+    order_type STRING NOT NULL
+        CHECK (order_type IN ('RESERVATION', 'ADVERTISEMENT')),  -- order_id가 어느 도메인 주문을 가리키는지 (예약/광고)
     user_id INT8,                           -- Identity 도메인 user_accounts.id 참조, 논리적 참조 (내 결제 내역 조회용)
     idempotency_key STRING NOT NULL,        -- 클라이언트가 결제 요청마다 생성해 전달하는 멱등성 키 (재시도 시 동일 결제 결과 반환용)
     amount DECIMAL(12, 2) NOT NULL,

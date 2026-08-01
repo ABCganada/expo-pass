@@ -49,8 +49,8 @@ class PaymentController {
         @RequestBody PaymentConfirmRequest request,
         @AuthenticationPrincipal LastMissionPrincipal principal
     ) {
-        Payment payment = paymentService.confirm(principal.userId(), orderId, request.pgOrderId(),
-                request.paymentKey(), request.amount());
+        Payment payment = paymentService.confirm(principal.userId(), orderId, request.orderType(),
+                request.pgOrderId(), request.paymentKey(), request.amount());
 
         return ResponseEntity
             .status(HttpStatus.OK)

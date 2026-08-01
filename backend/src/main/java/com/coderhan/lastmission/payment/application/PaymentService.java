@@ -2,6 +2,7 @@ package com.coderhan.lastmission.payment.application;
 
 import java.math.BigDecimal;
 import java.util.List;
+import com.coderhan.lastmission.payment.domain.OrderType;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.reservation.ReservationOrderDirectory;
 import com.coderhan.lastmission.shared.error.BusinessException;
@@ -31,13 +32,14 @@ public class PaymentService {
      * 유니크 제약 위반으로 실패하면 CockroachDB/Postgres는 같은 트랜잭션 안의 이후 쿼리를 전부
      * 거부하므로, 실패 시 재조회는 반드시 새 트랜잭션(Spring Data 기본 메서드별 트랜잭션)에서 해야 한다.
      */
-    public Payment confirm(long userId, String reservationOrderId, String pgOrderId,
-                           String paymentKey, BigDecimal amount) {
-        Payment.validate(reservationOrderId, pgOrderId, paymentKey, amount);
-        validateAmountMatchesOrder(reservationOrderId, amount);
+    public Payment confirm(long userId, String orderId, OrderType orderType,
+                           String pgOrderId, String paymentKey, BigDecimal amount) {
+        Payment.validate(orderId, orderType, pgOrderId, paymentKey, amount);
+        validateAmountMatchesOrder(orderId, amount);
 
         return repository.findByIdempotencyKey(paymentKey)
-                .orElseGet(() -> confirmAndSave(userId, reservationOrderId, pgOrderId, paymentKey, amount));
+                .orElseGet(() ->
+                    confirmAndSave(userId, orderId, orderType, pgOrderId, paymentKey, amount));
     }
 
     private void validateAmountMatchesOrder(String orderId, BigDecimal amount) {
@@ -49,13 +51,17 @@ public class PaymentService {
         }
     }
 
-    private Payment confirmAndSave(long userId, String reservationOrderId, String pgOrderId,
-                                   String paymentKey, BigDecimal amount) {
+    private Payment confirmAndSave(long userId, String orderId, OrderType orderType,
+                                   String pgOrderId, String paymentKey, BigDecimal amount) {
         PaymentGateway.ConfirmResult result = paymentGateway.confirm(paymentKey, pgOrderId, amount);
 
         try {
-            return repository.save(reservationOrderId, userId, paymentKey, amount, result.method(), "TOSS",
-                    pgOrderId, paymentKey, result.approvedAt());
+            return repository.save(
+                orderId, orderType, userId,
+                paymentKey, amount, result.method(),
+                "TOSS", pgOrderId, paymentKey,
+                result.approvedAt()
+            );
         } catch (DataIntegrityViolationException e) {
             /** paymentKey(idempotency_key) 경합이면 먼저 커밋된 쪽을 반환.
              * 그게 아니라면 order_id 유니크 제약 위반 — 이 주문은 이미 다른 결제로 완료된 것이므로

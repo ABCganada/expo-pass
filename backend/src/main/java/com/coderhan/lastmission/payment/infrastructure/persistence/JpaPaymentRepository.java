@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.application.PaymentRepository;
+import com.coderhan.lastmission.payment.domain.OrderType;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import lombok.RequiredArgsConstructor;
@@ -16,14 +17,20 @@ class JpaPaymentRepository implements PaymentRepository {
     private final PaymentJpaRepository jpaRepository;
 
     @Override
-    public Payment save(String orderId, Long userId, String idempotencyKey, BigDecimal amount,
-                        String method, String pgProvider, String pgOrderId,
-                        String pgTransactionId, OffsetDateTime paidAt) {
+    public Payment save(String orderId, OrderType orderType, Long userId,
+                        String idempotencyKey, BigDecimal amount, String method,
+                        String pgProvider, String pgOrderId, String pgTransactionId,
+                        OffsetDateTime paidAt) {
         OffsetDateTime now = OffsetDateTime.now();
 
         PaymentEntity saved = jpaRepository.save(
-                new PaymentEntity(orderId, userId, idempotencyKey, amount, method, pgProvider, pgOrderId,
-                        pgTransactionId, paidAt, now));
+                new PaymentEntity(
+                    orderId, orderType, userId,
+                    idempotencyKey, amount, method,
+                    pgProvider, pgOrderId, pgTransactionId,
+                    paidAt, now
+                )
+        );
 
         return toDomain(saved);
     }
@@ -54,6 +61,7 @@ class JpaPaymentRepository implements PaymentRepository {
         return Payment.builder()
                 .id(entity.getId())
                 .orderId(entity.getOrderId())
+                .orderType(entity.getOrderType())
                 .userId(entity.getUserId())
                 .idempotencyKey(entity.getIdempotencyKey())
                 .amount(entity.getAmount())
