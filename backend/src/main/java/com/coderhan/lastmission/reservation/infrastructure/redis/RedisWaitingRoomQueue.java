@@ -4,6 +4,7 @@ import com.coderhan.lastmission.reservation.application.WaitingRoomQueue;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class RedisWaitingRoomQueue implements WaitingRoomQueue {
@@ -30,9 +32,17 @@ public class RedisWaitingRoomQueue implements WaitingRoomQueue {
     @Override
     public long register(long userId, long eventId) {
         long sequence = redisTemplate.opsForValue().increment(SEQ_KEY + eventId);
-        redisTemplate.opsForZSet().addIfAbsent(QUEUE_KEY + eventId, String.valueOf(userId), sequence);
-        redisTemplate.opsForSet().add(ACTIVE_EVENTS_KEY, String.valueOf(eventId));
-        return getRank(userId, eventId);
+        Boolean added = redisTemplate.opsForZSet().addIfAbsent(QUEUE_KEY + eventId, String.valueOf(userId), sequence);
+        Long activeAdded = redisTemplate.opsForSet().add(ACTIVE_EVENTS_KEY, String.valueOf(eventId));
+        Long ttl = redisTemplate.getExpire(ACTIVE_EVENTS_KEY);
+        if (ttl != null && ttl >= 0) {
+            log.warn("[waiting-room] {} 키에 예상치 못한 TTL={}s 발견, PERSIST로 해제", ACTIVE_EVENTS_KEY, ttl);
+            redisTemplate.persist(ACTIVE_EVENTS_KEY);
+        }
+        long rank = getRank(userId, eventId);
+        log.info("[waiting-room] register userId={} eventId={} sequence={} zsetAdded={} activeEventsAdded={} rank={} activeEventsNow={}",
+                userId, eventId, sequence, added, activeAdded, rank, getActiveEventIds());
+        return rank;
     }
 
     @Override
@@ -79,6 +89,7 @@ public class RedisWaitingRoomQueue implements WaitingRoomQueue {
             admittedUserIds.add(Long.parseLong(userId));
         }
         removeFromActiveEventsIfEmpty(eventId);
+        log.info("[waiting-room] allowEntry eventId={} admitted={}", eventId, admittedUserIds);
         return admittedUserIds;
     }
 
@@ -98,6 +109,7 @@ public class RedisWaitingRoomQueue implements WaitingRoomQueue {
 
     @Override
     public void leave(long userId, long eventId) {
+        log.info("[waiting-room] leave 호출됨 userId={} eventId={}", userId, eventId, new Throwable("leave 호출 스택"));
         redisTemplate.opsForZSet().remove(
                 QUEUE_KEY + eventId,
                 String.valueOf(userId)

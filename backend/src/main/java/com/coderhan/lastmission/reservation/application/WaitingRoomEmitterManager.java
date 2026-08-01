@@ -1,13 +1,14 @@
 package com.coderhan.lastmission.reservation.application;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Component
 public class WaitingRoomEmitterManager {
 
@@ -17,6 +18,7 @@ public class WaitingRoomEmitterManager {
 
         // 기존 연결이 있으면 종료 (이미 끊긴 연결이면 complete()가 IllegalStateException을 던질 수 있어 무시)
         SseEmitter oldEmitter = emitters.remove(userId);
+        log.info("[waiting-room] connect userId={} 기존emitter있음={}", userId, oldEmitter != null);
         if (oldEmitter != null) {
             try {
                 oldEmitter.complete();
@@ -29,9 +31,18 @@ public class WaitingRoomEmitterManager {
 
         emitters.put(userId, emitter);
 
-        emitter.onCompletion(() -> emitters.remove(userId));
-        emitter.onTimeout(() -> emitters.remove(userId));
-        emitter.onError(e -> emitters.remove(userId));
+        emitter.onCompletion(() -> {
+            log.info("[waiting-room] emitter onCompletion userId={}", userId);
+            emitters.remove(userId);
+        });
+        emitter.onTimeout(() -> {
+            log.info("[waiting-room] emitter onTimeout userId={}", userId);
+            emitters.remove(userId);
+        });
+        emitter.onError(e -> {
+            log.info("[waiting-room] emitter onError userId={} error={}", userId, e.toString());
+            emitters.remove(userId);
+        });
 
         return emitter;
     }
@@ -41,6 +52,7 @@ public class WaitingRoomEmitterManager {
         SseEmitter emitter = emitters.get(userId);
 
         if (emitter == null) {
+            log.warn("[waiting-room] send 실패: 등록된 emitter 없음 userId={} event={}", userId, eventName);
             return;
         }
 
@@ -50,7 +62,8 @@ public class WaitingRoomEmitterManager {
                             .name(eventName)
                             .data(data)
             );
-        } catch (IOException e) {
+        } catch (Exception e) {
+            log.warn("[waiting-room] send 실패: userId={} event={} 연결 정리함", userId, eventName, e);
             remove(userId);
         }
     }
