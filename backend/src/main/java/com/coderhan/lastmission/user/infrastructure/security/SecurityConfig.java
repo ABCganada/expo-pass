@@ -51,7 +51,7 @@ class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/banners").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/manager/**").hasAnyRole("MANAGER")
+                        .requestMatchers("/api/v1/manager/**").hasAnyRole("MANAGER", "ADMIN")
                         .requestMatchers("/api/kafka/test/**").hasAnyRole("DEVELOPER")
                         .requestMatchers("/api/**").hasAnyRole("USER")
                         // WebSocket 핸드셰이크. CSRF 대상이 아니므로 허용 Origin 검사가 별도로 필요하다

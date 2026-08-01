@@ -74,6 +74,24 @@ class EventServiceTest {
         verify(eventBookmarkService, never()).removeBookmarksForEvent(anyLong());
     }
 
+    @Test
+    void increaseViewCount_영향받은_행이_있으면_성공() {
+        when(eventRepository.increaseViewCount(EVENT_ID)).thenReturn(1);
+
+        service.increaseViewCount(EVENT_ID);
+
+        verify(eventRepository).increaseViewCount(EVENT_ID);
+    }
+
+    @Test
+    void increaseViewCount_영향받은_행이_없으면_예외() {
+        when(eventRepository.increaseViewCount(EVENT_ID)).thenReturn(0);
+
+        assertThatThrownBy(() -> service.increaseViewCount(EVENT_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_NOT_FOUND));
+    }
+
     private Event event(long managerId) {
         EventCategory category = new EventCategory("MUSIC", "음악", true);
         Event event = new Event("테스트 행사", category, managerId);

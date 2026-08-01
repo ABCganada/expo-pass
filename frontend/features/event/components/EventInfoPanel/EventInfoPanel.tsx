@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, BookmarkCheck, Eye, MapPin } from "lucide-react";
+import { Bookmark, Eye, MapPin } from "lucide-react";
 import type { EventDetail } from "../../types/event";
 import { formatPeriod } from "../../utils/eventPhase";
 import { EventPhaseBadge } from "../EventPhaseBadge";
@@ -33,7 +33,7 @@ export function EventInfoPanel({ detail, isBookmarked, isBookmarkPending, onTogg
             disabled={isBookmarkPending}
             onClick={onToggleBookmark}
           >
-            {isBookmarked ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
+            <Bookmark size={20} fill={isBookmarked ? "currentColor" : "none"} />
           </button>
         </div>
       </div>

@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -40,9 +41,10 @@ class EventManagerController {
 
     @GetMapping("/api/v1/manager/events")
     ApiResponse<List<AdminEventListItemResponse>> getAdminEvents(
-            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication,
+            @RequestParam(required = false) String status) {
         List<AdminEventListItemResponse> events = eventQueryService
-                .getAdminEvents(principal.userId(), isAdmin(authentication))
+                .getAdminEvents(principal.userId(), isAdmin(authentication), parseStatus(status))
                 .stream()
                 .map(AdminEventListItemResponse::from)
                 .toList();
@@ -82,10 +84,22 @@ class EventManagerController {
                 .anyMatch("ROLE_ADMIN"::equals);
     }
 
+    private static EventStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        try {
+            return EventStatus.valueOf(status.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST,
+                    "status 값이 올바르지 않습니다. (PUBLISHED, DRAFT, CANCELLED 중 하나여야 합니다.)");
+        }
+    }
+
     record AdminEventListItemResponse(
             String id, String title, String categoryName, String managerId,
             EventStatus status, LocalDate startDate, LocalDate endDate, EventPhase phase, long viewCount,
-            String thumbnailUrl
+            String thumbnailUrl, Instant createdAt
     ) {
         static AdminEventListItemResponse from(EventQueryService.EventListItem eventItem) {
             Event event = eventItem.event();
@@ -99,7 +113,8 @@ class EventManagerController {
                     event.getEndDate(),
                     eventItem.phase(),
                     event.getViewCount(),
-                    eventItem.thumbnailUrl());
+                    eventItem.thumbnailUrl(),
+                    event.getCreatedAt());
         }
     }
 

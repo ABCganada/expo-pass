@@ -15,7 +15,9 @@ import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.event.domain.Ticket;
 import com.coderhan.lastmission.shared.ApiResponse;
+import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,8 +41,9 @@ class EventController {
     }
 
     @GetMapping("/{eventId}")
-    ApiResponse<EventDetailResponse> getEventDetail(@PathVariable long eventId) {
-        EventQueryService.EventDetail eventDetail = eventQueryService.getEventDetail(eventId);
+    ApiResponse<EventDetailResponse> getEventDetail(@PathVariable long eventId, 
+                                                    @AuthenticationPrincipal LastMissionPrincipal principal) {
+        EventQueryService.EventDetail eventDetail = eventQueryService.getEventDetail(eventId, principal.userId());
         return ApiResponse.success(EventDetailResponse.from(eventDetail));
     }
 
