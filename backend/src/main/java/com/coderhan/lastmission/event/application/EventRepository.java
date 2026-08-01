@@ -24,6 +24,9 @@ public interface EventRepository {
     // 관리자 목록 조회용. start_date 순으로 정렬
     List<Event> findAllOrderByStartDateAsc();
 
+    // 박람회 관리자 목록 조회용(MANAGER). 본인이 담당하는 행사만, start_date 순으로 정렬
+    List<Event> findAllByManagerIdOrderByStartDateAsc(long managerId);
+
     // 행사 종료 감지 스케줄러용
     List<Event> findEndedEventsNotNotified(LocalDate date);
 

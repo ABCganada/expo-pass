@@ -52,6 +52,16 @@ interface EventJpaRepository extends JpaRepository<Event, Long>, EventRepository
     @Override
     @Query("""
         SELECT e FROM Event e
+        JOIN FETCH e.category
+        WHERE e.managerId = :managerId 
+        AND e.deletedAt IS NULL
+        ORDER BY e.startDate ASC
+    """)
+    List<Event> findAllByManagerIdOrderByStartDateAsc(@Param("managerId") long managerId);
+
+    @Override
+    @Query("""
+        SELECT e FROM Event e
         WHERE e.status = com.coderhan.lastmission.event.domain.EventStatus.PUBLISHED
         AND e.deletedAt IS NULL
         AND e.endDate < :date

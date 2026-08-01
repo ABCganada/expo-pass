@@ -55,12 +55,14 @@ public class EventQueryService {
      * 관리자용 행사 목록 조회 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
      */
     @Transactional(readOnly = true)
-    public List<EventListItem> getAdminEvents(long callerUserId, boolean isAdmin) {
+    public List<EventListItem> getAdminEvents(long callerUserId, boolean isAdmin, EventStatus status) {
         LocalDate today = LocalDate.now(clock);
 
-        List<Event> events = eventRepository.findAllOrderByStartDateAsc()
-                .stream()
-                .filter(event -> isAdmin || Objects.equals(event.getManagerId(), callerUserId))
+        List<Event> events = isAdmin
+                ? eventRepository.findAllOrderByStartDateAsc()
+                : eventRepository.findAllByManagerIdOrderByStartDateAsc(callerUserId);
+        events = events.stream()
+                .filter(event -> status == null || event.getStatus() == status)
                 .toList();
         Map<Long, String> thumbnailByEventId = thumbnailUrlsByEventIds(events);
 
