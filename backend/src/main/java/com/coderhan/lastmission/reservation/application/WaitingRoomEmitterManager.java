@@ -15,10 +15,14 @@ public class WaitingRoomEmitterManager {
 
     public SseEmitter connect(long userId) {
 
-        // 기존 연결이 있으면 종료
+        // 기존 연결이 있으면 종료 (이미 끊긴 연결이면 complete()가 IllegalStateException을 던질 수 있어 무시)
         SseEmitter oldEmitter = emitters.remove(userId);
         if (oldEmitter != null) {
-            oldEmitter.complete();
+            try {
+                oldEmitter.complete();
+            } catch (IllegalStateException ignored) {
+                // 이미 완료/끊긴 연결 — 새 연결로 교체하는 중이므로 무시
+            }
         }
 
         SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
@@ -55,7 +59,11 @@ public class WaitingRoomEmitterManager {
         SseEmitter emitter = emitters.remove(userId);
 
         if (emitter != null) {
-            emitter.complete();
+            try {
+                emitter.complete();
+            } catch (IllegalStateException ignored) {
+                // 이미 완료/끊긴 연결
+            }
         }
     }
 
