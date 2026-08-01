@@ -15,6 +15,7 @@ import com.coderhan.lastmission.user.UserDirectory;
 import com.coderhan.lastmission.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -112,7 +113,7 @@ public class EventService {
     /**
      * 조회수 증가.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void increaseViewCount(long eventId) {
         int updated = eventRepository.increaseViewCount(eventId);
         if (updated == 0) {

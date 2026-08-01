@@ -18,7 +18,7 @@ import styles from "./EventDetailContent.module.css";
 export function EventDetailContent() {
   const { eventId } = useParams<{ eventId: string }>();
 
-  const { data: detail, isLoading, error } = useGetEventDetailQuery(eventId);
+  const { data: detail, isLoading, error } = useGetEventDetailQuery(eventId, { refetchOnMountOrArgChange: true });
   const { data: bookmarks = [] } = useGetMyBookmarksQuery();
   const [toggleBookmark, { isLoading: isTogglingBookmark }] = useToggleBookmarkMutation();
 
