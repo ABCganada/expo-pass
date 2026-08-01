@@ -26,7 +26,7 @@ public class BannerAdService {
 
     @Transactional
     public BannerAd registerAd(Set<UUID> slotIds, String title, String bannerImageUrl, String adImageUrl,
-                               String linkUrl, int priority, OffsetDateTime startsAt, OffsetDateTime endsAt,
+                               String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt,
                                String createdBy) {
         if (slotIds == null || slotIds.isEmpty()) {
             throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "광고 슬롯을 하나 이상 선택해야 합니다.");
@@ -40,14 +40,15 @@ public class BannerAdService {
 
         int days = (int) Math.max(1, ChronoUnit.DAYS.between(startsAt.toLocalDate(), endsAt.toLocalDate()));
         long totalAmount = calculateTotalAmount(slots, days);
+        String orderId = UUID.randomUUID().toString();
 
-        return adRepository.save(slotIds, title, bannerImageUrl, adImageUrl, linkUrl,
-                priority, startsAt, endsAt, createdBy, totalAmount);
+        return adRepository.save(slotIds, orderId, title, bannerImageUrl, adImageUrl, linkUrl,
+                startsAt, endsAt, createdBy, totalAmount);
     }
 
     @Transactional
     public BannerAd updateAd(UUID id, String createdBy, String title, String bannerImageUrl, String adImageUrl,
-                              String linkUrl, int priority, OffsetDateTime startsAt, OffsetDateTime endsAt) {
+                              String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt) {
         BannerAd ad = adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
         if (!ad.createdBy().equals(createdBy)) {
@@ -57,7 +58,7 @@ public class BannerAdService {
             throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "승인/거절된 광고는 수정할 수 없습니다.");
         }
         BannerAd.validate(title, startsAt, endsAt);
-        return adRepository.update(id, title, bannerImageUrl, adImageUrl, linkUrl, priority, startsAt, endsAt);
+        return adRepository.update(id, title, bannerImageUrl, adImageUrl, linkUrl, startsAt, endsAt);
     }
 
     @Transactional

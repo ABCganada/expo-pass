@@ -23,6 +23,7 @@ export const baseApi = createApi({
     "Payment",
     "Event",
     "EventCategory",
+    "EventBookmark",
     "Reservation",
   ],
   endpoints: () => ({}),

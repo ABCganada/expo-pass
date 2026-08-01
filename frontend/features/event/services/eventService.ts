@@ -1,4 +1,5 @@
-import type { EventCategory, EventListItem } from "../types/event";
+import { getCsrfToken } from "@/features/shared/api/csrf";
+import type { BookmarkedEvent, EventCategory, EventDetail, EventListItem } from "../types/event";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 const BASE = `${API_BASE_URL}/api/v1`;
@@ -18,5 +19,26 @@ export const eventService = {
   getEvents: (categoryId: string | undefined, signal?: AbortSignal): Promise<EventListItem[]> => {
     const url = categoryId ? `${BASE}/events?categoryId=${encodeURIComponent(categoryId)}` : `${BASE}/events`;
     return fetch(url, { credentials: "include", signal }).then((res) => parseData<EventListItem[]>(res));
+  },
+
+  getEventDetail: (eventId: string, signal?: AbortSignal): Promise<EventDetail> =>
+    fetch(`${BASE}/events/${eventId}`, { credentials: "include", signal }).then((res) =>
+      parseData<EventDetail>(res),
+    ),
+
+  getMyBookmarks: (signal?: AbortSignal): Promise<BookmarkedEvent[]> =>
+    fetch(`${BASE}/users/me/bookmarks`, { credentials: "include", signal }).then((res) =>
+      parseData<BookmarkedEvent[]>(res),
+    ),
+
+  toggleBookmark: async (eventId: string, signal?: AbortSignal): Promise<{ isBookmarked: boolean }> => {
+    const csrf = await getCsrfToken();
+    const res = await fetch(`${BASE}/events/${eventId}/bookmark`, {
+      method: "POST",
+      credentials: "include",
+      headers: { [csrf.headerName]: csrf.token },
+      signal,
+    });
+    return parseData<{ isBookmarked: boolean }>(res);
   },
 };

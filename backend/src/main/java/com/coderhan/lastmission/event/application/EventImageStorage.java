@@ -6,10 +6,10 @@ package com.coderhan.lastmission.event.application;
 public interface EventImageStorage {
 
     // 실제 업로드 없이 URL(키)만 발급
-    String reserveUrl(long eventId, String originalFilename);
+    String reserveUrl(long eventId, EventImageContentType contentType);
 
     // reserveUrl로 발급받은 URL에 실제 업로드
-    void uploadTo(String imageUrl, String contentType, byte[] content);
+    void uploadTo(String imageUrl, EventImageContentType contentType, byte[] content);
 
     // 고아 파일 정리용
     void cleanup(String imageUrl);

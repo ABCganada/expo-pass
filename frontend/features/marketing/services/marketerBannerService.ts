@@ -1,7 +1,7 @@
 import { getCsrfToken } from "@/features/shared/api/csrf";
 import type {
   BannerAdStats,
-  BannerSlotWithPolicies,
+  BannerSlot,
   MarketerBannerAd,
   RegisterAdCommand,
   UpdateAdCommand,
@@ -21,9 +21,9 @@ export const marketerBannerService = {
     fetch(`${BASE}/manager/banner-ads`, { credentials: "include", signal })
       .then((res) => parseData<MarketerBannerAd[]>(res)),
 
-  getSlotsWithPolicies: (signal?: AbortSignal): Promise<BannerSlotWithPolicies[]> =>
+  getSlots: (signal?: AbortSignal): Promise<BannerSlot[]> =>
     fetch(`${BASE}/manager/banner-ads/slots`, { credentials: "include", signal })
-      .then((res) => parseData<BannerSlotWithPolicies[]>(res)),
+      .then((res) => parseData<BannerSlot[]>(res)),
 
   uploadImage: async (file: File): Promise<string> => {
     const csrf = await getCsrfToken();

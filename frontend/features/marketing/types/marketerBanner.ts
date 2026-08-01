@@ -20,7 +20,6 @@ export interface MarketerBannerAd {
   bannerImageUrl?: string;
   adImageUrl?: string;
   linkUrl: string;
-  priority: number;
   status: BannerAdStatus;
   startsAt: string;
   endsAt: string;
@@ -34,24 +33,7 @@ export interface BannerSlot {
   name: string;
   maxCount: number;
   type: BannerSlotType;
-}
-
-export interface SlotPolicy {
-  id: string;
-  durationDays: number;
-  price: number;
-}
-
-export interface BannerSlotWithPolicies extends BannerSlot {
-  policies: SlotPolicy[];
-}
-
-export interface BannerPricingPolicy {
-  id: string;
-  slotId: string;
-  durationDays: number;
-  price: number;
-  createdAt: string;
+  pricePerDay: number;
 }
 
 export interface BannerAdStats {
@@ -67,7 +49,6 @@ export interface RegisterAdCommand {
   bannerImageUrl?: string;
   adImageUrl?: string;
   linkUrl: string;
-  priority: number;
   startsAt: string;
   endsAt: string;
 }
@@ -77,7 +58,6 @@ export interface UpdateAdCommand {
   bannerImageUrl?: string;
   adImageUrl?: string;
   linkUrl: string;
-  priority: number;
   startsAt: string;
   endsAt: string;
 }

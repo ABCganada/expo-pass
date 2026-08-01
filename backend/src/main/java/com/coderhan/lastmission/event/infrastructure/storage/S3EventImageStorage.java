@@ -3,6 +3,7 @@ package com.coderhan.lastmission.event.infrastructure.storage;
 import java.net.URI;
 import java.util.UUID;
 
+import com.coderhan.lastmission.event.application.EventImageContentType;
 import com.coderhan.lastmission.event.application.EventImageStorage;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
@@ -28,23 +29,25 @@ class S3EventImageStorage implements EventImageStorage {
     }
 
     @Override
-    public String reserveUrl(long eventId, String originalFilename) {
+    public String reserveUrl(long eventId, EventImageContentType contentType) {
         // S3 저장 경로 (실제 업로드는 하지 않고 키/URL만 발급)
-        String key = "events/%d/images/%s%s".formatted(eventId, UUID.randomUUID(), extensionOf(originalFilename));
-        return s3Client.utilities().getUrl(builder -> builder
-                .bucket(bucket)
-                .key(key))
+        String key = buildKey(eventId, contentType);
+
+        return s3Client.utilities()
+                .getUrl(builder -> builder
+                    .bucket(bucket)
+                    .key(key))
                 .toString();
     }
 
     @Override
-    public void uploadTo(String imageUrl, String contentType, byte[] content) {
+    public void uploadTo(String imageUrl, EventImageContentType contentType, byte[] content) {
         try {
             s3Client.putObject(
                     PutObjectRequest.builder()
                             .bucket(bucket)
                             .key(keyFromUrl(imageUrl))
-                            .contentType(contentType)
+                            .contentType(contentType.mimeType())
                             .build(),
                     RequestBody.fromBytes(content));
         } catch (SdkException e) {
@@ -64,17 +67,16 @@ class S3EventImageStorage implements EventImageStorage {
         }
     }
 
+    private String buildKey(long eventId, EventImageContentType contentType) {
+        return "events/%d/%s%s".formatted(
+                eventId,
+                UUID.randomUUID(),
+                contentType.extension()
+        );
+    }
+
     private static String keyFromUrl(String imageUrl) {
         String path = URI.create(imageUrl).getPath();
         return path.startsWith("/") ? path.substring(1) : path;
-    }
-
-    // 파일 확장자 추출
-    private static String extensionOf(String filename) {
-        if (filename == null) {
-            return "";
-        }
-        int dotIndex = filename.lastIndexOf('.');
-        return dotIndex >= 0 ? filename.substring(dotIndex) : "";
     }
 }

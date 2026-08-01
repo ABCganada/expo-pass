@@ -1,12 +1,14 @@
 package com.coderhan.lastmission.payment.infrastructure.persistence;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
+import com.coderhan.lastmission.payment.application.PaymentLogPage;
 import com.coderhan.lastmission.payment.application.PaymentLogRepository;
 import com.coderhan.lastmission.payment.domain.PaymentLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -36,10 +38,16 @@ class JpaPaymentLogRepository implements PaymentLogRepository {
     }
 
     @Override
-    public List<PaymentLog> findAll() {
-        return jpaRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(JpaPaymentLogRepository::toDomain)
-                .toList();
+    public PaymentLogPage findAll(int page, int size) {
+        int safeSize = Math.clamp(size, 1, 100);
+        int safePage = Math.max(page, 0);
+
+        Page<PaymentLogEntity> result = jpaRepository.findAllByOrderByCreatedAtDesc(
+                PageRequest.of(safePage, safeSize));
+
+        return new PaymentLogPage(
+                result.stream().map(JpaPaymentLogRepository::toDomain).toList(),
+                safePage, safeSize, result.getTotalElements());
     }
 
     @Override

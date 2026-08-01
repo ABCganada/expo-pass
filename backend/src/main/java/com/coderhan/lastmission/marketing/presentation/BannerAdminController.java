@@ -102,7 +102,6 @@ class BannerAdminController {
             String bannerImageUrl,
             String adImageUrl,
             String linkUrl,
-            int priority,
             BannerAdStatus status,
             OffsetDateTime startsAt,
             OffsetDateTime endsAt,
@@ -113,7 +112,7 @@ class BannerAdminController {
         static BannerAdResponse from(BannerAd ad) {
             return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(),
                     ad.bannerImageUrl(), ad.adImageUrl(), ad.linkUrl(),
-                    ad.priority(), ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(),
+                    ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(),
                     ad.createdAt(), ad.totalAmount());
         }
     }
