@@ -39,7 +39,6 @@ class PaymentController {
      * 돌려주는 값 3개를 그대로 받는다 — pgOrderId는 우리가 위젯을 열 때 토스에 넘긴 값이라
      * orderId와 다를 수 있다(재시도 시 접미사 등).
      *
-     * TODO orderType에 따른 승인 분기(예약/광고 각각의 금액 검증)는 아직 미구현 — 현재는 예약 주문만 처리.
      * TODO 결제 승인/실패에 대한 알림 reservation/marketing에 줘야 PENDING 변경 가능
      * TODO 결제 - 오더 간 정합성 스케줄링
      */
