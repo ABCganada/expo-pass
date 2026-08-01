@@ -36,4 +36,5 @@ export interface AdminEventListItem {
   endDate: string;
   phase: string;
   viewCount: number;
+  thumbnailUrl: string | null;
 }

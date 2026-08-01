@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronRight, ImageIcon } from "lucide-react";
 import { useGetAdminEventsForDisplayQuery } from "../../api/eventLookupApi";
 import styles from "./EventSelectContent.module.css";
 
@@ -50,6 +50,13 @@ export function EventSelectContent({ basePath, title, subtitle }: EventSelectCon
       <div className={styles.grid}>
         {events.map((event) => (
           <Link key={event.id} href={`${basePath}/${event.id}`} className={styles.card}>
+            <div className={styles.thumbnail}>
+              {event.thumbnailUrl ? (
+                <img src={event.thumbnailUrl} alt="" className={styles.thumbnailImage} />
+              ) : (
+                <ImageIcon size={32} />
+              )}
+            </div>
             <div className={styles.cardHeader}>
               <span className={styles.category}>{event.categoryName}</span>
               <span className={styles.phase} data-phase={event.phase}>

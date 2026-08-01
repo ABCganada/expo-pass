@@ -51,7 +51,11 @@ export function CheckinStatusCard({ event }: CheckinStatusCardProps) {
     <div className={styles.card}>
       <div className={styles.cardTop}>
         <div className={styles.avatar}>
-          <ImageIcon size={22} />
+          {event.thumbnailUrl ? (
+            <img src={event.thumbnailUrl} alt="" className={styles.avatarImage} />
+          ) : (
+            <ImageIcon size={22} />
+          )}
         </div>
         <div className={styles.cardHeaderText}>
           <div className={styles.badgeRow}>
