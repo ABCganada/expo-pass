@@ -32,4 +32,7 @@ public interface EventRepository {
 
     // PaymentEventQueryPort용
     Optional<LocalDate> findStartDateByEventId(long eventId);
+
+    // 조회수 증가
+    int increaseViewCount(long eventId);
 }

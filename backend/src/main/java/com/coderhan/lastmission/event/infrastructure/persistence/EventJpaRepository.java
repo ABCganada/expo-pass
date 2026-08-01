@@ -7,6 +7,7 @@ import com.coderhan.lastmission.event.application.EventRepository;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -73,4 +74,15 @@ interface EventJpaRepository extends JpaRepository<Event, Long>, EventRepository
         AND e.deletedAt IS NULL
     """)
     Optional<LocalDate> findStartDateByEventId(@Param("eventId") long eventId);
+
+    @Override
+    @Modifying
+    @Query("""
+        UPDATE Event e
+        SET e.viewCount = e.viewCount + 1
+        WHERE e.id = :eventId
+        AND e.deletedAt IS NULL
+        AND e.status <> com.coderhan.lastmission.event.domain.EventStatus.DRAFT
+    """)
+    int increaseViewCount(@Param("eventId") long eventId);
 }

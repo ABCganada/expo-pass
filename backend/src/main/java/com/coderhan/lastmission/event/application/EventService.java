@@ -109,6 +109,17 @@ public class EventService {
         return event;
     }
 
+    /**
+     * 조회수 증가.
+     */
+    @Transactional
+    public void increaseViewCount(long eventId) {
+        int updated = eventRepository.increaseViewCount(eventId);
+        if (updated == 0) {
+            throw new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다.");
+        }
+    }
+
     /** ADMIN은 전체 허용, 아니면 본인이 담당(manager_id)하는 행사인지 확인 */
     private void validateEventAccess(Event event, long callerUserId, boolean isAdmin, String action) {
         if (!isAdmin && !Objects.equals(event.getManagerId(), callerUserId)) {
