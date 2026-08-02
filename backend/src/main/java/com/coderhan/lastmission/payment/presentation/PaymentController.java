@@ -84,13 +84,13 @@ class PaymentController {
         return ApiResponse.success(payments);
     }
 
-    /** 결제 내역 상세 조회. 본인 것만 조회 가능. */
-    @GetMapping("/{paymentId}")
+    /** 결제 내역 상세 조회. orderId 기준(confirm/fail과 동일) — 본인 것만 조회 가능. */
+    @GetMapping("/{orderId}")
     ApiResponse<PaymentResponse> getPayment(
-        @PathVariable String paymentId,
+        @PathVariable String orderId,
         @AuthenticationPrincipal LastMissionPrincipal principal
     ) {
-        Payment payment = paymentService.getPayment(principal.userId(), parsePaymentId(paymentId));
+        Payment payment = paymentService.getPayment(principal.userId(), orderId);
         return ApiResponse.success(PaymentResponse.from(payment));
     }
 

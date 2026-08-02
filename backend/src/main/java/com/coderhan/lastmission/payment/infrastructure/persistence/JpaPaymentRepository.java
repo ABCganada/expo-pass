@@ -51,6 +51,11 @@ class JpaPaymentRepository implements PaymentRepository {
     }
 
     @Override
+    public Optional<Payment> findByOrderId(String orderId) {
+        return jpaRepository.findByOrderId(orderId).map(JpaPaymentRepository::toDomain);
+    }
+
+    @Override
     public List<Payment> findByUserId(long userId) {
         return jpaRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(JpaPaymentRepository::toDomain)
