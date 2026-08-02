@@ -14,7 +14,7 @@ CREATE TABLE payments (
     amount DECIMAL(12, 2) NOT NULL,
     method STRING NOT NULL,                 -- 'CARD', 'BANK_TRANSFER' 등 결제수단
     status STRING NOT NULL DEFAULT 'REQUESTED'
-        CHECK (status IN ('REQUESTED', 'COMPLETED', 'FAILED', 'CANCELLED')),
+        CHECK (status IN ('REQUESTED', 'COMPLETED', 'FAILED', 'CANCELLED', 'REFUNDED')),
 
     pg_provider STRING NOT NULL
         CHECK (pg_provider IN ('TOSS')),    -- 단일 PG지만 추후 확장 대비해 컬럼은 유지

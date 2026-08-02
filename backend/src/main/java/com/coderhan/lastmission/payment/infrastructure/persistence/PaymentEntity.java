@@ -88,4 +88,9 @@ class PaymentEntity {
         this.createdAt = now;
         this.updatedAt = now;
     }
+
+    void markRefunded(OffsetDateTime refundedAt) {
+        this.status = PaymentStatus.REFUNDED;
+        this.updatedAt = refundedAt;
+    }
 }

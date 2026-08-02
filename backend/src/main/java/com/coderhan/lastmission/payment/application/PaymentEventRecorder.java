@@ -81,14 +81,17 @@ class PaymentEventRecorder {
     }
 
     /**
-     * 환불 저장 + {@link PaymentRefundedEvent} 발행. RefundService.refund()는 private 메서드를 거치는
-     * self-invocation이라(request() → refund()) 직접 @Transactional을 못 쓴다 — confirmAndSave()와
-     * 동일한 이유로 이 협력 객체로 뺐다.
+     * 환불 저장 + payments.status를 REFUNDED로 갱신 + {@link PaymentRefundedEvent} 발행을 한 트랜잭션으로
+     * 묶는다. 셋 중 하나라도 실패하면 전부 롤백되므로, "환불 이벤트는 나갔는데 payments 테이블은
+     * 여전히 COMPLETED로 남는" 드리프트가 구조적으로 발생하지 않는다.
+     * RefundService.refund()는 private 메서드를 거치는 self-invocation이라(request() → refund())
+     * 직접 @Transactional을 못 쓴다 — confirmAndSave()와 동일한 이유로 이 협력 객체로 뺐다.
      */
     @Transactional
     Refund reportRefund(long paymentId, String orderId, OrderType orderType, BigDecimal amount, String reason,
                         OffsetDateTime refundedAt) {
         Refund refund = refundRepository.save(paymentId, amount, reason, refundedAt);
+        repository.markRefunded(paymentId, refundedAt);
 
         eventPublisher.publishEvent(new PaymentRefundedEvent(
             orderId,
