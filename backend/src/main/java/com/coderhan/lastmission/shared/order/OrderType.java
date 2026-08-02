@@ -1,4 +1,4 @@
-package com.coderhan.lastmission.payment.domain;
+package com.coderhan.lastmission.shared.order;
 
 public enum OrderType {
     RESERVATION,
