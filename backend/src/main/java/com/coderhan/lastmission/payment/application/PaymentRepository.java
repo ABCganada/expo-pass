@@ -19,6 +19,7 @@ public interface PaymentRepository {
     Optional<Payment> findById(long id);
     Optional<Payment> findByIdempotencyKey(String idempotencyKey);
     Optional<Payment> findByOrderIdAndStatus(String orderId, PaymentStatus status);  // 이중 결제 여부 체크용
+    Optional<Payment> findByOrderId(String orderId);  // 결제 상세 조회용 — 주문 하나당 결제는 최대 1건
     List<Payment> findByUserId(long userId);  // 내 결제 내역 조회용, 최신순
 
     /** 환불 확정 직후 payments.status를 REFUNDED로 갱신한다. */

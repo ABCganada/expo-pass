@@ -196,9 +196,9 @@ class PaymentServiceTest {
     @Test
     @DisplayName("본인 결제가 아니면 PAYMENT_ACCESS_DENIED 예외를 던진다")
     void rejectsGetPaymentForAnotherUsersPayment() {
-        when(repository.findById(PAYMENT_ID)).thenReturn(Optional.of(completedPayment()));
+        when(repository.findByOrderId(ORDER_ID)).thenReturn(Optional.of(completedPayment()));
 
-        assertThatThrownBy(() -> service.getPayment(OTHER_USER_ID, PAYMENT_ID))
+        assertThatThrownBy(() -> service.getPayment(OTHER_USER_ID, ORDER_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_ACCESS_DENIED));
     }
@@ -206,9 +206,9 @@ class PaymentServiceTest {
     @Test
     @DisplayName("결제 내역이 없으면 PAYMENT_NOT_FOUND 예외를 던진다")
     void rejectsGetPaymentWhenNotFound() {
-        when(repository.findById(PAYMENT_ID)).thenReturn(Optional.empty());
+        when(repository.findByOrderId(ORDER_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.getPayment(USER_ID, PAYMENT_ID))
+        assertThatThrownBy(() -> service.getPayment(USER_ID, ORDER_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_NOT_FOUND));
     }

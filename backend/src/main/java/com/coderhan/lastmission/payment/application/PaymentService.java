@@ -120,8 +120,8 @@ public class PaymentService {
         return repository.findByUserId(userId);
     }
 
-    public Payment getPayment(long userId, long paymentId) {
-        Payment payment = repository.findById(paymentId)
+    public Payment getPayment(long userId, String orderId) {
+        Payment payment = repository.findByOrderId(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, "결제 내역을 찾을 수 없습니다."));
 
         validatePaymentAccess(userId, payment);

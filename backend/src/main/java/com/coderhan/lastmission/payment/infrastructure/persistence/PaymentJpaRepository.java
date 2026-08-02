@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long> {
     Optional<PaymentEntity> findByIdempotencyKey(String idempotencyKey);
     Optional<PaymentEntity> findByOrderIdAndStatus(String orderId, PaymentStatus status);
+    Optional<PaymentEntity> findByOrderId(String orderId);
     List<PaymentEntity> findByUserIdOrderByCreatedAtDesc(Long userId);
     List<PaymentEntity> findByOrderIdInAndStatus(Collection<String> orderIds, PaymentStatus status);
 }
