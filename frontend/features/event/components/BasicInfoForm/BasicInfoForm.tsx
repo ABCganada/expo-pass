@@ -21,6 +21,7 @@ export interface BasicInfoFormValues {
   latitude: number | null;
   longitude: number | null;
   kakaoPlaceId: string | null;
+  legalDongCode: string | null;
 }
 
 interface BasicInfoFormProps {
@@ -62,11 +63,19 @@ export function BasicInfoForm({ values, onChange, onValidSubmit, readOnly = fals
       latitude: venue.latitude,
       longitude: venue.longitude,
       kakaoPlaceId: venue.kakaoPlaceId,
+      legalDongCode: venue.legalDongCode,
     });
   };
 
   const handleVenueClear = () => {
-    onChange({ venueName: "", address: "", latitude: null, longitude: null, kakaoPlaceId: null });
+    onChange({
+      venueName: "",
+      address: "",
+      latitude: null,
+      longitude: null,
+      kakaoPlaceId: null,
+      legalDongCode: null,
+    });
   };
 
   const handleSubmit = (event: React.FormEvent) => {

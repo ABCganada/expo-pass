@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useUpdateAdminEventMutation } from "../../api/adminEventDetailApi";
 import { useChangeEventManagerMutation } from "../../api/eventCreateApi";
 import { BasicInfoForm, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
@@ -32,6 +32,7 @@ function toFormValues(detail: AdminEventDetail, categoryId: string): BasicInfoFo
     latitude: detail.latitude,
     longitude: detail.longitude,
     kakaoPlaceId: detail.kakaoPlaceId,
+    legalDongCode: detail.legalDongCode,
   };
 }
 
@@ -50,10 +51,14 @@ export function BasicInfoEditor({
   const [values, setValues] = useState<BasicInfoFormValues>(() => toFormValues(detail, initialCategoryId));
   const [error, setError] = useState<string | null>(null);
 
-  // detail이 갱신되면(예: 저장 후 재조회) 편집 중이던 값도 최신 서버 상태로 다시 맞춘다.
-  useEffect(() => {
+  // detail/initialCategoryId가 바뀌면(예: 저장 후 재조회) 편집 중이던 값도 최신 서버 상태로 다시 맞춘다.
+  const [syncedDetail, setSyncedDetail] = useState(detail);
+  const [syncedCategoryId, setSyncedCategoryId] = useState(initialCategoryId);
+  if (detail !== syncedDetail || initialCategoryId !== syncedCategoryId) {
+    setSyncedDetail(detail);
+    setSyncedCategoryId(initialCategoryId);
     setValues(toFormValues(detail, initialCategoryId));
-  }, [detail, initialCategoryId]);
+  }
 
   const handleChange = (patch: Partial<BasicInfoFormValues>) => setValues((prev) => ({ ...prev, ...patch }));
 
@@ -76,7 +81,7 @@ export function BasicInfoEditor({
           address: values.address || null,
           detailAddress: values.detailAddress || null,
           kakaoPlaceId: values.kakaoPlaceId,
-          legalDongCode: detail.legalDongCode,
+          legalDongCode: values.legalDongCode,
           latitude: values.latitude,
           longitude: values.longitude,
           startDate: values.startDate || null,

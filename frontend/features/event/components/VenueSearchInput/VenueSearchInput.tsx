@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MapPin, Search, X } from "lucide-react";
-import type { KakaoPlaceDocument, KakaoPlacesService } from "@/features/event/types/kakaoMaps";
+import type { KakaoGeocoderService, KakaoPlaceDocument, KakaoPlacesService } from "@/features/event/types/kakaoMaps";
 import "@/features/event/types/kakaoMaps";
 import styles from "./VenueSearchInput.module.css";
 
@@ -37,6 +37,7 @@ export interface VenueSelection {
   latitude: number;
   longitude: number;
   kakaoPlaceId: string;
+  legalDongCode: string | null;
 }
 
 interface VenueSearchInputProps {
@@ -49,14 +50,14 @@ export function VenueSearchInput({ selectedVenueName, onSelect, onClear }: Venue
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<KakaoPlaceDocument[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [asyncError, setError] = useState<string | null>(null);
+  const configError = APP_KEY ? null : "장소 검색에 필요한 설정이 누락되었습니다.";
+  const error = configError ?? asyncError;
   const placesRef = useRef<KakaoPlacesService | null>(null);
+  const geocoderRef = useRef<KakaoGeocoderService | null>(null);
 
   useEffect(() => {
-    if (!APP_KEY) {
-      setError("장소 검색에 필요한 설정이 누락되었습니다.");
-      return;
-    }
+    if (!APP_KEY) return;
     let cancelled = false;
     loadKakaoServicesSdk()
       .then(() => {
@@ -64,6 +65,7 @@ export function VenueSearchInput({ selectedVenueName, onSelect, onClear }: Venue
         window.kakao!.maps.load(() => {
           if (cancelled) return;
           placesRef.current = new window.kakao!.maps.services.Places();
+          geocoderRef.current = new window.kakao!.maps.services.Geocoder();
         });
       })
       .catch((e: Error) => {
@@ -90,15 +92,26 @@ export function VenueSearchInput({ selectedVenueName, onSelect, onClear }: Venue
   };
 
   const handleSelect = (place: KakaoPlaceDocument) => {
-    onSelect({
+    const latitude = Number(place.y);
+    const longitude = Number(place.x);
+    const base = {
       venueName: place.place_name,
       address: place.road_address_name || place.address_name,
-      latitude: Number(place.y),
-      longitude: Number(place.x),
+      latitude,
+      longitude,
       kakaoPlaceId: place.id,
-    });
+    };
     setResults([]);
     setQuery("");
+
+    if (!geocoderRef.current) {
+      onSelect({ ...base, legalDongCode: null });
+      return;
+    }
+    geocoderRef.current.coord2RegionCode(longitude, latitude, (data, status) => {
+      const legalDongCode = status === "OK" ? (data.find((region) => region.region_type === "B")?.code ?? null) : null;
+      onSelect({ ...base, legalDongCode });
+    });
   };
 
   if (selectedVenueName) {
