@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * 결제 승인/실패 결과를 기록하고 {@link PaymentConfirmedEvent}/{@link PaymentFailedEvent}를
@@ -23,7 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 class PaymentEventRecorder {
 
     private final PaymentRepository repository;
+    private final PaymentLogRepository paymentLogRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     Payment reportConfirmation(String orderId, OrderType orderType, Long userId,
@@ -47,9 +50,20 @@ class PaymentEventRecorder {
         return payment;
     }
 
+    /**
+     * FAILED 감사 로그를 payment_logs에 저장 + {@link PaymentFailedEvent} 발행. PG 승인 자체가 없어
+     * payments 테이블(idempotency_key/method 등 NOT NULL)에는 채울 실제 값이 없다 — payment_logs는
+     * payment_key/request_payload가 전부 nullable이라 이런 감사 로그 용도에 원래 맞는 테이블이다.
+     * 같은 주문에 실패 로그가 여러 건 쌓이는 것도 허용한다(webhookTransmissionId가 없어 중복 방지 대상이
+     * 아님 — "결제가 안 됐다"는 사실 자체가 중요하지 재시도 중복 방지가 목적이 아니기 때문).
+     */
     @Transactional
-    void reportFailure(String orderId, OrderType orderType, Long userId,
+    void reportFailure(String orderId, OrderType orderType, Long userId, BigDecimal amount,
                        String reason, OffsetDateTime failedAt) {
+        String requestPayload = objectMapper.writeValueAsString(
+                new FailureLogPayload(orderId, orderType, userId, amount, reason));
+        paymentLogRepository.save(null, "PAYMENT_FAILED", requestPayload, null, null, failedAt);
+
         eventPublisher.publishEvent(new PaymentFailedEvent(
             orderId,
             orderType,
@@ -57,5 +71,9 @@ class PaymentEventRecorder {
             reason,
             failedAt
         ));
+    }
+
+    private record FailureLogPayload(String orderId, OrderType orderType, Long userId, BigDecimal amount,
+                                     String reason) {
     }
 }

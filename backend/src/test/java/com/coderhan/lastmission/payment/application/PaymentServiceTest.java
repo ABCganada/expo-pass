@@ -220,7 +220,7 @@ class PaymentServiceTest {
 
         service.reportFailure(USER_ID, ORDER_ID, ORDER_TYPE, "사용자가 결제창에서 취소함");
 
-        verify(eventRecorder).reportFailure(ORDER_ID, ORDER_TYPE, USER_ID,
+        verify(eventRecorder).reportFailure(ORDER_ID, ORDER_TYPE, USER_ID, AMOUNT,
                 "사용자가 결제창에서 취소함", OffsetDateTime.now(clock));
     }
 
@@ -231,7 +231,7 @@ class PaymentServiceTest {
 
         service.reportFailure(USER_ID, ORDER_ID, OrderType.ADVERTISEMENT, null);
 
-        verify(eventRecorder).reportFailure(any(), any(), any(), any(), any());
+        verify(eventRecorder).reportFailure(any(), any(), any(), any(), any(), any());
         verify(reservationOrderDirectory, never()).findOrderAmount(any());
     }
 
@@ -243,7 +243,7 @@ class PaymentServiceTest {
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
 
         verify(reservationOrderDirectory, never()).findOrderAmount(any());
-        verify(eventRecorder, never()).reportFailure(any(), any(), any(), any(), any());
+        verify(eventRecorder, never()).reportFailure(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -253,7 +253,7 @@ class PaymentServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
 
-        verify(eventRecorder, never()).reportFailure(any(), any(), any(), any(), any());
+        verify(eventRecorder, never()).reportFailure(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -265,7 +265,7 @@ class PaymentServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
 
-        verify(eventRecorder, never()).reportFailure(any(), any(), any(), any(), any());
+        verify(eventRecorder, never()).reportFailure(any(), any(), any(), any(), any(), any());
     }
 
     private static Payment completedPayment() {
