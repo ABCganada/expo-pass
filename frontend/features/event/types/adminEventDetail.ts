@@ -86,6 +86,7 @@ export interface CreateTicketPayload {
 export interface UpdateTicketPayload {
   name: string;
   price: number;
+  quantityTotal: number;
   maxPurchasePerUser: number;
   saleStartAt: string | null;
   saleEndAt: string | null;
