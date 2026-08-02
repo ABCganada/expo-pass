@@ -15,6 +15,7 @@ import com.coderhan.lastmission.user.UserDirectory;
 import com.coderhan.lastmission.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -107,6 +108,17 @@ public class EventService {
             case DRAFT -> throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "DRAFT로는 되돌릴 수 없습니다.");
         }
         return event;
+    }
+
+    /**
+     * 조회수 증가.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void increaseViewCount(long eventId) {
+        int updated = eventRepository.increaseViewCount(eventId);
+        if (updated == 0) {
+            throw new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다.");
+        }
     }
 
     /** ADMIN은 전체 허용, 아니면 본인이 담당(manager_id)하는 행사인지 확인 */

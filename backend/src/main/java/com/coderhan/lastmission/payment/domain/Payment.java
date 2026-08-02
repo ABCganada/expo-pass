@@ -10,6 +10,7 @@ import lombok.Builder;
 public record Payment(
         long id,
         String orderId,
+        OrderType orderType,
         Long userId,
         String idempotencyKey,
         BigDecimal amount,
@@ -22,9 +23,13 @@ public record Payment(
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {
-    public static void validate(String orderId, String pgOrderId, String paymentKey, BigDecimal amount) {
+    public static void validate(String orderId, OrderType orderType, String pgOrderId, String paymentKey,
+            BigDecimal amount) {
         if (orderId == null || orderId.isBlank()) {
             throw new BusinessException(ErrorCode.PAYMENT_INVALID_REQUEST, "주문 ID가 올바르지 않습니다.");
+        }
+        if (orderType == null) {
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_REQUEST, "주문 타입이 올바르지 않습니다.");
         }
         if (pgOrderId == null || pgOrderId.isBlank()) {
             throw new BusinessException(ErrorCode.PAYMENT_INVALID_REQUEST, "PG 주문 ID가 올바르지 않습니다.");

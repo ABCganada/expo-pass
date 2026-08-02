@@ -19,6 +19,7 @@ import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.UserDirectory;
 import com.coderhan.lastmission.user.UserRef;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class EventQueryService {
     private final EventRepository eventRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final TicketRepository ticketRepository;
     private final EventContentRepository eventContentRepository;
     private final EventImageRepository eventImageRepository;
@@ -53,12 +55,14 @@ public class EventQueryService {
      * 관리자용 행사 목록 조회 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
      */
     @Transactional(readOnly = true)
-    public List<EventListItem> getAdminEvents(long callerUserId, boolean isAdmin) {
+    public List<EventListItem> getAdminEvents(long callerUserId, boolean isAdmin, EventStatus status) {
         LocalDate today = LocalDate.now(clock);
 
-        List<Event> events = eventRepository.findAllOrderByStartDateAsc()
-                .stream()
-                .filter(event -> isAdmin || Objects.equals(event.getManagerId(), callerUserId))
+        List<Event> events = isAdmin
+                ? eventRepository.findAllOrderByStartDateAsc()
+                : eventRepository.findAllByManagerIdOrderByStartDateAsc(callerUserId);
+        events = events.stream()
+                .filter(event -> status == null || event.getStatus() == status)
                 .toList();
         Map<Long, String> thumbnailByEventId = thumbnailUrlsByEventIds(events);
 
@@ -68,10 +72,10 @@ public class EventQueryService {
     }
 
     /**
-     * 행사 상세 조회
+     * 행사 상세 조회.
      */
     @Transactional(readOnly = true)
-    public EventDetail getEventDetail(long id) {
+    public EventDetail getEventDetail(long id, long viewerUserId) {
         LocalDate today = LocalDate.now(clock);
 
         Event event = eventRepository.findNotDeletedById(id)
@@ -81,6 +85,8 @@ public class EventQueryService {
         List<Ticket> tickets = ticketRepository.findAllNotDeletedByEventIdOrderByCreatedAtAsc(id);
         List<EventContent> contents = eventContentRepository.findAllByEventId(id);
         List<EventImage> images = eventImageRepository.findAllByEventIdOrderByDisplayOrderAsc(id);
+
+        eventPublisher.publishEvent(new EventViewedEvent(id, viewerUserId));
 
         return new EventDetail(event, event.phase(today), tickets, contents, images);
     }

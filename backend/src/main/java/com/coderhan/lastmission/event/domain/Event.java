@@ -90,8 +90,9 @@ public class Event {
         this.status = EventStatus.DRAFT;
         this.viewCount = 0L;
     }
-
+    
     public EventPhase phase(LocalDate today) {
+        if (startDate == null || endDate == null) return null;
         if (today.isBefore(startDate)) return EventPhase.UPCOMING;
         if (today.isAfter(endDate)) return EventPhase.ENDED;
         return EventPhase.ONGOING;

@@ -2,6 +2,7 @@ package com.coderhan.lastmission.event.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -29,6 +30,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,8 +39,10 @@ class EventQueryServiceTest {
     private static final long OTHER_EVENT_ID = 2L;
     private static final long MANAGER_ID = 100L;
     private static final long OTHER_MANAGER_ID = 200L;
+    private static final long VIEWER_USER_ID = 300L;
 
     @Mock EventRepository eventRepository;
+    @Mock ApplicationEventPublisher eventPublisher;
     @Mock TicketRepository ticketRepository;
     @Mock EventContentRepository eventContentRepository;
     @Mock EventImageRepository eventImageRepository;
@@ -53,7 +57,7 @@ class EventQueryServiceTest {
         Event other = event(OTHER_EVENT_ID, OTHER_MANAGER_ID);
         when(eventRepository.findAllOrderByStartDateAsc()).thenReturn(List.of(own, other));
 
-        List<EventQueryService.EventListItem> events = service.getAdminEvents(MANAGER_ID, true);
+        List<EventQueryService.EventListItem> events = service.getAdminEvents(MANAGER_ID, true, null);
 
         assertThat(events).extracting(EventQueryService.EventListItem::event).containsExactly(own, other);
     }
@@ -61,12 +65,23 @@ class EventQueryServiceTest {
     @Test
     void getAdminEvents_MANAGER는_본인_담당_행사만_조회() {
         Event own = event(EVENT_ID, MANAGER_ID);
-        Event other = event(OTHER_EVENT_ID, OTHER_MANAGER_ID);
-        when(eventRepository.findAllOrderByStartDateAsc()).thenReturn(List.of(own, other));
+        when(eventRepository.findAllByManagerIdOrderByStartDateAsc(MANAGER_ID)).thenReturn(List.of(own));
 
-        List<EventQueryService.EventListItem> events = service.getAdminEvents(MANAGER_ID, false);
+        List<EventQueryService.EventListItem> events = service.getAdminEvents(MANAGER_ID, false, null);
 
         assertThat(events).extracting(EventQueryService.EventListItem::event).containsExactly(own);
+    }
+
+    @Test
+    void getAdminEvents_status가_있으면_해당_상태만_조회() {
+        Event draft = event(EVENT_ID, MANAGER_ID);
+        Event published = event(OTHER_EVENT_ID, MANAGER_ID);
+        ReflectionTestUtils.setField(published, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findAllOrderByStartDateAsc()).thenReturn(List.of(draft, published));
+
+        List<EventQueryService.EventListItem> events = service.getAdminEvents(MANAGER_ID, true, EventStatus.PUBLISHED);
+
+        assertThat(events).extracting(EventQueryService.EventListItem::event).containsExactly(published);
     }
 
     @Test
@@ -113,11 +128,25 @@ class EventQueryServiceTest {
         when(eventContentRepository.findAllByEventId(EVENT_ID)).thenReturn(List.of(content));
         when(eventImageRepository.findAllByEventIdOrderByDisplayOrderAsc(EVENT_ID)).thenReturn(List.of(image));
 
-        EventQueryService.EventDetail detail = service.getEventDetail(EVENT_ID);
+        EventQueryService.EventDetail detail = service.getEventDetail(EVENT_ID, VIEWER_USER_ID);
 
         assertThat(detail.tickets()).containsExactly(ticket);
         assertThat(detail.contents()).containsExactly(content);
         assertThat(detail.images()).containsExactly(image);
+    }
+
+    @Test
+    void getEventDetail_조회시_EventViewedEvent를_발행() {
+        Event event = event(EVENT_ID, MANAGER_ID);
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+        when(ticketRepository.findAllNotDeletedByEventIdOrderByCreatedAtAsc(EVENT_ID)).thenReturn(List.of());
+        when(eventContentRepository.findAllByEventId(EVENT_ID)).thenReturn(List.of());
+        when(eventImageRepository.findAllByEventIdOrderByDisplayOrderAsc(EVENT_ID)).thenReturn(List.of());
+
+        service.getEventDetail(EVENT_ID, VIEWER_USER_ID);
+
+        verify(eventPublisher).publishEvent(new EventViewedEvent(EVENT_ID, VIEWER_USER_ID));
     }
 
     @Test

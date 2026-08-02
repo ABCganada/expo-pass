@@ -29,6 +29,33 @@ const eventApi = baseApi.injectEndpoints({
     toggleBookmark: build.mutation<{ isBookmarked: boolean }, string>({
       queryFn: (eventId, api) => queryResult(eventService.toggleBookmark(eventId, api.signal)),
       invalidatesTags: ["EventBookmark"],
+      async onQueryStarted(eventId, { dispatch, getState, queryFulfilled }) {
+        const patch = dispatch( // Optimistic Update : RTK Qeury 캐시 수정
+          eventApi.util.updateQueryData("getMyBookmarks", undefined, (draft) => {
+            const index = draft.findIndex((bookmark) => bookmark.id === eventId);
+            if (index >= 0) { // 이미 북마크 -> 제거
+              draft.splice(index, 1);
+              return;
+            }
+            const detail = eventApi.endpoints.getEventDetail.select(eventId)(getState()).data;
+            if (detail?.startDate && detail.endDate) {
+              draft.push({ // 캐시에 추가
+                id: detail.id,
+                title: detail.title,
+                categoryName: detail.categoryName,
+                startDate: detail.startDate,
+                endDate: detail.endDate,
+                phase: detail.phase,
+              });
+            }
+          }),
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patch.undo();
+        }
+      },
     }),
   }),
 });
