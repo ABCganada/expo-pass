@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { useCreateDraftEventMutation, useChangeEventManagerMutation } from "@/features/event/api/eventCreateApi";
 import { useUpdateAdminEventMutation, useGetAdminEventDetailQuery } from "@/features/event/api/adminEventDetailApi";
 import { StepIndicator } from "@/features/event/components/EventCreateStepper/StepIndicator";
@@ -102,6 +103,10 @@ export default function NewEventPage() {
   return (
     <section className={styles.page}>
       <header className={styles.header}>
+        <button type="button" className={styles.backButton} onClick={() => router.push("/admin/events")}>
+          <ArrowLeft size={16} />
+          목록으로
+        </button>
         <h1 className={styles.title}>새 행사 등록</h1>
       </header>
 
