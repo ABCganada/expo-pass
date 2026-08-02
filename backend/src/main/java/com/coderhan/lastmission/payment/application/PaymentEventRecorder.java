@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.shared.event.PaymentConfirmedEvent;
+import com.coderhan.lastmission.shared.event.PaymentFailedEvent;
 import com.coderhan.lastmission.shared.order.OrderType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -11,21 +12,21 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 결제 저장과 {@link PaymentConfirmedEvent} 발행을 하나의 트랜잭션으로 묶는 전담 협력 객체.
- * PaymentService에서 직접 @Transactional을 쓸 수 없어서(private 메서드 self-invocation이라
- * 프록시를 안 거침) 별도 빈으로 분리했다 — EventEndedEventPublisher와 동일한 패턴.
- * 트랜잭션 커밋 이후에만 실행되는 @TransactionalEventListener(AFTER_COMMIT) 리스너가
- * 정상적으로 등록되려면, publishEvent() 호출 시점에 활성 트랜잭션이 있어야 한다.
+ * 결제 승인/실패 결과를 기록하고 {@link PaymentConfirmedEvent}/{@link PaymentFailedEvent}를
+ * 발행하는 전담 협력 객체. 트랜잭션 커밋 이후에만 실행되는 @TransactionalEventListener(AFTER_COMMIT)
+ * 리스너가 정상적으로 등록되려면 publishEvent() 호출 시점에 활성 트랜잭션이 있어야 하므로,
+ * "결제 결과를 기록/발행하는" 책임을 여기 한 군데로 모아 PaymentService는 검증·오케스트레이션만
+ * 담당하게 한다.
  */
 @Component
 @RequiredArgsConstructor
-class PaymentConfirmationRecorder {
+class PaymentEventRecorder {
 
     private final PaymentRepository repository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    Payment save(String orderId, OrderType orderType, Long userId,
+    Payment reportConfirmation(String orderId, OrderType orderType, Long userId,
                  String idempotencyKey, BigDecimal amount, String method,
                  String pgProvider, String pgOrderId, String pgTransactionId,
                  OffsetDateTime paidAt) {
@@ -44,5 +45,17 @@ class PaymentConfirmationRecorder {
         ));
 
         return payment;
+    }
+
+    @Transactional
+    void reportFailure(String orderId, OrderType orderType, Long userId,
+                       String reason, OffsetDateTime failedAt) {
+        eventPublisher.publishEvent(new PaymentFailedEvent(
+            orderId,
+            orderType,
+            userId,
+            reason,
+            failedAt
+        ));
     }
 }
