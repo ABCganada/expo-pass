@@ -28,6 +28,15 @@ spring:
   flyway:
     enabled: ${SPRING_FLYWAY_ENABLED:false}
 
+  modulith:
+    events:
+      # 모듈 간 도메인 이벤트 발행 이력을 event_publication 테이블에 기록해 durability를 보장한다.
+      # (실제 프로퍼티 경로는 spring.modulith.events.jdbc.schema-initialization — jdbc 단계가 하나 더 있다)
+      jdbc:
+        schema-initialization:
+          enabled: true
+      republish-outstanding-events-on-restart: true
+
   jpa:
     database-platform: org.hibernate.dialect.CockroachDialect
     # false로 꺼야 Hibernate가 기동 시점에 Dialect 확인용 DB 커넥션을 열지 않는다.
