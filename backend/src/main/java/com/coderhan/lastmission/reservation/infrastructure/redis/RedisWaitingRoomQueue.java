@@ -30,19 +30,19 @@ public class RedisWaitingRoomQueue implements WaitingRoomQueue {
     private static final String ACTIVE_EVENTS_KEY = "waiting_active_events";
 
     @Override
-    public long register(long userId, long eventId) {
+    public void register(long userId, long eventId) {
+        // register~getRank(sendInitialRank) 사이의 창이 좁을수록 "등록 직후 스케줄러가
+        // 먼저 허가해버리는" 레이스가 줄어든다. 여기서 순번을 다시 조회하거나 진단용으로
+        // 전체 활성 이벤트 목록을 또 읽는 건 왕복만 늘릴 뿐 호출부(enter())가 반환값을
+        // 쓰지도 않으므로 제거한다 — 순번 조회는 오직 sendInitialRank()에서만 한다.
         long sequence = redisTemplate.opsForValue().increment(SEQ_KEY + eventId);
-        Boolean added = redisTemplate.opsForZSet().addIfAbsent(QUEUE_KEY + eventId, String.valueOf(userId), sequence);
-        Long activeAdded = redisTemplate.opsForSet().add(ACTIVE_EVENTS_KEY, String.valueOf(eventId));
+        redisTemplate.opsForZSet().addIfAbsent(QUEUE_KEY + eventId, String.valueOf(userId), sequence);
+        redisTemplate.opsForSet().add(ACTIVE_EVENTS_KEY, String.valueOf(eventId));
         Long ttl = redisTemplate.getExpire(ACTIVE_EVENTS_KEY);
         if (ttl != null && ttl >= 0) {
             log.warn("[waiting-room] {} 키에 예상치 못한 TTL={}s 발견, PERSIST로 해제", ACTIVE_EVENTS_KEY, ttl);
             redisTemplate.persist(ACTIVE_EVENTS_KEY);
         }
-        long rank = getRank(userId, eventId);
-        log.info("[waiting-room] register userId={} eventId={} sequence={} zsetAdded={} activeEventsAdded={} rank={} activeEventsNow={}",
-                userId, eventId, sequence, added, activeAdded, rank, getActiveEventIds());
-        return rank;
     }
 
     @Override
@@ -82,7 +82,7 @@ public class RedisWaitingRoomQueue implements WaitingRoomQueue {
             redisTemplate.opsForZSet().remove(QUEUE_KEY + eventId, userId);
             // 입장 티켓 발급 (5분 유효)
             redisTemplate.opsForValue().set(
-                    ADMITTED_KEY + ":" + eventId + ":" + userId,
+                    admittedKey(eventId, userId),
                     "true",
                     Duration.ofMinutes(5)
             );
@@ -94,8 +94,13 @@ public class RedisWaitingRoomQueue implements WaitingRoomQueue {
     }
 
     @Override
+    public boolean hasTicket(long userId, long eventId) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(admittedKey(eventId, String.valueOf(userId))));
+    }
+
+    @Override
     public void consumeTicket(long userId, long eventId) {
-        String key = ADMITTED_KEY + ":" + eventId + ":" + userId;
+        String key = admittedKey(eventId, String.valueOf(userId));
 
         String ticket = redisTemplate.opsForValue().getAndDelete(key);
 
@@ -109,7 +114,6 @@ public class RedisWaitingRoomQueue implements WaitingRoomQueue {
 
     @Override
     public void leave(long userId, long eventId) {
-        log.info("[waiting-room] leave 호출됨 userId={} eventId={}", userId, eventId, new Throwable("leave 호출 스택"));
         redisTemplate.opsForZSet().remove(
                 QUEUE_KEY + eventId,
                 String.valueOf(userId)
@@ -131,11 +135,7 @@ public class RedisWaitingRoomQueue implements WaitingRoomQueue {
         }
     }
 
-    @Override
-    public void clearAll() {
-        for (Long eventId : getActiveEventIds()) {
-            redisTemplate.delete(QUEUE_KEY + eventId);
-        }
-        redisTemplate.delete(ACTIVE_EVENTS_KEY);
+    private String admittedKey(long eventId, String userId) {
+        return ADMITTED_KEY + ":" + eventId + ":" + userId;
     }
 }

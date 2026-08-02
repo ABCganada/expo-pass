@@ -15,10 +15,8 @@ public class WaitingRoomEmitterManager {
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     public SseEmitter connect(long userId) {
-
         // 기존 연결이 있으면 종료 (이미 끊긴 연결이면 complete()가 IllegalStateException을 던질 수 있어 무시)
         SseEmitter oldEmitter = emitters.remove(userId);
-        log.info("[waiting-room] connect userId={} 기존emitter있음={}", userId, oldEmitter != null);
         if (oldEmitter != null) {
             try {
                 oldEmitter.complete();
@@ -28,27 +26,11 @@ public class WaitingRoomEmitterManager {
         }
 
         SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
-
         emitters.put(userId, emitter);
-
-        emitter.onCompletion(() -> {
-            log.info("[waiting-room] emitter onCompletion userId={}", userId);
-            emitters.remove(userId);
-        });
-        emitter.onTimeout(() -> {
-            log.info("[waiting-room] emitter onTimeout userId={}", userId);
-            emitters.remove(userId);
-        });
-        emitter.onError(e -> {
-            log.info("[waiting-room] emitter onError userId={} error={}", userId, e.toString());
-            emitters.remove(userId);
-        });
-
         return emitter;
     }
 
     public void send(long userId, String eventName, Object data) {
-
         SseEmitter emitter = emitters.get(userId);
 
         if (emitter == null) {
@@ -64,24 +46,26 @@ public class WaitingRoomEmitterManager {
             );
         } catch (Exception e) {
             log.warn("[waiting-room] send 실패: userId={} event={} 연결 정리함", userId, eventName, e);
-            remove(userId);
+            evict(userId, emitter);
         }
     }
 
-    public void remove(long userId) {
-        SseEmitter emitter = emitters.remove(userId);
-
-        if (emitter != null) {
+    /**
+     * 이 emitter가 지금도 이 유저의 "현재" 연결일 때만 원자적으로 제거한다.
+     * 재연결 등으로 이미 다른 emitter로 교체된 뒤라면(맵의 값과 불일치) 아무 것도 하지 않고
+     * false를 반환한다 — 뒤늦게 도착한 옛날 연결의 콜백이 방금 들어온 새 연결을 잘못
+     * 쫓아내는 걸 막기 위한 원자적 compare-and-remove.
+     */
+    public boolean evict(long userId, SseEmitter emitter) {
+        boolean removed = emitters.remove(userId, emitter);
+        if (removed) {
             try {
                 emitter.complete();
             } catch (IllegalStateException ignored) {
                 // 이미 완료/끊긴 연결
             }
         }
-    }
-
-    public boolean isCurrent(long userId, SseEmitter emitter) {
-        return emitters.get(userId) == emitter;
+        return removed;
     }
 
     public Collection<SseEmitter> getAll() {
