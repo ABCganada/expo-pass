@@ -2,7 +2,7 @@ package com.coderhan.lastmission.payment.presentation;
 
 import com.coderhan.lastmission.payment.application.PaymentService;
 import com.coderhan.lastmission.payment.application.RefundService;
-import com.coderhan.lastmission.payment.domain.OrderType;
+import com.coderhan.lastmission.shared.order.OrderType;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
