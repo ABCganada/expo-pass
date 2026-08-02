@@ -1,0 +1,237 @@
+.card {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.cardHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.titleText {
+  color: var(--color-text-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.titleInput {
+  flex: 1;
+  height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-content-background);
+  color: var(--color-text-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.titleInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.statusBadge {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusBadge[data-tone="upcoming"] {
+  background: color-mix(in srgb, var(--color-text-secondary) 16%, transparent);
+  color: var(--color-text-secondary);
+}
+
+.statusBadge[data-tone="ongoing"] {
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+  color: var(--color-success);
+}
+
+.statusBadge[data-tone="ended"],
+.statusBadge[data-tone="soldout"] {
+  background: color-mix(in srgb, var(--color-danger) 16%, transparent);
+  color: var(--color-danger);
+}
+
+.priceText {
+  margin-top: 6px;
+  color: var(--color-primary);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.priceInput {
+  flex: 1;
+  height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-content-background);
+  color: var(--color-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.priceInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.divider {
+  height: 1px;
+  margin: 10px 0;
+  background: var(--color-border);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.label {
+  flex-shrink: 0;
+  width: 70px;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.value {
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.readonlyValue {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.valueInput {
+  flex: 1;
+  max-width: 160px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-content-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.valueInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.dateRange {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.inlineActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pickerSpacer {
+  height: 280px;
+}
+
+.cardActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.editButton,
+.saveButton,
+.cancelButton,
+.deleteButton {
+  padding: 7px 16px;
+  border-radius: var(--radius-button);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.editButton {
+  border: 1px solid var(--color-border);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+}
+
+.editButton:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.saveButton {
+  border: none;
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.saveButton:disabled,
+.editButton:disabled,
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  border: 1px solid var(--color-border);
+  background: var(--color-card-background);
+  color: var(--color-text-secondary);
+}
+
+.cancelButton:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.deleteButton {
+  border: none;
+  background: transparent;
+  color: var(--color-danger);
+}
+
+.deleteButton:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+@media (max-width: 767px) {
+  .dateRange {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
