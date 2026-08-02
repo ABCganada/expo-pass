@@ -3,8 +3,10 @@ package com.coderhan.lastmission.payment.application;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import com.coderhan.lastmission.payment.domain.Payment;
+import com.coderhan.lastmission.payment.domain.Refund;
 import com.coderhan.lastmission.shared.event.PaymentConfirmedEvent;
 import com.coderhan.lastmission.shared.event.PaymentFailedEvent;
+import com.coderhan.lastmission.shared.event.PaymentRefundedEvent;
 import com.coderhan.lastmission.shared.order.OrderType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -13,11 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 결제 승인/실패 결과를 기록하고 {@link PaymentConfirmedEvent}/{@link PaymentFailedEvent}를
- * 발행하는 전담 협력 객체. 트랜잭션 커밋 이후에만 실행되는 @TransactionalEventListener(AFTER_COMMIT)
- * 리스너가 정상적으로 등록되려면 publishEvent() 호출 시점에 활성 트랜잭션이 있어야 하므로,
- * "결제 결과를 기록/발행하는" 책임을 여기 한 군데로 모아 PaymentService는 검증·오케스트레이션만
- * 담당하게 한다.
+ * 결제 승인/실패/환불 결과를 기록하고 {@link PaymentConfirmedEvent}/{@link PaymentFailedEvent}/
+ * {@link PaymentRefundedEvent}를 발행하는 전담 협력 객체. 트랜잭션 커밋 이후에만 실행되는
+ * @TransactionalEventListener(AFTER_COMMIT) 리스너가 정상적으로 등록되려면 publishEvent() 호출 시점에
+ * 활성 트랜잭션이 있어야 하므로, "결제 결과를 기록/발행하는" 책임을 여기 한 군데로 모아
+ * PaymentService/RefundService는 검증·오케스트레이션만 담당하게 한다.
  */
 @Component
 @RequiredArgsConstructor
@@ -25,6 +27,7 @@ class PaymentEventRecorder {
 
     private final PaymentRepository repository;
     private final PaymentLogRepository paymentLogRepository;
+    private final RefundRepository refundRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
 
@@ -75,5 +78,26 @@ class PaymentEventRecorder {
 
     private record FailureLogPayload(String orderId, OrderType orderType, Long userId, BigDecimal amount,
                                      String reason) {
+    }
+
+    /**
+     * 환불 저장 + {@link PaymentRefundedEvent} 발행. RefundService.refund()는 private 메서드를 거치는
+     * self-invocation이라(request() → refund()) 직접 @Transactional을 못 쓴다 — confirmAndSave()와
+     * 동일한 이유로 이 협력 객체로 뺐다.
+     */
+    @Transactional
+    Refund reportRefund(long paymentId, String orderId, OrderType orderType, BigDecimal amount, String reason,
+                        OffsetDateTime refundedAt) {
+        Refund refund = refundRepository.save(paymentId, amount, reason, refundedAt);
+
+        eventPublisher.publishEvent(new PaymentRefundedEvent(
+            orderId,
+            orderType,
+            paymentId,
+            amount,
+            refundedAt
+        ));
+
+        return refund;
     }
 }
