@@ -9,7 +9,11 @@ const paymentApi = baseApi.injectEndpoints({
       queryFn: (_arg, api) => queryResult(paymentService.getMyPayments(api.signal)),
       providesTags: ["Payment"],
     }),
+    getPayment: build.query<Payment, string>({
+      queryFn: (orderId, api) => queryResult(paymentService.getPayment(orderId, api.signal)),
+      providesTags: ["Payment"],
+    }),
   }),
 });
 
-export const { useGetMyPaymentsQuery } = paymentApi;
+export const { useGetMyPaymentsQuery, useGetPaymentQuery } = paymentApi;

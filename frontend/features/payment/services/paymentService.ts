@@ -14,4 +14,15 @@ export const paymentService = {
     const body: { data: Payment[] } = await res.json();
     return body.data;
   },
+
+  async getPayment(orderId: string, signal?: AbortSignal): Promise<Payment> {
+    const res = await fetch(buildApiUrl(`/api/v1/payments/${orderId}`), {
+      credentials: "include",
+      cache: "no-store",
+      signal,
+    });
+    if (!res.ok) throw new Error("결제 정보를 불러오지 못했습니다.");
+    const body: { data: Payment } = await res.json();
+    return body.data;
+  },
 };
