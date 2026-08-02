@@ -27,19 +27,33 @@ interface BasicInfoFormProps {
   values: BasicInfoFormValues;
   onChange: (patch: Partial<BasicInfoFormValues>) => void;
   onValidSubmit: () => void;
+  readOnly?: boolean;
   footer: React.ReactNode;
 }
 
+function displayText(value: string): string {
+  return value.trim() === "" ? "-" : value;
+}
+
+function displayDate(value: string): string {
+  return value ? value.replaceAll("-", ".") : "-";
+}
+
+function displayManager(manager: ManagerOption | null): string {
+  if (!manager) return "-";
+  return manager.email ? `${manager.name} (${manager.email})` : manager.name;
+}
+
 /**
- * 행사명/주최자·카테고리/담당자/기간/장소/주소 필드 렌더링과 장소 선택·날짜 선택·필수값
- * validation을 전담한다. 값 저장 위치(state)와 실제 제출(API 호출)은 wrapper(Step1BasicInfo,
- * BasicInfoTab)가 맡는다.
+ * 행사명/주최자·카테고리/담당자/기간/장소/주소 필드를 조회·수정 모드 공용 레이아웃으로 렌더링
+ * readOnly일 때는 동일한 자리에 값만 표시하고, 아닐 때는 실제 입력 컴포넌트로 전환
  */
-export function BasicInfoForm({ values, onChange, onValidSubmit, footer }: BasicInfoFormProps) {
+export function BasicInfoForm({ values, onChange, onValidSubmit, readOnly = false, footer }: BasicInfoFormProps) {
   const { data: categories = [] } = useGetEventCategoriesQuery();
   const [invalid, setInvalid] = useState<{ title?: boolean; categoryId?: boolean; manager?: boolean }>({});
 
   const categoryOptions = categories.map((category) => ({ value: category.id, label: category.name }));
+  const categoryLabel = categoryOptions.find((option) => option.value === values.categoryId)?.label ?? "-";
 
   const handleVenueSelect = (venue: VenueSelection) => {
     onChange({
@@ -57,6 +71,7 @@ export function BasicInfoForm({ values, onChange, onValidSubmit, footer }: Basic
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (readOnly) return;
     const nextInvalid = {
       title: values.title.trim() === "",
       categoryId: values.categoryId === "",
@@ -73,29 +88,45 @@ export function BasicInfoForm({ values, onChange, onValidSubmit, footer }: Basic
         <span>
           행사명 <em className={styles.required}>*</em>
         </span>
-        <input
-          value={values.title}
-          onChange={(event) => onChange({ title: event.target.value })}
-          data-invalid={invalid.title}
-        />
-        {invalid.title && <p className={styles.fieldError}>필수 정보입니다.</p>}
+        {readOnly ? (
+          <div className={styles.readonlyBox}>{displayText(values.title)}</div>
+        ) : (
+          <>
+            <input
+              value={values.title}
+              onChange={(event) => onChange({ title: event.target.value })}
+              data-invalid={invalid.title}
+            />
+            {invalid.title && <p className={styles.fieldError}>필수 정보입니다.</p>}
+          </>
+        )}
       </label>
 
       <div className={styles.fieldRow}>
         <label className={styles.field}>
           <span>주최자명</span>
-          <input value={values.hostName} onChange={(event) => onChange({ hostName: event.target.value })} />
+          {readOnly ? (
+            <div className={styles.readonlyBox}>{displayText(values.hostName)}</div>
+          ) : (
+            <input value={values.hostName} onChange={(event) => onChange({ hostName: event.target.value })} />
+          )}
         </label>
         <label className={styles.field}>
           <span>
             카테고리 <em className={styles.required}>*</em>
           </span>
-          <StatusFilterDropdown
-            options={categoryOptions}
-            value={values.categoryId}
-            onChange={(categoryId) => onChange({ categoryId })}
-          />
-          {invalid.categoryId && <p className={styles.fieldError}>필수 정보입니다.</p>}
+          {readOnly ? (
+            <div className={styles.readonlyBox}>{categoryLabel}</div>
+          ) : (
+            <>
+              <StatusFilterDropdown
+                options={categoryOptions}
+                value={values.categoryId}
+                onChange={(categoryId) => onChange({ categoryId })}
+              />
+              {invalid.categoryId && <p className={styles.fieldError}>필수 정보입니다.</p>}
+            </>
+          )}
         </label>
       </div>
 
@@ -103,47 +134,69 @@ export function BasicInfoForm({ values, onChange, onValidSubmit, footer }: Basic
         <span>
           담당자 <em className={styles.required}>*</em>
         </span>
-        <ManagerPicker
-          selectedManager={values.manager}
-          onSelect={(manager) => onChange({ manager })}
-          onClear={() => onChange({ manager: null })}
-          invalid={invalid.manager}
-        />
-        {invalid.manager && <p className={styles.fieldError}>필수 정보입니다.</p>}
+        {readOnly ? (
+          <div className={styles.readonlyBox}>{displayManager(values.manager)}</div>
+        ) : (
+          <>
+            <ManagerPicker
+              selectedManager={values.manager}
+              onSelect={(manager) => onChange({ manager })}
+              onClear={() => onChange({ manager: null })}
+              invalid={invalid.manager}
+            />
+            {invalid.manager && <p className={styles.fieldError}>필수 정보입니다.</p>}
+          </>
+        )}
       </label>
 
       <div className={styles.fieldRow}>
         <label className={styles.field}>
           <span>시작일</span>
-          <DatePicker value={values.startDate} onChange={(startDate) => onChange({ startDate })} />
+          {readOnly ? (
+            <div className={styles.readonlyBox}>{displayDate(values.startDate)}</div>
+          ) : (
+            <DatePicker value={values.startDate} onChange={(startDate) => onChange({ startDate })} />
+          )}
         </label>
         <label className={styles.field}>
           <span>종료일</span>
-          <DatePicker value={values.endDate} onChange={(endDate) => onChange({ endDate })} />
+          {readOnly ? (
+            <div className={styles.readonlyBox}>{displayDate(values.endDate)}</div>
+          ) : (
+            <DatePicker value={values.endDate} onChange={(endDate) => onChange({ endDate })} />
+          )}
         </label>
       </div>
 
       <label className={styles.fieldFull}>
         <span>장소명</span>
-        <VenueSearchInput
-          selectedVenueName={values.venueName}
-          onSelect={handleVenueSelect}
-          onClear={handleVenueClear}
-        />
+        {readOnly ? (
+          <div className={styles.readonlyBox}>{displayText(values.venueName)}</div>
+        ) : (
+          <VenueSearchInput
+            selectedVenueName={values.venueName}
+            onSelect={handleVenueSelect}
+            onClear={handleVenueClear}
+          />
+        )}
       </label>
 
       <div className={styles.fieldRow}>
         <label className={styles.field}>
           <span>주소</span>
-          <div className={styles.readonlyBox}>{values.address || "주소를 입력하세요"}</div>
+          <div className={styles.readonlyBox}>{values.address || (readOnly ? "-" : "주소를 입력하세요")}</div>
         </label>
         <label className={styles.field}>
           <span>상세주소</span>
-          <input
-            value={values.detailAddress}
-            onChange={(event) => onChange({ detailAddress: event.target.value })}
-            placeholder="상세주소 (선택)"
-          />
+          {readOnly ? (
+            <div className={styles.readonlyBox}>{displayText(values.detailAddress)}</div>
+          ) : (
+            <input
+              value={values.detailAddress}
+              onChange={(event) => onChange({ detailAddress: event.target.value })}
+              placeholder="상세주소 (선택)"
+            />
+          )}
         </label>
       </div>
 

@@ -12,6 +12,9 @@ interface BasicInfoEditorProps {
   eventId: string;
   detail: AdminEventDetail;
   initialCategoryId: string;
+  isEditing: boolean;
+  onStartEdit: () => void;
+  onCancel: () => void;
   onSaved: (message: string) => void;
 }
 
@@ -33,7 +36,15 @@ function toFormValues(detail: AdminEventDetail, categoryId: string): BasicInfoFo
 }
 
 /** 저장 mutation과 폼 상태를 담당한다. 필드 렌더링은 BasicInfoForm에 위임한다. */
-export function BasicInfoEditor({ eventId, detail, initialCategoryId, onSaved }: BasicInfoEditorProps) {
+export function BasicInfoEditor({
+  eventId,
+  detail,
+  initialCategoryId,
+  isEditing,
+  onStartEdit,
+  onCancel,
+  onSaved,
+}: BasicInfoEditorProps) {
   const [updateEvent, { isLoading: isUpdating }] = useUpdateAdminEventMutation();
   const [changeManager, { isLoading: isChangingManager }] = useChangeEventManagerMutation();
   const [values, setValues] = useState<BasicInfoFormValues>(() => toFormValues(detail, initialCategoryId));
@@ -45,6 +56,12 @@ export function BasicInfoEditor({ eventId, detail, initialCategoryId, onSaved }:
   }, [detail, initialCategoryId]);
 
   const handleChange = (patch: Partial<BasicInfoFormValues>) => setValues((prev) => ({ ...prev, ...patch }));
+
+  const handleCancel = () => {
+    setError(null);
+    setValues(toFormValues(detail, initialCategoryId));
+    onCancel();
+  };
 
   const handleSubmit = async () => {
     setError(null);
@@ -82,15 +99,27 @@ export function BasicInfoEditor({ eventId, detail, initialCategoryId, onSaved }:
       values={values}
       onChange={handleChange}
       onValidSubmit={() => void handleSubmit()}
+      readOnly={!isEditing}
       footer={
-        <>
-          {error && <p className={styles.error}>{error}</p>}
-          <div className={styles.formActions}>
-            <button type="submit" className={styles.saveButton} disabled={isSubmitting}>
-              {isSubmitting ? "저장 중..." : "저장"}
+        isEditing ? (
+          <>
+            {error && <p className={styles.error}>{error}</p>}
+            <div className={styles.formActions}>
+              <button type="button" className={styles.cancelButton} onClick={handleCancel} disabled={isSubmitting}>
+                취소
+              </button>
+              <button type="submit" className={styles.saveButton} disabled={isSubmitting}>
+                {isSubmitting ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className={styles.viewHeader}>
+            <button type="button" className={styles.editButton} onClick={onStartEdit}>
+              수정
             </button>
           </div>
-        </>
+        )
       }
     />
   );

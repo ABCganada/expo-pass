@@ -67,6 +67,7 @@
 .formActions {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
 }
 
 .saveButton {
@@ -87,4 +88,46 @@
 .saveButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.cancelButton {
+  padding: 10px 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelButton:hover:not(:disabled) {
+  border-color: var(--color-text-secondary);
+}
+
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.viewHeader {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.editButton {
+  padding: 10px 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.editButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
