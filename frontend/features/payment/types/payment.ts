@@ -1,4 +1,4 @@
-export type PaymentStatus = "REQUESTED" | "COMPLETED" | "FAILED" | "CANCELLED";
+export type PaymentStatus = "REQUESTED" | "COMPLETED" | "FAILED" | "CANCELLED" | "REFUNDED";
 
 export interface Payment {
   id: string;
