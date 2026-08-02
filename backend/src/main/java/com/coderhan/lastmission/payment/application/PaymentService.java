@@ -72,15 +72,16 @@ public class PaymentService {
      * 없기 때문. 토스 결제위젯이 실패(failUrl)로 리다이렉트됐을 때 프론트가 호출해서, PENDING 상태로
      * 남아있는 주문에 실패를 알려준다.
      *
-     * confirm()과 달리 결제 기록을 저장하지 않는다(성사된 결제가 없으므로) — orderId가 실재하는
-     * 주문인지만 기존 findOrderAmount()로 확인한 뒤 이벤트 발행은 {@link PaymentEventRecorder}에 위임한다.
+     * confirm()과 달리 클라이언트가 amount를 보내지 않는다 — 실제로 성사된 결제가 없어 검증할 대상이
+     * 없기 때문. 대신 findOrderAmount()로 조회한 주문의 실제 금액을 그대로 감사 로그에 남긴다(클라이언트
+     * 입력값을 신뢰하지 않는다는 원칙은 여기서도 동일). 저장 + 이벤트 발행은 {@link PaymentEventRecorder}에 위임한다.
      */
     public void reportFailure(long userId, String orderId, OrderType orderType, String reason) {
         validateOrderIdAndType(orderId, orderType);
-        findOrderAmount(orderId, orderType)
+        BigDecimal orderAmount = findOrderAmount(orderId, orderType)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_INVALID_REQUEST, "주문 내역을 찾을 수 없습니다."));
 
-        eventRecorder.reportFailure(orderId, orderType, userId, reason, OffsetDateTime.now(clock));
+        eventRecorder.reportFailure(orderId, orderType, userId, orderAmount, reason, OffsetDateTime.now(clock));
     }
 
     private void validateOrderIdAndType(String orderId, OrderType orderType) {

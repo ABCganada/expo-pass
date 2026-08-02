@@ -1,6 +1,8 @@
 package com.coderhan.lastmission.payment.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,8 +19,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentEventRecorderTest {
@@ -32,7 +36,9 @@ class PaymentEventRecorderTest {
     private static final OffsetDateTime APPROVED_AT = OffsetDateTime.parse("2026-07-23T10:00:00Z");
 
     @Mock PaymentRepository repository;
+    @Mock PaymentLogRepository paymentLogRepository;
     @Mock ApplicationEventPublisher eventPublisher;
+    @Spy ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks PaymentEventRecorder recorder;
 
@@ -71,9 +77,16 @@ class PaymentEventRecorderTest {
     }
 
     @Test
-    @DisplayName("reportFailure()를 호출하면 전달받은 값 그대로 PaymentFailedEvent를 발행한다")
-    void publishesPaymentFailedEvent() {
-        recorder.reportFailure(ORDER_ID, ORDER_TYPE, USER_ID, "사용자가 결제창에서 취소함", APPROVED_AT);
+    @DisplayName("reportFailure()를 호출하면 FAILED 감사 로그를 payment_logs에 저장하고 PaymentFailedEvent를 발행한다")
+    void savesFailedAuditLogAndPublishesPaymentFailedEvent() {
+        recorder.reportFailure(ORDER_ID, ORDER_TYPE, USER_ID, AMOUNT, "사용자가 결제창에서 취소함", APPROVED_AT);
+
+        ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+        verify(paymentLogRepository).save(isNull(), eq("PAYMENT_FAILED"), payloadCaptor.capture(),
+                isNull(), isNull(), eq(APPROVED_AT));
+        assertThat(payloadCaptor.getValue())
+                .contains("\"orderId\":\"" + ORDER_ID + "\"")
+                .contains("\"reason\":\"사용자가 결제창에서 취소함\"");
 
         ArgumentCaptor<PaymentFailedEvent> captor = ArgumentCaptor.forClass(PaymentFailedEvent.class);
         verify(eventPublisher).publishEvent(captor.capture());
