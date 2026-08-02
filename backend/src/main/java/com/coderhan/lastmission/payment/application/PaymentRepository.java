@@ -20,4 +20,7 @@ public interface PaymentRepository {
     Optional<Payment> findByIdempotencyKey(String idempotencyKey);
     Optional<Payment> findByOrderIdAndStatus(String orderId, PaymentStatus status);  // 이중 결제 여부 체크용
     List<Payment> findByUserId(long userId);  // 내 결제 내역 조회용, 최신순
+
+    /** 환불 확정 직후 payments.status를 REFUNDED로 갱신한다. */
+    void markRefunded(long paymentId, OffsetDateTime refundedAt);
 }

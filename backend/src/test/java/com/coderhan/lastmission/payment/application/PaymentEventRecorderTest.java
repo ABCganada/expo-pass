@@ -10,8 +10,11 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
+import com.coderhan.lastmission.payment.domain.Refund;
+import com.coderhan.lastmission.payment.domain.RefundStatus;
 import com.coderhan.lastmission.shared.event.PaymentConfirmedEvent;
 import com.coderhan.lastmission.shared.event.PaymentFailedEvent;
+import com.coderhan.lastmission.shared.event.PaymentRefundedEvent;
 import com.coderhan.lastmission.shared.order.OrderType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +40,7 @@ class PaymentEventRecorderTest {
 
     @Mock PaymentRepository repository;
     @Mock PaymentLogRepository paymentLogRepository;
+    @Mock RefundRepository refundRepository;
     @Mock ApplicationEventPublisher eventPublisher;
     @Spy ObjectMapper objectMapper = new ObjectMapper();
 
@@ -96,5 +100,37 @@ class PaymentEventRecorderTest {
         assertThat(event.userId()).isEqualTo(USER_ID);
         assertThat(event.reason()).isEqualTo("사용자가 결제창에서 취소함");
         assertThat(event.failedAt()).isEqualTo(APPROVED_AT);
+    }
+
+    @Test
+    @DisplayName("reportRefund()를 호출하면 payments.status를 REFUNDED로 갱신하고 PaymentRefundedEvent를 발행한다")
+    void reportsRefundAndPublishesPaymentRefundedEvent() {
+        Refund saved = Refund.builder()
+                .id(1L)
+                .paymentId(PAYMENT_ID)
+                .amount(AMOUNT)
+                .reason("단순 변심")
+                .status(RefundStatus.COMPLETED)
+                .autoApproved(true)
+                .requestedAt(APPROVED_AT)
+                .refundedAt(APPROVED_AT)
+                .createdAt(APPROVED_AT)
+                .updatedAt(APPROVED_AT)
+                .build();
+        when(refundRepository.save(PAYMENT_ID, AMOUNT, "단순 변심", APPROVED_AT)).thenReturn(saved);
+
+        Refund result = recorder.reportRefund(PAYMENT_ID, ORDER_ID, ORDER_TYPE, AMOUNT, "단순 변심", APPROVED_AT);
+
+        assertThat(result).isSameAs(saved);
+        verify(repository).markRefunded(PAYMENT_ID, APPROVED_AT);
+
+        ArgumentCaptor<PaymentRefundedEvent> captor = ArgumentCaptor.forClass(PaymentRefundedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        PaymentRefundedEvent event = captor.getValue();
+        assertThat(event.orderId()).isEqualTo(ORDER_ID);
+        assertThat(event.orderType()).isEqualTo(ORDER_TYPE);
+        assertThat(event.paymentId()).isEqualTo(PAYMENT_ID);
+        assertThat(event.refundAmount()).isEqualTo(AMOUNT);
+        assertThat(event.refundedAt()).isEqualTo(APPROVED_AT);
     }
 }
