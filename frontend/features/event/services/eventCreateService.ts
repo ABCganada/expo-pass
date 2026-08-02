@@ -38,4 +38,14 @@ export const eventCreateService = {
     });
     return parseData<CreatedEvent>(res);
   },
+
+  deleteEvent: async (eventId: string): Promise<void> => {
+    const csrf = await getCsrfToken();
+    const res = await fetch(`${BASE}/${eventId}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { [csrf.headerName]: csrf.token },
+    });
+    await parseData<void>(res);
+  },
 };

@@ -17,7 +17,15 @@ const eventCreateApi = baseApi.injectEndpoints({
         { type: "Event", id: "LIST" },
       ],
     }),
+
+    deleteEvent: build.mutation<void, string>({
+      queryFn: (eventId) => queryResult(eventCreateService.deleteEvent(eventId)),
+      invalidatesTags: (_result, _error, eventId) => [
+        { type: "Event", id: eventId },
+        { type: "Event", id: "LIST" },
+      ],
+    }),
   }),
 });
 
-export const { useCreateDraftEventMutation, useChangeEventManagerMutation } = eventCreateApi;
+export const { useCreateDraftEventMutation, useChangeEventManagerMutation, useDeleteEventMutation } = eventCreateApi;
