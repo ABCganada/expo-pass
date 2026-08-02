@@ -16,7 +16,10 @@ const eventApi = baseApi.injectEndpoints({
     }),
     getEvents: build.query<EventListItem[], string | undefined>({
       queryFn: (categoryId, api) => queryResult(eventService.getEvents(categoryId, api.signal)),
-      providesTags: ["Event"],
+      providesTags: (result) =>
+        result
+          ? [...result.map((event) => ({ type: "Event" as const, id: event.id })), { type: "Event" as const, id: "LIST" }]
+          : [{ type: "Event" as const, id: "LIST" }],
     }),
     getEventDetail: build.query<EventDetail, string>({
       queryFn: (eventId, api) => queryResult(eventService.getEventDetail(eventId, api.signal)),

@@ -81,10 +81,11 @@ class TicketManagerController {
     }
 
     record UpdateTicketRequest(
-            String name, Integer price, Integer maxPurchasePerUser, Instant saleStartAt, Instant saleEndAt
+            String name, Integer price, Integer quantityTotal, Integer maxPurchasePerUser,
+            Instant saleStartAt, Instant saleEndAt
     ) {
         UpdateTicketCommand toCommand() {
-            return new UpdateTicketCommand(name, price, maxPurchasePerUser, saleStartAt, saleEndAt);
+            return new UpdateTicketCommand(name, price, quantityTotal, maxPurchasePerUser, saleStartAt, saleEndAt);
         }
     }
 
