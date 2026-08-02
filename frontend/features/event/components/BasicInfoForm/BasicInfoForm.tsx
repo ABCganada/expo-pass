@@ -6,6 +6,7 @@ import { ManagerPicker, type ManagerOption } from "../ManagerPicker/ManagerPicke
 import { VenueSearchInput, type VenueSelection } from "../VenueSearchInput/VenueSearchInput";
 import { DatePicker } from "../DatePicker/DatePicker";
 import { StatusFilterDropdown } from "../StatusFilterDropdown/StatusFilterDropdown";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import styles from "./BasicInfoForm.module.css";
 
 export interface BasicInfoFormValues {
@@ -51,6 +52,9 @@ function displayManager(manager: ManagerOption | null): string {
  */
 export function BasicInfoForm({ values, onChange, onValidSubmit, readOnly = false, footer }: BasicInfoFormProps) {
   const { data: categories = [] } = useGetEventCategoriesQuery();
+  const { user } = useAuth();
+  const isAdmin = user?.roles.includes("ADMIN") ?? false;
+  const managerReadOnly = readOnly || !isAdmin;
   const [invalid, setInvalid] = useState<{ title?: boolean; categoryId?: boolean; manager?: boolean }>({});
 
   const categoryOptions = categories.map((category) => ({ value: category.id, label: category.name }));
@@ -143,7 +147,7 @@ export function BasicInfoForm({ values, onChange, onValidSubmit, readOnly = fals
         <span>
           담당자 <em className={styles.required}>*</em>
         </span>
-        {readOnly ? (
+        {managerReadOnly ? (
           <div className={styles.readonlyBox}>{displayManager(values.manager)}</div>
         ) : (
           <>
