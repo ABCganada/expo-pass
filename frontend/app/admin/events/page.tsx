@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { CalendarDays, Plus, Settings, Trash2 } from "lucide-react";
 import { useGetAdminEventsQuery } from "@/features/event/api/adminEventApi";
 import { useDeleteEventMutation } from "@/features/event/api/eventCreateApi";
-import { StatusFilterDropdown } from "@/features/event/components/StatusFilterDropdown/StatusFilterDropdown";
 import { ConfirmDialog } from "@/features/event/components/ConfirmDialog/ConfirmDialog";
 import { Toast } from "@/features/event/components/Toast/Toast";
 import type { AdminEventStatus } from "@/features/event/types/adminEvent";
@@ -14,18 +13,17 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./page.module.css";
 
-const STATUS_OPTIONS: { value: AdminEventStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "전체" },
-  { value: "DRAFT", label: "DRAFT" },
-  { value: "PUBLISHED", label: "PUBLISHED" },
-  { value: "CANCELLED", label: "CANCELLED" },
-];
-
 const STATUS_LABEL: Record<AdminEventStatus, string> = {
   DRAFT: "초안",
   PUBLISHED: "게시됨",
-  CANCELLED: "취소됨",
+  CANCELLED: "취소",
 };
+
+const STATUS_TAB_VALUES: (AdminEventStatus | "ALL")[] = ["ALL", "DRAFT", "PUBLISHED", "CANCELLED"];
+
+function statusTabLabel(value: AdminEventStatus | "ALL"): string {
+  return value === "ALL" ? "전체" : STATUS_LABEL[value];
+}
 
 export default function AdminEventsPage() {
   const router = useRouter();
@@ -82,12 +80,21 @@ export default function AdminEventsPage() {
 
       <div className={styles.listSection}>
         <div className={styles.filterRow}>
-          <StatusFilterDropdown
-            label="상태:"
-            options={STATUS_OPTIONS}
-            value={statusFilter}
-            onChange={setStatusFilter}
-          />
+          <div className={styles.statusTabs} role="tablist" aria-label="행사 상태 필터">
+            {STATUS_TAB_VALUES.map((value) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={statusFilter === value}
+                className={styles.statusTab}
+                data-active={statusFilter === value}
+                onClick={() => setStatusFilter(value)}
+              >
+                {statusTabLabel(value)}
+              </button>
+            ))}
+          </div>
           <span className={styles.countText}>전체 {events.length}건</span>
         </div>
 
