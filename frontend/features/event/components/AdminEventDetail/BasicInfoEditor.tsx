@@ -1,0 +1,97 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useUpdateAdminEventMutation } from "../../api/adminEventDetailApi";
+import { useChangeEventManagerMutation } from "../../api/eventCreateApi";
+import { BasicInfoForm, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
+import type { AdminEventDetail } from "../../types/adminEventDetail";
+import { queryErrorMessage } from "@/features/store/api/queryError";
+import styles from "./AdminEventDetail.module.css";
+
+interface BasicInfoEditorProps {
+  eventId: string;
+  detail: AdminEventDetail;
+  initialCategoryId: string;
+  onSaved: (message: string) => void;
+}
+
+function toFormValues(detail: AdminEventDetail, categoryId: string): BasicInfoFormValues {
+  return {
+    title: detail.title,
+    hostName: detail.hostName ?? "",
+    categoryId,
+    manager: detail.managerId ? { id: detail.managerId, name: detail.managerName ?? "", email: "" } : null,
+    startDate: detail.startDate ?? "",
+    endDate: detail.endDate ?? "",
+    venueName: detail.venueName ?? "",
+    address: detail.address ?? "",
+    detailAddress: detail.detailAddress ?? "",
+    latitude: detail.latitude,
+    longitude: detail.longitude,
+    kakaoPlaceId: detail.kakaoPlaceId,
+  };
+}
+
+/** 저장 mutation과 폼 상태를 담당한다. 필드 렌더링은 BasicInfoForm에 위임한다. */
+export function BasicInfoEditor({ eventId, detail, initialCategoryId, onSaved }: BasicInfoEditorProps) {
+  const [updateEvent, { isLoading: isUpdating }] = useUpdateAdminEventMutation();
+  const [changeManager, { isLoading: isChangingManager }] = useChangeEventManagerMutation();
+  const [values, setValues] = useState<BasicInfoFormValues>(() => toFormValues(detail, initialCategoryId));
+  const [error, setError] = useState<string | null>(null);
+
+  // detail이 갱신되면(예: 저장 후 재조회) 편집 중이던 값도 최신 서버 상태로 다시 맞춘다.
+  useEffect(() => {
+    setValues(toFormValues(detail, initialCategoryId));
+  }, [detail, initialCategoryId]);
+
+  const handleChange = (patch: Partial<BasicInfoFormValues>) => setValues((prev) => ({ ...prev, ...patch }));
+
+  const handleSubmit = async () => {
+    setError(null);
+    try {
+      await updateEvent({
+        eventId,
+        payload: {
+          title: values.title,
+          categoryId: values.categoryId,
+          hostName: values.hostName || null,
+          venueName: values.venueName || null,
+          address: values.address || null,
+          detailAddress: values.detailAddress || null,
+          kakaoPlaceId: values.kakaoPlaceId,
+          legalDongCode: detail.legalDongCode,
+          latitude: values.latitude,
+          longitude: values.longitude,
+          startDate: values.startDate || null,
+          endDate: values.endDate || null,
+        },
+      }).unwrap();
+      if (values.manager && values.manager.id !== detail.managerId) {
+        await changeManager({ eventId, managerId: values.manager.id }).unwrap();
+      }
+      onSaved("변경사항이 저장되었습니다.");
+    } catch (reason) {
+      setError(queryErrorMessage(reason, "저장에 실패했습니다."));
+    }
+  };
+
+  const isSubmitting = isUpdating || isChangingManager;
+
+  return (
+    <BasicInfoForm
+      values={values}
+      onChange={handleChange}
+      onValidSubmit={() => void handleSubmit()}
+      footer={
+        <>
+          {error && <p className={styles.error}>{error}</p>}
+          <div className={styles.formActions}>
+            <button type="submit" className={styles.saveButton} disabled={isSubmitting}>
+              {isSubmitting ? "저장 중..." : "저장"}
+            </button>
+          </div>
+        </>
+      }
+    />
+  );
+}
