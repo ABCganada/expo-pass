@@ -8,7 +8,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import com.coderhan.lastmission.marketing.BannerOrderDirectory;
 import com.coderhan.lastmission.shared.order.OrderType;
@@ -22,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
@@ -41,7 +45,8 @@ class PaymentServiceTest {
     @Mock PaymentGateway paymentGateway;
     @Mock ReservationOrderDirectory reservationOrderDirectory;
     @Mock BannerOrderDirectory bannerOrderDirectory;
-    @Mock PaymentConfirmationRecorder confirmationRecorder;
+    @Mock PaymentEventRecorder eventRecorder;
+    @Spy Clock clock = Clock.fixed(Instant.parse("2026-08-02T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks PaymentService service;
 
@@ -56,7 +61,7 @@ class PaymentServiceTest {
 
         assertThat(result).isSameAs(existing);
         verify(paymentGateway, never()).confirm(any(), any(), any());
-        verify(confirmationRecorder, never()).save(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(eventRecorder, never()).reportConfirmation(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -67,7 +72,7 @@ class PaymentServiceTest {
         when(repository.findByIdempotencyKey(PAYMENT_KEY)).thenReturn(Optional.empty());
         when(paymentGateway.confirm(PAYMENT_KEY, PG_ORDER_ID, AMOUNT))
                 .thenReturn(new PaymentGateway.ConfirmResult("CARD", APPROVED_AT));
-        when(confirmationRecorder.save(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
+        when(eventRecorder.reportConfirmation(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
                 PG_ORDER_ID, PAYMENT_KEY, APPROVED_AT)).thenReturn(saved);
 
         Payment result = service.confirm(USER_ID, ORDER_ID, ORDER_TYPE, PG_ORDER_ID, PAYMENT_KEY, AMOUNT);
@@ -83,7 +88,7 @@ class PaymentServiceTest {
         when(repository.findByIdempotencyKey(PAYMENT_KEY)).thenReturn(Optional.empty());
         when(paymentGateway.confirm(PAYMENT_KEY, PG_ORDER_ID, AMOUNT))
                 .thenReturn(new PaymentGateway.ConfirmResult("CARD", APPROVED_AT));
-        when(confirmationRecorder.save(ORDER_ID, OrderType.ADVERTISEMENT, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
+        when(eventRecorder.reportConfirmation(ORDER_ID, OrderType.ADVERTISEMENT, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
                 PG_ORDER_ID, PAYMENT_KEY, APPROVED_AT)).thenReturn(saved);
 
         Payment result = service.confirm(USER_ID, ORDER_ID, OrderType.ADVERTISEMENT, PG_ORDER_ID, PAYMENT_KEY, AMOUNT);
@@ -102,7 +107,7 @@ class PaymentServiceTest {
                 .thenReturn(Optional.of(committedByOtherRequest));
         when(paymentGateway.confirm(PAYMENT_KEY, PG_ORDER_ID, AMOUNT))
                 .thenReturn(new PaymentGateway.ConfirmResult("CARD", APPROVED_AT));
-        when(confirmationRecorder.save(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(eventRecorder.reportConfirmation(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenThrow(new DataIntegrityViolationException("duplicate idempotency_key"));
 
         Payment result = service.confirm(USER_ID, ORDER_ID, ORDER_TYPE, PG_ORDER_ID, PAYMENT_KEY, AMOUNT);
@@ -118,7 +123,7 @@ class PaymentServiceTest {
         when(paymentGateway.confirm(PAYMENT_KEY, PG_ORDER_ID, AMOUNT))
                 .thenReturn(new PaymentGateway.ConfirmResult("CARD", APPROVED_AT));
         DataIntegrityViolationException saveFailure = new DataIntegrityViolationException("duplicate order_id");
-        when(confirmationRecorder.save(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(eventRecorder.reportConfirmation(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenThrow(saveFailure);
 
         assertThatThrownBy(() -> service.confirm(USER_ID, ORDER_ID, ORDER_TYPE, PG_ORDER_ID, PAYMENT_KEY, AMOUNT))
@@ -206,6 +211,61 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> service.getPayment(USER_ID, PAYMENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("주문이 실재하면 결제 실패를 신고했을 때 PaymentEventRecorder에 실패를 위임한다")
+    void reportsFailureDelegatesToEventRecorder() {
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(AMOUNT));
+
+        service.reportFailure(USER_ID, ORDER_ID, ORDER_TYPE, "사용자가 결제창에서 취소함");
+
+        verify(eventRecorder).reportFailure(ORDER_ID, ORDER_TYPE, USER_ID,
+                "사용자가 결제창에서 취소함", OffsetDateTime.now(clock));
+    }
+
+    @Test
+    @DisplayName("광고 주문의 결제 실패를 신고하면 BannerOrderDirectory 기준으로 존재 여부를 확인한다")
+    void reportsAdvertisementFailureUsingBannerOrderDirectory() {
+        when(bannerOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(AMOUNT));
+
+        service.reportFailure(USER_ID, ORDER_ID, OrderType.ADVERTISEMENT, null);
+
+        verify(eventRecorder).reportFailure(any(), any(), any(), any(), any());
+        verify(reservationOrderDirectory, never()).findOrderAmount(any());
+    }
+
+    @Test
+    @DisplayName("orderId가 비어있으면 주문 조회 전에 PAYMENT_INVALID_REQUEST 예외를 던진다")
+    void rejectsFailureReportWhenOrderIdBlank() {
+        assertThatThrownBy(() -> service.reportFailure(USER_ID, " ", ORDER_TYPE, null))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
+
+        verify(reservationOrderDirectory, never()).findOrderAmount(any());
+        verify(eventRecorder, never()).reportFailure(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("orderType이 없으면 주문 조회 전에 PAYMENT_INVALID_REQUEST 예외를 던진다")
+    void rejectsFailureReportWhenOrderTypeMissing() {
+        assertThatThrownBy(() -> service.reportFailure(USER_ID, ORDER_ID, null, null))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
+
+        verify(eventRecorder, never()).reportFailure(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("주문 내역을 찾을 수 없으면 실패를 위임하지 않고 PAYMENT_INVALID_REQUEST 예외를 던진다")
+    void rejectsFailureReportWhenOrderNotFound() {
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.reportFailure(USER_ID, ORDER_ID, ORDER_TYPE, null))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
+
+        verify(eventRecorder, never()).reportFailure(any(), any(), any(), any(), any());
     }
 
     private static Payment completedPayment() {

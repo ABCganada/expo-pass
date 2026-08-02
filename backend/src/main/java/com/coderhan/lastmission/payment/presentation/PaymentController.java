@@ -39,7 +39,8 @@ class PaymentController {
      * 돌려주는 값 3개를 그대로 받는다 — pgOrderId는 우리가 위젯을 열 때 토스에 넘긴 값이라
      * orderId와 다를 수 있다(재시도 시 접미사 등).
      *
-     * TODO 결제 승인/실패에 대한 알림 reservation/marketing에 줘야 PENDING 변경 가능
+     * 결제 승인/실패 시 PaymentConfirmedEvent/PaymentFailedEvent를 발행한다.
+     *
      * TODO 결제 - 오더 간 정합성 스케줄링
      */
     @PostMapping("/{orderId}/confirm")
@@ -54,6 +55,23 @@ class PaymentController {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(ApiResponse.success(PaymentResponse.from(payment)));
+    }
+
+    /**
+     * 결제 실패/취소 신고 API. 토스 결제위젯이 실패(failUrl)로 리다이렉트됐을 때 프론트가 호출한다.
+     * PG 승인 호출이 없으므로 PENDING 상태의 주문에 실패를 알리는 이벤트만 발행한다.
+     */
+    @PostMapping("/{orderId}/fail")
+    ResponseEntity<ApiResponse<Void>> fail(
+        @PathVariable String orderId,
+        @RequestBody PaymentFailRequest request,
+        @AuthenticationPrincipal LastMissionPrincipal principal
+    ) {
+        paymentService.reportFailure(principal.userId(), orderId, request.orderType(), request.reason());
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success("결제 실패 신고가 접수되었습니다.", null));
     }
 
     /** 내 결제 내역 목록 조회. 최신순 */
@@ -106,6 +124,8 @@ class PaymentController {
         String paymentKey,
         BigDecimal amount
     ) {}
+
+    record PaymentFailRequest(OrderType orderType, String reason) {}
 
     record RefundRequest(String reason) {}
 

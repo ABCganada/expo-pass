@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import com.coderhan.lastmission.payment.domain.Payment;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.shared.event.PaymentConfirmedEvent;
+import com.coderhan.lastmission.shared.event.PaymentFailedEvent;
 import com.coderhan.lastmission.shared.order.OrderType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
-class PaymentConfirmationRecorderTest {
+class PaymentEventRecorderTest {
     private static final long PAYMENT_ID = 5L;
     private static final String ORDER_ID = "ORD-1";
     private static final OrderType ORDER_TYPE = OrderType.RESERVATION;
@@ -33,7 +34,7 @@ class PaymentConfirmationRecorderTest {
     @Mock PaymentRepository repository;
     @Mock ApplicationEventPublisher eventPublisher;
 
-    @InjectMocks PaymentConfirmationRecorder recorder;
+    @InjectMocks PaymentEventRecorder recorder;
 
     @Test
     @DisplayName("저장에 성공하면 저장된 결제 정보를 담아 PaymentConfirmedEvent를 발행한다")
@@ -55,7 +56,7 @@ class PaymentConfirmationRecorderTest {
         when(repository.save(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
                 PG_ORDER_ID, PAYMENT_KEY, APPROVED_AT)).thenReturn(saved);
 
-        Payment result = recorder.save(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
+        Payment result = recorder.reportConfirmation(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
                 PG_ORDER_ID, PAYMENT_KEY, APPROVED_AT);
 
         assertThat(result).isSameAs(saved);
@@ -67,5 +68,20 @@ class PaymentConfirmationRecorderTest {
         assertThat(event.orderId()).isEqualTo(ORDER_ID);
         assertThat(event.orderType()).isEqualTo(ORDER_TYPE);
         assertThat(event.confirmedAt()).isEqualTo(APPROVED_AT);
+    }
+
+    @Test
+    @DisplayName("reportFailure()를 호출하면 전달받은 값 그대로 PaymentFailedEvent를 발행한다")
+    void publishesPaymentFailedEvent() {
+        recorder.reportFailure(ORDER_ID, ORDER_TYPE, USER_ID, "사용자가 결제창에서 취소함", APPROVED_AT);
+
+        ArgumentCaptor<PaymentFailedEvent> captor = ArgumentCaptor.forClass(PaymentFailedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        PaymentFailedEvent event = captor.getValue();
+        assertThat(event.orderId()).isEqualTo(ORDER_ID);
+        assertThat(event.orderType()).isEqualTo(ORDER_TYPE);
+        assertThat(event.userId()).isEqualTo(USER_ID);
+        assertThat(event.reason()).isEqualTo("사용자가 결제창에서 취소함");
+        assertThat(event.failedAt()).isEqualTo(APPROVED_AT);
     }
 }

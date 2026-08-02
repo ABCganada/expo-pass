@@ -1,6 +1,8 @@
 package com.coderhan.lastmission.payment.application;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.marketing.BannerOrderDirectory;
@@ -21,7 +23,8 @@ public class PaymentService {
     private final PaymentGateway paymentGateway;
     private final ReservationOrderDirectory reservationOrderDirectory;
     private final BannerOrderDirectory bannerOrderDirectory;
-    private final PaymentConfirmationRecorder confirmationRecorder;
+    private final PaymentEventRecorder eventRecorder;
+    private final Clock clock;
 
     /**
      * 결제 승인. 별도의 "결제 신청" 흐름은 없음.
@@ -35,7 +38,7 @@ public class PaymentService {
      *
      * confirm() 전체를 하나의 @Transactional로 묶지 않는다: 저장이 idempotency_key 유니크 제약
      * 위반으로 실패하면 CockroachDB/Postgres는 같은 트랜잭션 안의 이후 쿼리를 전부 거부하므로,
-     * 실패 시 재조회는 반드시 새 트랜잭션에서 해야 한다. 저장 자체는 {@link PaymentConfirmationRecorder}의
+     * 실패 시 재조회는 반드시 새 트랜잭션에서 해야 한다. 저장 자체는 {@link PaymentEventRecorder}의
      * 별도 트랜잭션으로 위임한다.
      */
     public Payment confirm(long userId, String orderId, OrderType orderType,
@@ -64,13 +67,38 @@ public class PaymentService {
         };
     }
 
+    /**
+     * 결제 실패/취소 신고. PG 승인 호출이 없다 — 애초에 결제가 성사된 적이 없어서 승인 취소할 대상이
+     * 없기 때문. 토스 결제위젯이 실패(failUrl)로 리다이렉트됐을 때 프론트가 호출해서, PENDING 상태로
+     * 남아있는 주문에 실패를 알려준다.
+     *
+     * confirm()과 달리 결제 기록을 저장하지 않는다(성사된 결제가 없으므로) — orderId가 실재하는
+     * 주문인지만 기존 findOrderAmount()로 확인한 뒤 이벤트 발행은 {@link PaymentEventRecorder}에 위임한다.
+     */
+    public void reportFailure(long userId, String orderId, OrderType orderType, String reason) {
+        validateOrderIdAndType(orderId, orderType);
+        findOrderAmount(orderId, orderType)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_INVALID_REQUEST, "주문 내역을 찾을 수 없습니다."));
+
+        eventRecorder.reportFailure(orderId, orderType, userId, reason, OffsetDateTime.now(clock));
+    }
+
+    private void validateOrderIdAndType(String orderId, OrderType orderType) {
+        if (orderId == null || orderId.isBlank()) {
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_REQUEST, "주문 ID가 올바르지 않습니다.");
+        }
+        if (orderType == null) {
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_REQUEST, "주문 타입이 올바르지 않습니다.");
+        }
+    }
+
     private Payment confirmAndSave(long userId, String orderId, OrderType orderType,
                                    String pgOrderId, String paymentKey, BigDecimal amount) {
         PaymentGateway.ConfirmResult result = paymentGateway.confirm(paymentKey, pgOrderId, amount);
 
         try {
-            /** 저장 + 이벤트 발행은 PaymentConfirmationRecorder의 @Transactional 메서드가 하나로 묶어서 처리한다. */
-            return confirmationRecorder.save(
+            /** 저장 + 이벤트 발행은 PaymentEventRecorder의 @Transactional 메서드가 하나로 묶어서 처리한다. */
+            return eventRecorder.reportConfirmation(
                     orderId, orderType, userId,
                     paymentKey, amount, result.method(),
                     "TOSS", pgOrderId, paymentKey,
@@ -80,7 +108,7 @@ public class PaymentService {
             /** paymentKey(idempotency_key) 경합이면 먼저 커밋된 쪽을 반환.
              * 그게 아니라면 order_id 유니크 제약 위반 — 이 주문은 이미 다른 결제로 완료된 것이므로
              * 그대로 예외를 던진다(토스에는 이미 승인 요청을 보냈지만, 우리 쪽엔 저장하지 않는다).
-             * confirmationRecorder.save()의 @Transactional이 예외 발생 시 트랜잭션을 롤백/종료한 뒤
+             * eventRecorder.reportConfirmation()의 @Transactional이 예외 발생 시 트랜잭션을 롤백/종료한 뒤
              * 재던지므로, 아래 재조회는 항상 새 트랜잭션에서 실행된다(CockroachDB가 실패한 트랜잭션 안의
              * 후속 쿼리를 거부하는 문제 없음). */
             return repository.findByIdempotencyKey(paymentKey).orElseThrow(() -> e);
