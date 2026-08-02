@@ -1,5 +1,7 @@
 .page {
-  padding: 32px;
+  /* 이 컴포넌트를 감싸는 매니저/관리자 레이아웃 셸이 이미 32px 여백(상하좌우)을 주고 있어서,
+     좌우는 셸에 맡기고 상하만 최소로 둔다(내 예약 내역 페이지와 같은 방식). */
+  padding: 8px 0 32px;
   width: 100%;
 }
 
@@ -25,6 +27,75 @@
   font-size: 15px;
   color: var(--color-text-secondary);
   margin: 0;
+}
+
+.topRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.searchBar {
+  position: relative;
+  width: 220px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.searchBar svg {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+}
+
+.searchInput {
+  width: 100%;
+  height: 38px;
+  padding: 0 14px 0 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.searchInput:focus {
+  border-color: var(--color-primary);
+}
+
+.filterTabs {
+  display: flex;
+  gap: 32px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.filterTab {
+  padding: 12px 2px;
+  margin-bottom: -1px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.filterTab[data-active="true"] {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: 600;
 }
 
 .grid {

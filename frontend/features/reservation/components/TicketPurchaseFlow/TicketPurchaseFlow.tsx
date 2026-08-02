@@ -84,36 +84,38 @@ export function TicketPurchaseFlow({ eventId, ticketTypes }: TicketPurchaseFlowP
       )}
 
       {phase === "success" && order && (
-        <div className={styles.card}>
-          <div className={styles.successPanel}>
-            <CheckCircle2 size={40} className={styles.successIcon} />
-            <p className={styles.successTitle}>예약이 접수되었습니다</p>
-            <p className={styles.successDescription}>결제가 확인되면 예약이 확정돼요. 결제대기 상태로 저장됐어요.</p>
-            <div className={styles.successDetail}>
-              <div className={styles.successRow}>
-                <span>예약번호</span>
-                <strong>{order.orderId}</strong>
+        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && handleReset()}>
+          <div className={styles.modal}>
+            <div className={styles.successPanel}>
+              <CheckCircle2 size={40} className={styles.successIcon} />
+              <p className={styles.successTitle}>예약이 접수되었습니다</p>
+              <p className={styles.successDescription}>결제가 확인되면 예약이 확정돼요. 결제대기 상태로 저장됐어요.</p>
+              <div className={styles.successDetail}>
+                <div className={styles.successRow}>
+                  <span>예약번호</span>
+                  <strong>{order.orderId}</strong>
+                </div>
+                <div className={styles.successRow}>
+                  <span>티켓 수량</span>
+                  <strong>{order.items.length}매</strong>
+                </div>
+                <div className={styles.successRow}>
+                  <span>결제금액</span>
+                  <strong>{order.totalAmount.toLocaleString("ko-KR")}원</strong>
+                </div>
               </div>
-              <div className={styles.successRow}>
-                <span>티켓 수량</span>
-                <strong>{order.items.length}매</strong>
-              </div>
-              <div className={styles.successRow}>
-                <span>결제금액</span>
-                <strong>{order.totalAmount.toLocaleString("ko-KR")}원</strong>
-              </div>
+
+              {/*
+                TODO: 실제 결제 진입 버튼은 Payment 도메인이 컴포넌트로 제공하기로 함.
+                orderId(+ totalAmount)를 props로 받아서 버튼 렌더링부터 결제창 연동까지
+                전부 캡슐화된 컴포넌트를 여기에 그대로 끼워넣으면 됨.
+                예: <PaymentCheckoutButton orderId={order.orderId} amount={order.totalAmount} />
+              */}
+
+              <button type="button" className={styles.resetButton} onClick={handleReset}>
+                닫기
+              </button>
             </div>
-
-            {/*
-              TODO: 실제 결제 진입 버튼은 Payment 도메인이 컴포넌트로 제공하기로 함.
-              orderId(+ totalAmount)를 props로 받아서 버튼 렌더링부터 결제창 연동까지
-              전부 캡슐화된 컴포넌트를 여기에 그대로 끼워넣으면 됨.
-              예: <PaymentCheckoutButton orderId={order.orderId} amount={order.totalAmount} />
-            */}
-
-            <button type="button" className={styles.resetButton} onClick={handleReset}>
-              닫기
-            </button>
           </div>
         </div>
       )}

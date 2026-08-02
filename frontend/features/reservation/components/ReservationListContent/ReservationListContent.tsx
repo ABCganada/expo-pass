@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Search } from "lucide-react";
 import { ReservationListItem } from "../ReservationListItem";
 import { useGetMyOrdersQuery } from "../../api/reservationApi";
+import { useLazyGetEventForDisplayQuery } from "../../api/eventLookupApi";
 import type { OrderStatus } from "../../types/reservation";
 import styles from "./ReservationListContent.module.css";
 
@@ -20,40 +21,69 @@ const FILTER_TABS: { key: FilterKey; label: string }[] = [
 export function ReservationListContent() {
   const { data: orders = [], isLoading } = useGetMyOrdersQuery();
   const [filter, setFilter] = useState<FilterKey>("ALL");
+  const [query, setQuery] = useState("");
+  const [titlesByEventId, setTitlesByEventId] = useState<Record<string, string>>({});
+  const [triggerGetEvent] = useLazyGetEventForDisplayQuery();
   const router = useRouter();
 
-  const filteredOrders =
-    filter === "ALL"
-      ? orders
-      : orders.filter((order) => order.status === filter);
+  // 검색은 행사명 기준인데 OrderSummary엔 행사명이 없다 — eventId별로 한 번만 조회해서 채워둔다
+  // (ReservationListItem도 같은 쿼리를 쓰므로 RTK Query 캐시가 중복 요청을 걸러준다).
+  useEffect(() => {
+    const uniqueEventIds = Array.from(new Set(orders.map((order) => order.eventId)));
+    uniqueEventIds
+      .filter((eventId) => !(eventId in titlesByEventId))
+      .forEach((eventId) => {
+        triggerGetEvent(eventId)
+          .unwrap()
+          .then((event) => setTitlesByEventId((prev) => ({ ...prev, [eventId]: event.title })))
+          .catch(() => {});
+      });
+  }, [orders, titlesByEventId, triggerGetEvent]);
 
-  // TODO: Event 팀이 실제 행사 상세 라우트(예: /exhibitions/[eventId])를 만들면 그쪽으로 교체
+  const trimmedQuery = query.trim().toLowerCase();
+  const filteredOrders = orders.filter((order) => {
+    if (filter !== "ALL" && order.status !== filter) return false;
+    if (trimmedQuery) {
+      const title = titlesByEventId[order.eventId];
+      if (!title || !title.toLowerCase().includes(trimmedQuery)) return false;
+    }
+    return true;
+  });
+
   const handleViewEvent = (eventId: string) => {
-    router.push(`/exhibitions?eventId=${eventId}`);
+    router.push(`/exhibitions/${eventId}`);
   };
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <p className={styles.subtitle}>
-          예약한 박람회 티켓의 상태를 확인하고 관리할 수 있습니다.
-        </p>
-      </header>
+      <div className={styles.topRow}>
+        <div className={styles.filterTabs} role="tablist">
+          {FILTER_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={filter === tab.key}
+              className={styles.filterTab}
+              data-active={filter === tab.key}
+              onClick={() => setFilter(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      <div className={styles.filterTabs} role="tablist">
-        {FILTER_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            role="tab"
-            aria-selected={filter === tab.key}
-            className={styles.filterTab}
-            data-active={filter === tab.key}
-            onClick={() => setFilter(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <div className={styles.searchBar}>
+          <Search size={16} aria-hidden />
+          <input
+            type="text"
+            className={styles.searchInput}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="행사명으로 검색"
+            aria-label="행사명 검색"
+          />
+        </div>
       </div>
 
       {isLoading && (
@@ -70,7 +100,9 @@ export function ReservationListContent() {
             <ClipboardList size={28} />
           </div>
           <div className={styles.emptyBody}>
-            <p className={styles.emptyTitle}>해당하는 예약 내역이 없습니다</p>
+            <p className={styles.emptyTitle}>
+              {trimmedQuery ? "검색 결과가 없습니다" : "해당하는 예약 내역이 없습니다"}
+            </p>
             <p className={styles.emptyDescription}>
               박람회를 둘러보고 티켓을 예약해보세요.
             </p>

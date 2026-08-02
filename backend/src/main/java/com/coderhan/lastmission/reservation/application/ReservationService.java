@@ -16,6 +16,8 @@ import com.coderhan.lastmission.event.TicketInfo;
 import com.coderhan.lastmission.reservation.domain.*;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
+import com.coderhan.lastmission.user.UserDirectory;
+import com.coderhan.lastmission.user.UserRef;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ public class ReservationService implements ReservationQueryPort {
     private final ReservationRepository repository;
     private final EventQueryPort eventQueryPort;
     private final WaitingRoomService waitingRoomService;
+    private final UserDirectory userDirectory;
     private final Clock clock;
 
     /**
@@ -152,6 +155,22 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
+     * 관리자용 — 이 행사의 예약자 명단을 유저 이름/이메일까지 채워서 조회한다.
+     */
+    @Transactional(readOnly = true)
+    public List<AttendeeInfo> getEventAttendees(long eventId) {
+        List<ReservationOrder> orders = repository.findOrdersByEventId(eventId);
+
+        List<Long> userIds = orders.stream().map(ReservationOrder::userId).distinct().toList();
+        Map<Long, UserRef> usersById = userDirectory.findActiveByIds(userIds).stream()
+                .collect(Collectors.toMap(UserRef::id, ref -> ref));
+
+        return orders.stream()
+                .map(order -> new AttendeeInfo(order, usersById.get(order.userId())))
+                .toList();
+    }
+
+    /**
      * 관리자용 — 이 행사의 예약 현황(상태별 건수)을 조회한다.
      */
     @Transactional(readOnly = true)
@@ -183,4 +202,7 @@ public class ReservationService implements ReservationQueryPort {
 
     public record EventReservationSummary(
             long eventId, long totalOrders, Map<OrderStatus, Long> countsByStatus) {}
+
+    /** userRef가 null이면(탈퇴 등으로 활성 유저가 아니면) 이름/이메일을 모른다는 뜻이다. */
+    public record AttendeeInfo(ReservationOrder order, UserRef userRef) {}
 }

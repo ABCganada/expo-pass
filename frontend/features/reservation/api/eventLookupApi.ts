@@ -24,6 +24,7 @@ const eventLookupApi = baseApi.injectEndpoints({
 
 export const {
   useGetEventForDisplayQuery,
+  useLazyGetEventForDisplayQuery,
   useGetEventTicketsForDisplayQuery,
   useGetAdminEventsForDisplayQuery,
 } = eventLookupApi;

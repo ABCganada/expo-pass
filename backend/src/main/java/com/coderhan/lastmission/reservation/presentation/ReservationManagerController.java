@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import com.coderhan.lastmission.reservation.application.ReservationService;
 import com.coderhan.lastmission.reservation.domain.CheckinProgress;
 import com.coderhan.lastmission.reservation.domain.OrderStatus;
@@ -14,7 +13,6 @@ import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
-import com.coderhan.lastmission.user.UserDirectory;
 import com.coderhan.lastmission.user.UserRef;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,7 +34,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 class ReservationManagerController {
     private final ReservationService reservationService;
-    private final UserDirectory userDirectory;
 
     @PostMapping("/checkin")
     ApiResponse<CheckinResponse> checkin(@RequestBody CheckinRequest request,
@@ -48,14 +45,8 @@ class ReservationManagerController {
     /** 예약자 명단 조회. 유저 이름/이메일까지 채워서 내려준다. */
     @GetMapping("/events/{eventId}/attendees")
     ApiResponse<List<AttendeeResponse>> getAttendees(@PathVariable String eventId) {
-        List<ReservationOrder> orders = reservationService.getEventOrders(parseEventId(eventId));
-
-        List<Long> userIds = orders.stream().map(ReservationOrder::userId).distinct().toList();
-        Map<Long, UserRef> usersById = userDirectory.findActiveByIds(userIds).stream()
-                .collect(Collectors.toMap(UserRef::id, ref -> ref));
-
-        List<AttendeeResponse> attendees = orders.stream()
-                .map(order -> AttendeeResponse.from(order, usersById.get(order.userId())))
+        List<AttendeeResponse> attendees = reservationService.getEventAttendees(parseEventId(eventId)).stream()
+                .map(info -> AttendeeResponse.from(info.order(), info.userRef()))
                 .toList();
         return ApiResponse.success(attendees);
     }

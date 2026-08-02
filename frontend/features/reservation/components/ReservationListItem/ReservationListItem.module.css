@@ -174,19 +174,21 @@
   gap: 6px;
   padding: 10px 20px;
   border-radius: var(--radius-button);
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-border);
   background: var(--color-card-background);
-  color: var(--color-primary);
+  color: var(--color-text-primary);
   font-size: 14px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   white-space: nowrap;
 }
 
 .eventButton:hover {
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  transform: translateY(-2px);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
 }
 
 .paymentButton {
