@@ -5,7 +5,9 @@ import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useChangeAdminEventStatusMutation } from "../../api/adminEventDetailApi";
 import { ConfirmDialog } from "../ConfirmDialog/ConfirmDialog";
+import { AlertDialog } from "../AlertDialog/AlertDialog";
 import type { AdminEventStatus } from "../../types/adminEvent";
+import type { AdminEventDetail } from "../../types/adminEventDetail";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./EventDetailHeader.module.css";
 
@@ -15,18 +17,35 @@ const STATUS_LABEL: Record<AdminEventStatus, string> = {
   CANCELLED: "취소됨",
 };
 
+const PUBLISH_REQUIREMENT_MESSAGE =
+  "게시하려면 주최자명, 행사 기간, 장소 정보를 모두 입력해 주세요.";
+
+function isPublishReady(detail: AdminEventDetail): boolean {
+  return Boolean(
+    detail.hostName &&
+      detail.venueName &&
+      detail.address &&
+      detail.legalDongCode &&
+      detail.latitude !== null &&
+      detail.longitude !== null &&
+      detail.startDate &&
+      detail.endDate,
+  );
+}
+
 interface EventDetailHeaderProps {
   eventId: string;
-  title: string;
-  status: AdminEventStatus;
+  detail: AdminEventDetail;
   onStatusChanged: (message: string) => void;
 }
 
-export function EventDetailHeader({ eventId, title, status, onStatusChanged }: EventDetailHeaderProps) {
+type DialogState = "none" | "publishInvalid" | "confirmPublish" | "confirmCancel";
+
+export function EventDetailHeader({ eventId, detail, onStatusChanged }: EventDetailHeaderProps) {
   const router = useRouter();
   const [changeStatus, { isLoading }] = useChangeAdminEventStatusMutation();
   const [error, setError] = useState<string | null>(null);
-  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [dialog, setDialog] = useState<DialogState>("none");
 
   const applyStatus = async (next: AdminEventStatus) => {
     setError(null);
@@ -38,8 +57,17 @@ export function EventDetailHeader({ eventId, title, status, onStatusChanged }: E
     }
   };
 
-  const handleCancelConfirm = () => {
-    setConfirmCancel(false);
+  const handlePublishClick = () => {
+    setDialog(isPublishReady(detail) ? "confirmPublish" : "publishInvalid");
+  };
+
+  const handleConfirmPublish = () => {
+    setDialog("none");
+    void applyStatus("PUBLISHED");
+  };
+
+  const handleConfirmCancel = () => {
+    setDialog("none");
     void applyStatus("CANCELLED");
   };
 
@@ -52,28 +80,28 @@ export function EventDetailHeader({ eventId, title, status, onStatusChanged }: E
 
       <div className={styles.titleRow}>
         <div className={styles.titleGroup}>
-          <h1 className={styles.title}>{title}</h1>
-          <span className={styles.statusBadge} data-status={status}>
-            {STATUS_LABEL[status]}
+          <h1 className={styles.title}>{detail.title}</h1>
+          <span className={styles.statusBadge} data-status={detail.status}>
+            {STATUS_LABEL[detail.status]}
           </span>
         </div>
 
         <div className={styles.actions}>
-          {status === "DRAFT" && (
+          {detail.status === "DRAFT" && (
             <button
               type="button"
               className={styles.publishButton}
-              onClick={() => void applyStatus("PUBLISHED")}
+              onClick={handlePublishClick}
               disabled={isLoading}
             >
               {isLoading ? "처리 중..." : "게시하기"}
             </button>
           )}
-          {status === "PUBLISHED" && (
+          {detail.status === "PUBLISHED" && (
             <button
               type="button"
               className={styles.cancelStatusButton}
-              onClick={() => setConfirmCancel(true)}
+              onClick={() => setDialog("confirmCancel")}
               disabled={isLoading}
             >
               취소하기
@@ -84,14 +112,32 @@ export function EventDetailHeader({ eventId, title, status, onStatusChanged }: E
 
       {error && <p className={styles.error}>{error}</p>}
 
-      {confirmCancel && (
+      {dialog === "publishInvalid" && (
+        <AlertDialog
+          title="게시할 수 없습니다"
+          description={PUBLISH_REQUIREMENT_MESSAGE}
+          onConfirm={() => setDialog("none")}
+        />
+      )}
+
+      {dialog === "confirmPublish" && (
+        <ConfirmDialog
+          title="행사를 게시하시겠습니까?"
+          description="게시 후 고객에게 노출됩니다."
+          confirmLabel="게시하기"
+          onConfirm={handleConfirmPublish}
+          onCancel={() => setDialog("none")}
+        />
+      )}
+
+      {dialog === "confirmCancel" && (
         <ConfirmDialog
           title="행사를 취소할까요?"
           description="취소하면 되돌릴 수 없습니다."
           confirmLabel="취소하기"
           danger
-          onConfirm={handleCancelConfirm}
-          onCancel={() => setConfirmCancel(false)}
+          onConfirm={handleConfirmCancel}
+          onCancel={() => setDialog("none")}
         />
       )}
     </header>

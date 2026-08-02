@@ -36,7 +36,7 @@ export function AdminEventDetail({ eventId }: AdminEventDetailProps) {
 
   return (
     <section className={styles.page}>
-      <EventDetailHeader eventId={eventId} title={detail.title} status={detail.status} onStatusChanged={setToast} />
+      <EventDetailHeader eventId={eventId} detail={detail} onStatusChanged={setToast} />
 
       <nav className={styles.tabBar}>
         {TABS.map((tab) => (
