@@ -41,6 +41,7 @@ class PaymentServiceTest {
     @Mock PaymentGateway paymentGateway;
     @Mock ReservationOrderDirectory reservationOrderDirectory;
     @Mock BannerOrderDirectory bannerOrderDirectory;
+    @Mock PaymentConfirmationRecorder confirmationRecorder;
 
     @InjectMocks PaymentService service;
 
@@ -55,7 +56,7 @@ class PaymentServiceTest {
 
         assertThat(result).isSameAs(existing);
         verify(paymentGateway, never()).confirm(any(), any(), any());
-        verify(repository, never()).save(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(confirmationRecorder, never()).save(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -66,7 +67,7 @@ class PaymentServiceTest {
         when(repository.findByIdempotencyKey(PAYMENT_KEY)).thenReturn(Optional.empty());
         when(paymentGateway.confirm(PAYMENT_KEY, PG_ORDER_ID, AMOUNT))
                 .thenReturn(new PaymentGateway.ConfirmResult("CARD", APPROVED_AT));
-        when(repository.save(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
+        when(confirmationRecorder.save(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
                 PG_ORDER_ID, PAYMENT_KEY, APPROVED_AT)).thenReturn(saved);
 
         Payment result = service.confirm(USER_ID, ORDER_ID, ORDER_TYPE, PG_ORDER_ID, PAYMENT_KEY, AMOUNT);
@@ -82,7 +83,7 @@ class PaymentServiceTest {
         when(repository.findByIdempotencyKey(PAYMENT_KEY)).thenReturn(Optional.empty());
         when(paymentGateway.confirm(PAYMENT_KEY, PG_ORDER_ID, AMOUNT))
                 .thenReturn(new PaymentGateway.ConfirmResult("CARD", APPROVED_AT));
-        when(repository.save(ORDER_ID, OrderType.ADVERTISEMENT, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
+        when(confirmationRecorder.save(ORDER_ID, OrderType.ADVERTISEMENT, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
                 PG_ORDER_ID, PAYMENT_KEY, APPROVED_AT)).thenReturn(saved);
 
         Payment result = service.confirm(USER_ID, ORDER_ID, OrderType.ADVERTISEMENT, PG_ORDER_ID, PAYMENT_KEY, AMOUNT);
@@ -101,7 +102,7 @@ class PaymentServiceTest {
                 .thenReturn(Optional.of(committedByOtherRequest));
         when(paymentGateway.confirm(PAYMENT_KEY, PG_ORDER_ID, AMOUNT))
                 .thenReturn(new PaymentGateway.ConfirmResult("CARD", APPROVED_AT));
-        when(repository.save(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(confirmationRecorder.save(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenThrow(new DataIntegrityViolationException("duplicate idempotency_key"));
 
         Payment result = service.confirm(USER_ID, ORDER_ID, ORDER_TYPE, PG_ORDER_ID, PAYMENT_KEY, AMOUNT);
@@ -117,7 +118,7 @@ class PaymentServiceTest {
         when(paymentGateway.confirm(PAYMENT_KEY, PG_ORDER_ID, AMOUNT))
                 .thenReturn(new PaymentGateway.ConfirmResult("CARD", APPROVED_AT));
         DataIntegrityViolationException saveFailure = new DataIntegrityViolationException("duplicate order_id");
-        when(repository.save(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(confirmationRecorder.save(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenThrow(saveFailure);
 
         assertThatThrownBy(() -> service.confirm(USER_ID, ORDER_ID, ORDER_TYPE, PG_ORDER_ID, PAYMENT_KEY, AMOUNT))
