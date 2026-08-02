@@ -1,6 +1,8 @@
 "use client";
 
-import { useGetPaymentQuery } from "../../api/paymentApi";
+import { useState } from "react";
+import { queryErrorMessage } from "@/features/store/api/queryError";
+import { useGetPaymentQuery, useRequestRefundMutation } from "../../api/paymentApi";
 import type { PaymentStatus } from "../../types/payment";
 import styles from "./PaymentDetailContent.module.css";
 
@@ -33,6 +35,25 @@ function formatDate(value: string | null): string {
 
 export function PaymentDetailContent({ orderId }: PaymentDetailContentProps) {
   const { data: payment, isLoading, isError } = useGetPaymentQuery(orderId);
+  const [requestRefund, { isLoading: isRefunding }] = useRequestRefundMutation();
+  const [refundMessage, setRefundMessage] = useState<string | null>(null);
+  const [refundError, setRefundError] = useState<string | null>(null);
+
+  const handleRefund = async () => {
+    if (!payment) return;
+    const confirmed = window.confirm("이 결제를 환불 신청할까요?");
+    if (!confirmed) return;
+
+    setRefundMessage(null);
+    setRefundError(null);
+
+    try {
+      await requestRefund({ paymentId: payment.id, reason: "사용자 요청" }).unwrap();
+      setRefundMessage("환불 신청이 완료되었습니다.");
+    } catch (error) {
+      setRefundError(queryErrorMessage(error, "환불 신청에 실패했습니다."));
+    }
+  };
 
   if (isLoading) {
     return (
@@ -77,6 +98,22 @@ export function PaymentDetailContent({ orderId }: PaymentDetailContentProps) {
           </div>
         ))}
       </div>
+
+      {payment.status === "COMPLETED" && (
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.refundButton}
+            onClick={handleRefund}
+            disabled={isRefunding}
+          >
+            {isRefunding ? "환불 신청 중..." : "환불 신청"}
+          </button>
+        </div>
+      )}
+
+      {refundMessage && <p className={styles.successMessage}>{refundMessage}</p>}
+      {refundError && <p className={styles.errorMessage}>{refundError}</p>}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { baseApi } from "@/features/store/api/baseApi";
 import { queryResult } from "@/features/store/api/queryError";
 import { paymentService } from "../services/paymentService";
-import type { Payment } from "../types/payment";
+import type { Payment, Refund } from "../types/payment";
 
 const paymentApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
@@ -13,7 +13,12 @@ const paymentApi = baseApi.injectEndpoints({
       queryFn: (orderId, api) => queryResult(paymentService.getPayment(orderId, api.signal)),
       providesTags: ["Payment"],
     }),
+    requestRefund: build.mutation<Refund, { paymentId: string; reason: string }>({
+      queryFn: ({ paymentId, reason }) => queryResult(paymentService.requestRefund(paymentId, reason)),
+      invalidatesTags: ["Payment", "Reservation"],
+    }),
   }),
+  overrideExisting: true,
 });
 
-export const { useGetMyPaymentsQuery, useGetPaymentQuery } = paymentApi;
+export const { useGetMyPaymentsQuery, useGetPaymentQuery, useRequestRefundMutation } = paymentApi;
