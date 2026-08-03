@@ -115,7 +115,7 @@ export function EventDetailHeader({ eventId, detail, onStatusChanged, mode }: Ev
               {isLoading ? "처리 중..." : "게시하기"}
             </button>
           )}
-          {detail.status === "PUBLISHED" && (
+          {detail.status === "PUBLISHED" && detail.phase !== "ENDED" && (
             <button
               type="button"
               className={styles.cancelStatusButton}
