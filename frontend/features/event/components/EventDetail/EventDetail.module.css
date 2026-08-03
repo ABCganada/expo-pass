@@ -131,22 +131,3 @@
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
-
-.managerLabel {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-}
-
-.readonlyBox {
-  padding: 10px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-input);
-  background: var(--color-page-background);
-  color: var(--color-text-primary);
-  font-size: 14px;
-  font-weight: 400;
-}

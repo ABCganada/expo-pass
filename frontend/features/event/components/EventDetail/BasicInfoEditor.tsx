@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useUpdateManagerEventMutation } from "../../api/managerEventDetailApi";
-import { useChangeAdminEventManagerMutation } from "../../api/adminEventApi";
 import { BasicInfoForm, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
+import { ManagerFieldControl } from "./ManagerFieldControl";
 import type { EventManagementDetail } from "../../types/eventManagementDetail";
 import type { EventRole } from "../../types/eventRole";
 import { queryErrorMessage } from "@/features/store/api/queryError";
@@ -38,7 +38,7 @@ function toFormValues(detail: EventManagementDetail, categoryId: string): BasicI
   };
 }
 
-/** 저장 mutation과 폼 상태를 담당한다. 필드 렌더링은 BasicInfoForm에 위임한다. */
+/** updateManagerEvent만 담당. 담당자 재배정(changeManager)은 ManagerFieldControl */
 export function BasicInfoEditor({
   eventId,
   detail,
@@ -51,7 +51,6 @@ export function BasicInfoEditor({
 }: BasicInfoEditorProps) {
   const canEdit = mode === "manager";
   const [updateEvent, { isLoading: isUpdating }] = useUpdateManagerEventMutation();
-  const [changeManager, { isLoading: isChangingManager }] = useChangeAdminEventManagerMutation();
   const [values, setValues] = useState<BasicInfoFormValues>(() => toFormValues(detail, initialCategoryId));
   const [error, setError] = useState<string | null>(null);
 
@@ -92,16 +91,11 @@ export function BasicInfoEditor({
           endDate: values.endDate || null,
         },
       }).unwrap();
-      if (values.manager && values.manager.id !== detail.managerId) {
-        await changeManager({ eventId, managerId: values.manager.id }).unwrap();
-      }
       onSaved("변경사항이 저장되었습니다.");
     } catch (reason) {
       setError(queryErrorMessage(reason, "저장에 실패했습니다."));
     }
   };
-
-  const isSubmitting = isUpdating || isChangingManager;
 
   return (
     <BasicInfoForm
@@ -109,16 +103,19 @@ export function BasicInfoEditor({
       onChange={handleChange}
       onValidSubmit={() => void handleSubmit()}
       readOnly={!isEditing}
+      managerField={
+        canEdit ? undefined : <ManagerFieldControl eventId={eventId} detail={detail} onSaved={onSaved} />
+      }
       footer={
         isEditing ? (
           <>
             {error && <p className={styles.error}>{error}</p>}
             <div className={styles.formActions}>
-              <button type="button" className={styles.cancelButton} onClick={handleCancel} disabled={isSubmitting}>
+              <button type="button" className={styles.cancelButton} onClick={handleCancel} disabled={isUpdating}>
                 취소
               </button>
-              <button type="submit" className={styles.saveButton} disabled={isSubmitting}>
-                {isSubmitting ? "저장 중..." : "저장"}
+              <button type="submit" className={styles.saveButton} disabled={isUpdating}>
+                {isUpdating ? "저장 중..." : "저장"}
               </button>
             </div>
           </>

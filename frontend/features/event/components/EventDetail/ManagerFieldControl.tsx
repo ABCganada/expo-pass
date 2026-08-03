@@ -5,9 +5,9 @@ import { useChangeAdminEventManagerMutation } from "../../api/adminEventApi";
 import { ManagerPicker, type ManagerOption } from "../ManagerPicker/ManagerPicker";
 import type { EventManagementDetail } from "../../types/eventManagementDetail";
 import { queryErrorMessage } from "@/features/store/api/queryError";
-import styles from "./EventDetail.module.css";
+import styles from "./ManagerFieldControl.module.css";
 
-interface ManagerReassignPanelProps {
+interface ManagerFieldControlProps {
   eventId: string;
   detail: EventManagementDetail;
   onSaved: (message: string) => void;
@@ -17,11 +17,26 @@ function toManagerOption(detail: EventManagementDetail): ManagerOption | null {
   return detail.managerId ? { id: detail.managerId, name: detail.managerName ?? "", email: "" } : null;
 }
 
-export function ManagerReassignPanel({ eventId, detail, onSaved }: ManagerReassignPanelProps) {
+function displayManager(manager: ManagerOption | null): string {
+  if (!manager) return "-";
+  return manager.email ? `${manager.name} (${manager.email})` : manager.name;
+}
+
+/** 담당자 필드 하나만 담당하는 slot 컴포넌트. changeManager mutation은 여기서만 호출한다. */
+export function ManagerFieldControl({ eventId, detail, onSaved }: ManagerFieldControlProps) {
   const [changeManager, { isLoading }] = useChangeAdminEventManagerMutation();
   const [isEditing, setIsEditing] = useState(false);
   const [manager, setManager] = useState<ManagerOption | null>(() => toManagerOption(detail));
   const [error, setError] = useState<string | null>(null);
+
+  // 다른 행사로 전환되거나 저장 후 재조회되면(managerId 변경) 대기 중인 선택값도 서버 상태로 재동기화한다.
+  const [syncedManagerId, setSyncedManagerId] = useState(detail.managerId);
+  if (detail.managerId !== syncedManagerId) {
+    setSyncedManagerId(detail.managerId);
+    setManager(toManagerOption(detail));
+    setIsEditing(false);
+    setError(null);
+  }
 
   const handleStartEdit = () => {
     setManager(toManagerOption(detail));
@@ -54,35 +69,34 @@ export function ManagerReassignPanel({ eventId, detail, onSaved }: ManagerReassi
     }
   };
 
-  return (
-    <div className={styles.form}>
-      <label className={styles.managerLabel}>
-        <span>담당자</span>
-        {isEditing ? (
-          <ManagerPicker selectedManager={manager} onSelect={setManager} onClear={() => setManager(null)} />
-        ) : (
-          <div className={styles.readonlyBox}>{detail.managerName ?? "-"}</div>
-        )}
-      </label>
-
-      {error && <p className={styles.error}>{error}</p>}
-
-      {isEditing ? (
-        <div className={styles.formActions}>
-          <button type="button" className={styles.cancelButton} onClick={handleCancel} disabled={isLoading}>
+  if (isEditing) {
+    return (
+      <>
+        <ManagerPicker selectedManager={manager} onSelect={setManager} onClear={() => setManager(null)} />
+        {error && <p className={styles.fieldError}>{error}</p>}
+        <div className={styles.managerEditActions}>
+          <button type="button" className={styles.managerCancelButton} onClick={handleCancel} disabled={isLoading}>
             취소
           </button>
-          <button type="button" className={styles.saveButton} onClick={() => void handleSave()} disabled={isLoading}>
+          <button
+            type="button"
+            className={styles.managerSaveButton}
+            onClick={() => void handleSave()}
+            disabled={isLoading}
+          >
             {isLoading ? "저장 중..." : "저장"}
           </button>
         </div>
-      ) : (
-        <div className={styles.viewHeader}>
-          <button type="button" className={styles.editButton} onClick={handleStartEdit}>
-            담당자 변경
-          </button>
-        </div>
-      )}
+      </>
+    );
+  }
+
+  return (
+    <div className={styles.managerRow}>
+      <div className={styles.readonlyBox}>{displayManager(manager)}</div>
+      <button type="button" className={styles.changeButton} onClick={handleStartEdit}>
+        변경
+      </button>
     </div>
   );
 }
