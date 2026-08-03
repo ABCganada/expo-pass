@@ -24,8 +24,8 @@ interface RoleTab {
  * 배열 순서 = 탭이 보이는 좌→우 순서.
  */
 const ROLE_TABS: RoleTab[] = [
-  { role: "USER", label: "일반 유저", href: "/exhibitions", mode: "user" },
-  { role: "MANAGER", label: "박람회 관리자", href: "/manager/reservations", mode: "manager" },
+  { role: "USER", label: "일반 유저", href: "/", mode: "user" },
+  { role: "MANAGER", label: "박람회 관리자", href: "/manager/events", mode: "manager" },
   { role: "ADMIN", label: "전체 관리자", href: "/admin/events", mode: "admin" },
   { role: "DEVELOPER", label: "개발자", mode: "developer" },
 ];

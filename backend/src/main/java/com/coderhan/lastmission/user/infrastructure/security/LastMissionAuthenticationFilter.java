@@ -19,7 +19,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
@@ -30,11 +29,13 @@ import lombok.extern.slf4j.Slf4j;
 public class LastMissionAuthenticationFilter extends OncePerRequestFilter {
     private final AuthClient authClient;
     private final UserProvisioningService userProvisioningService;
-    private final SecurityContextRepository securityContextRepository = new RequestAttributeSecurityContextRepository();
+    private final SecurityContextRepository securityContextRepository;
 
-    public LastMissionAuthenticationFilter(AuthClient authClient, UserProvisioningService userProvisioningService) {
+    public LastMissionAuthenticationFilter(AuthClient authClient, UserProvisioningService userProvisioningService,
+            SecurityContextRepository securityContextRepository) {
         this.authClient = authClient;
         this.userProvisioningService = userProvisioningService;
+        this.securityContextRepository = securityContextRepository;
     }
 
     /**
@@ -92,9 +93,13 @@ public class LastMissionAuthenticationFilter extends OncePerRequestFilter {
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
         securityContext.setAuthentication(authentication);
         SecurityContextHolder.setContext(securityContext);
-        // SSE 등 비동기 요청은 완료 시점에 서블릿 컨테이너가 필터 체인을 ASYNC 디스패치로 한 번 더 태우는데,
-        // 이 필터(OncePerRequestFilter)는 기본적으로 ASYNC 디스패치에서 재실행되지 않는다.
-        // 컨텍스트를 요청 속성에 저장해둬야 SecurityContextHolderFilter가 그 시점에 다시 불러올 수 있다.
+        // 요청 범위 저장. 두 가지를 동시에 해결한다:
+        // (1) CSRF: 저장 안 하면 SessionManagementFilter 가 containsContext=false 로 "매 요청 새 로그인"으로 오판 →
+        //     CsrfAuthenticationStrategy 가 CSRF 쿠키를 지워, 연속된 두 번째 변경 요청(채팅 입장 직후 전송 등)이 403 이 된다.
+        // (2) SSE 등 비동기: 완료 시 컨테이너가 ASYNC 디스패치로 체인을 한 번 더 태우는데 OncePerRequestFilter 는
+        //     재실행되지 않으므로, 저장해둬야 SecurityContextHolderFilter 가 그때 다시 불러온다.
+        // SecurityConfig 가 배선한 것과 같은 인스턴스여야 SessionManagementFilter 가 이 저장을 본다.
+        // RequestAttribute 저장은 요청 한 건만 살고 버려지므로 STATELESS 를 깨지 않는다.
         securityContextRepository.saveContext(securityContext, request, response);
         filterChain.doFilter(request, response);
     }

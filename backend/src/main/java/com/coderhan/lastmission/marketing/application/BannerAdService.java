@@ -13,9 +13,11 @@ import com.coderhan.lastmission.marketing.domain.BannerSlotType;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BannerAdService {
@@ -27,7 +29,7 @@ public class BannerAdService {
     @Transactional
     public BannerAd registerAd(Set<UUID> slotIds, String title, String bannerImageUrl, String adImageUrl,
                                String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt,
-                               String createdBy) {
+                               long createdBy) {
         if (slotIds == null || slotIds.isEmpty()) {
             throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "광고 슬롯을 하나 이상 선택해야 합니다.");
         }
@@ -47,11 +49,11 @@ public class BannerAdService {
     }
 
     @Transactional
-    public BannerAd updateAd(UUID id, String createdBy, String title, String bannerImageUrl, String adImageUrl,
+    public BannerAd updateAd(UUID id, long createdBy, String title, String bannerImageUrl, String adImageUrl,
                               String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt) {
         BannerAd ad = adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
-        if (!ad.createdBy().equals(createdBy)) {
+        if (ad.createdBy() != createdBy) {
             throw new BusinessException(ErrorCode.BANNER_AD_ACCESS_DENIED, "본인의 광고만 수정할 수 있습니다.");
         }
         if (ad.status() != BannerAdStatus.PENDING) {
@@ -87,8 +89,8 @@ public class BannerAdService {
     }
 
     @Transactional(readOnly = true)
-    public List<BannerAd> getMyAds(String email) {
-        return adRepository.findByCreatedBy(email);
+    public List<BannerAd> getMyAds(long userId) {
+        return adRepository.findByCreatedBy(userId);
     }
 
     @Transactional(readOnly = true)
@@ -108,6 +110,47 @@ public class BannerAdService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
         statRepository.deleteStatsByAdId(id);
         adRepository.deleteById(id);
+    }
+
+    /** 결제 완료 이벤트 리스너용 — 멱등 (이미 APPROVED면 스킵). */
+    @Transactional
+    public void approveByOrderId(String orderId) {
+        adRepository.findByOrderId(orderId).ifPresent(ad -> {
+            if (ad.status() == BannerAdStatus.APPROVED) {
+                return;
+            }
+            if (ad.status() != BannerAdStatus.PENDING) {
+                log.warn("approveByOrderId: 예상 밖 상태. orderId={}, status={}", orderId, ad.status());
+                return;
+            }
+            adRepository.updateStatus(ad.id(), BannerAdStatus.APPROVED);
+        });
+    }
+
+    /** 환불 이벤트 리스너용 — 멱등 (이미 REFUNDED면 스킵). */
+    @Transactional
+    public void refundByOrderId(String orderId) {
+        adRepository.findByOrderId(orderId).ifPresent(ad -> {
+            if (ad.status() == BannerAdStatus.REFUNDED) {
+                return;
+            }
+            if (ad.status() != BannerAdStatus.APPROVED) {
+                log.warn("refundByOrderId: 예상 밖 상태. orderId={}, status={}", orderId, ad.status());
+                return;
+            }
+            adRepository.updateStatus(ad.id(), BannerAdStatus.REFUNDED);
+        });
+    }
+
+    /** 정합성 스케줄러용 — 미결제 타임아웃된 PENDING 광고 취소. */
+    @Transactional
+    public void cancelByOrderId(String orderId) {
+        adRepository.findByOrderId(orderId).ifPresent(ad -> {
+            if (ad.status() != BannerAdStatus.PENDING) {
+                return;
+            }
+            adRepository.updateStatus(ad.id(), BannerAdStatus.CANCELLED);
+        });
     }
 
     @Transactional(readOnly = true)

@@ -15,6 +15,8 @@ import org.springframework.security.config.annotation.web.configurers.RequestCac
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
@@ -29,6 +31,11 @@ class SecurityConfig {
         csrfTokenRepository.setHeaderName("X-LASTMISSION-XSRF-TOKEN");
         csrfTokenRepository.setCookieCustomizer(cookie -> cookie.path("/").secure(secureCsrfCookie).sameSite("Lax"));
 
+        // 요청 범위 저장소. LastMissionAuthenticationFilter 가 여기에 저장하고 SessionManagementFilter 가
+        // 여기서 containsContext 를 확인한다 — 둘이 같은 인스턴스여야 하므로 필터에도 이 인스턴스를 넘긴다.
+        // 요청 한 건만 살고 버려지므로 STATELESS 를 유지한다(세션 저장이 아니다).
+        SecurityContextRepository securityContextRepository = new RequestAttributeSecurityContextRepository();
+
         http.cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
@@ -36,6 +43,7 @@ class SecurityConfig {
                         // 토스 웹훅도 외부 서버가 직접 호출하는 콜백이라 CSRF 토큰을 보낼 수 없음
                         .ignoringRequestMatchers("/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks",
                                 "/webhooks/payments/toss"))
+                .securityContext(context -> context.securityContextRepository(securityContextRepository))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .requestCache(RequestCacheConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -61,7 +69,8 @@ class SecurityConfig {
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((_, response, _) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
                         .accessDeniedHandler((_, response, _) -> response.sendError(HttpServletResponse.SC_FORBIDDEN)))
-                .addFilterBefore(new LastMissionAuthenticationFilter(authClient, userProvisioningService),
+                .addFilterBefore(new LastMissionAuthenticationFilter(authClient, userProvisioningService,
+                                securityContextRepository),
                         AnonymousAuthenticationFilter.class);
         return http.build();
     }

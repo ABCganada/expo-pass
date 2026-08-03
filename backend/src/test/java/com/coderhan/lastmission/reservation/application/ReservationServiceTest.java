@@ -226,16 +226,17 @@ class ReservationServiceTest {
                 OrderStatus.CONFIRMED, BigDecimal.valueOf(10000), NOW, NOW);
         ReservationOrder orderWithoutQuantities = new ReservationOrder("ORD-2", USER_ID, EVENT_ID,
                 OrderStatus.PENDING, BigDecimal.valueOf(5000), NOW, NOW);
-        when(repository.findOrdersByUserId(USER_ID))
-                .thenReturn(List.of(orderWithQuantities, orderWithoutQuantities));
-        when(repository.findTicketQuantitiesByUserId(USER_ID))
+        when(repository.findOrdersByUserId(USER_ID, null, 0, 10))
+                .thenReturn(new OrderPage(List.of(orderWithQuantities, orderWithoutQuantities), 0, 10, 2));
+        when(repository.findTicketQuantitiesByOrderIds(List.of("ORD-1", "ORD-2")))
                 .thenReturn(Map.of("ORD-1", List.of(new TicketQuantity(TICKET_ID, 2))));
 
-        List<ReservationService.OrderWithTickets> result = service.getMyOrders(USER_ID);
+        ReservationService.MyOrdersPage result = service.getMyOrders(USER_ID, null, 0, 10);
 
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).ticketQuantities()).containsExactly(new TicketQuantity(TICKET_ID, 2));
-        assertThat(result.get(1).ticketQuantities()).isEmpty();
+        assertThat(result.orders()).hasSize(2);
+        assertThat(result.orders().get(0).ticketQuantities()).containsExactly(new TicketQuantity(TICKET_ID, 2));
+        assertThat(result.orders().get(1).ticketQuantities()).isEmpty();
+        assertThat(result.totalElements()).isEqualTo(2);
     }
 
     // ---------- getMyQrTickets ----------
@@ -282,6 +283,84 @@ class ReservationServiceTest {
         assertThatThrownBy(() -> service.checkin(9L, "unknown-qr"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_QR_NOT_FOUND));
+    }
+
+    @Test
+    void checkinThrowsWhenOrderIsNotConfirmed() {
+        when(repository.checkin("qr-1", 9L, NOW)).thenReturn(false);
+        ReservationOrderItem notYetCheckedIn =
+                new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-1", null);
+        when(repository.findItemByQrCodeHash("qr-1")).thenReturn(Optional.of(notYetCheckedIn));
+        ReservationOrder refundedOrder = new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID,
+                OrderStatus.REFUNDED, BigDecimal.valueOf(10000), NOW, NOW);
+        when(repository.findOrder(ORDER_ID)).thenReturn(Optional.of(refundedOrder));
+
+        assertThatThrownBy(() -> service.checkin(9L, "qr-1"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_INVALID_TICKET_STATUS));
+    }
+
+    // ---------- confirmOrder ----------
+
+    @Test
+    void confirmOrderTransitionsPendingOrderUsingCurrentTime() {
+        service.confirmOrder(ORDER_ID);
+
+        verify(repository).confirmOrderIfPending(ORDER_ID, NOW);
+    }
+
+    // ---------- refundOrder ----------
+
+    @Test
+    void refundOrderRestoresStockPerTicketWhenTransitionSucceeds() {
+        long otherTicketId = TICKET_ID + 1;
+        when(repository.refundOrderIfConfirmed(ORDER_ID, NOW)).thenReturn(true);
+        when(repository.findItems(ORDER_ID)).thenReturn(List.of(
+                new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-1", null),
+                new ReservationOrderItem(2L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-2", null),
+                new ReservationOrderItem(3L, ORDER_ID, otherTicketId, BigDecimal.valueOf(5000), "qr-3", null)));
+
+        service.refundOrder(ORDER_ID);
+
+        verify(eventQueryPort).increaseTicketStock(TICKET_ID, 2);
+        verify(eventQueryPort).increaseTicketStock(otherTicketId, 1);
+    }
+
+    @Test
+    void refundOrderDoesNothingWhenOrderWasNotConfirmed() {
+        when(repository.refundOrderIfConfirmed(ORDER_ID, NOW)).thenReturn(false);
+
+        service.refundOrder(ORDER_ID);
+
+        verify(repository, never()).findItems(anyString());
+        verify(eventQueryPort, never()).increaseTicketStock(anyLong(), anyInt());
+    }
+
+    // ---------- cancelOrder ----------
+
+    @Test
+    void cancelOrderRestoresStockPerTicketWhenTransitionSucceeds() {
+        long otherTicketId = TICKET_ID + 1;
+        when(repository.cancelOrderIfPending(ORDER_ID, NOW)).thenReturn(true);
+        when(repository.findItems(ORDER_ID)).thenReturn(List.of(
+                new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-1", null),
+                new ReservationOrderItem(2L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-2", null),
+                new ReservationOrderItem(3L, ORDER_ID, otherTicketId, BigDecimal.valueOf(5000), "qr-3", null)));
+
+        service.cancelOrder(ORDER_ID);
+
+        verify(eventQueryPort).increaseTicketStock(TICKET_ID, 2);
+        verify(eventQueryPort).increaseTicketStock(otherTicketId, 1);
+    }
+
+    @Test
+    void cancelOrderDoesNothingWhenOrderWasNotPending() {
+        when(repository.cancelOrderIfPending(ORDER_ID, NOW)).thenReturn(false);
+
+        service.cancelOrder(ORDER_ID);
+
+        verify(repository, never()).findItems(anyString());
+        verify(eventQueryPort, never()).increaseTicketStock(anyLong(), anyInt());
     }
 
     // ---------- 관리자 조회 / ReservationQueryPort ----------

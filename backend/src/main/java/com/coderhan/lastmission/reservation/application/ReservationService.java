@@ -108,16 +108,20 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
-     * 이 유저의 모든 주문을 최신순으로 조회한다(목록용). 아이템 자체는 안 채우고,
-     * 티켓 종류별 수량만 일괄 집계해서 같이 내려준다(주문마다 상세를 또 조회하는 N+1 방지).
+     * 이 유저의 주문을 최신순으로 페이지 단위로 조회한다(목록용). 아이템 자체는 안 채우고,
+     * 이 페이지에 나온 주문에 대해서만 티켓 종류별 수량을 일괄 집계해서 같이 내려준다
+     * (주문마다 상세를 또 조회하는 N+1 방지 — 전체가 아니라 이 페이지 분량만 조회한다).
+     * status가 null이면 전체 상태를 대상으로 한다(마이페이지 필터 탭).
      */
     @Transactional(readOnly = true)
-    public List<OrderWithTickets> getMyOrders(long userId) {
-        List<ReservationOrder> orders = repository.findOrdersByUserId(userId);
-        Map<String, List<TicketQuantity>> quantitiesByOrderId = repository.findTicketQuantitiesByUserId(userId);
-        return orders.stream()
+    public MyOrdersPage getMyOrders(long userId, OrderStatus status, int page, int size) {
+        OrderPage orderPage = repository.findOrdersByUserId(userId, status, page, size);
+        List<String> orderIds = orderPage.orders().stream().map(ReservationOrder::orderId).toList();
+        Map<String, List<TicketQuantity>> quantitiesByOrderId = repository.findTicketQuantitiesByOrderIds(orderIds);
+        List<OrderWithTickets> orders = orderPage.orders().stream()
                 .map(order -> new OrderWithTickets(order, quantitiesByOrderId.getOrDefault(order.orderId(), List.of())))
                 .toList();
+        return new MyOrdersPage(orders, orderPage.page(), orderPage.size(), orderPage.totalElements());
     }
 
     /**
@@ -130,7 +134,9 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
-     * 관리자 QR 체크인. 이미 체크인됐거나 존재하지 않는 QR이면 예외.
+     * 관리자 QR 체크인. 존재하지 않는 QR·이미 체크인됨·주문이 CONFIRMED가 아님(결제대기/취소/환불)
+     * 이면 예외 — 특히 환불된 결제의 QR을 캡처해뒀다가 현장에서 스캔하는 경우를 막기 위해,
+     * DB 쪽 조건부 UPDATE 자체가 주문 상태까지 함께 확인한다(체크인 성공은 CONFIRMED일 때만).
      */
     @Transactional
     public ReservationOrderItem checkin(long adminUserId, String qrCodeHash) {
@@ -140,10 +146,62 @@ public class ReservationService implements ReservationQueryPort {
             ReservationOrderItem existing = repository.findItemByQrCodeHash(qrCodeHash)
                     .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_QR_NOT_FOUND,
                             "존재하지 않는 QR입니다."));
-            throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CHECKED_IN,
-                    "이미 체크인된 티켓입니다. (체크인 시각: " + existing.checkedInAt() + ")");
+            if (existing.checkedInAt() != null) {
+                throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CHECKED_IN,
+                        "이미 체크인된 티켓입니다. (체크인 시각: " + existing.checkedInAt() + ")");
+            }
+            OrderStatus status = repository.findOrder(existing.orderId())
+                    .map(ReservationOrder::status)
+                    .orElse(null);
+            throw new BusinessException(ErrorCode.RESERVATION_INVALID_TICKET_STATUS,
+                    "체크인할 수 없는 티켓입니다. (주문 상태: " + status + ")");
         }
         return repository.findItemByQrCodeHash(qrCodeHash).orElseThrow();
+    }
+
+    /**
+     * 결제 승인(PaymentConfirmedEvent) 시 호출 — PENDING 주문을 CONFIRMED로 전환한다.
+     * 이미 다른 상태로 바뀌었거나 존재하지 않는 주문이면 조용히 무시한다(이벤트는 재전달·중복
+     * 처리될 수 있으므로 리스너가 예외 없이 멱등하게 동작해야 한다).
+     */
+    @Transactional
+    public void confirmOrder(String orderId) {
+        repository.confirmOrderIfPending(orderId, OffsetDateTime.now(clock));
+    }
+
+    /**
+     * 결제 환불(PaymentRefundedEvent) 시 호출 — CONFIRMED 주문을 REFUNDED로 전환하고,
+     * 주문 시점에 차감했던 티켓 재고를 되돌린다. 이미 다른 상태로 바뀌었거나 존재하지 않는
+     * 주문이면 조용히 무시한다(이벤트 재전달에 안전해야 할 뿐 아니라, 재고를 두 번 복원하는
+     * 사고를 막기 위해서도 이 가드가 꼭 필요하다 — 그래서 재고 복원 전에 먼저 상태 전환이
+     * 실제로 일어났는지부터 확인한다).
+     */
+    @Transactional
+    public void refundOrder(String orderId) {
+        boolean refunded = repository.refundOrderIfConfirmed(orderId, OffsetDateTime.now(clock));
+        if (!refunded) {
+            return;
+        }
+        Map<Long, Long> quantityByTicketId = repository.findItems(orderId).stream()
+                .collect(Collectors.groupingBy(ReservationOrderItem::ticketId, Collectors.counting()));
+        quantityByTicketId.forEach((ticketId, quantity) -> eventQueryPort.increaseTicketStock(ticketId, quantity.intValue()));
+    }
+
+    /**
+     * 결제 실패(PaymentFailedEvent) 시 호출 — PENDING 주문을 CANCELLED로 전환하고, 주문 시점에
+     * 차감했던 티켓 재고를 되돌린다. 결제 시도 자체가 실패한 게 확정된 상황이라 보정 스케쥴러의
+     * 유휴시간(10~15분)을 기다릴 이유가 없어 즉시 처리한다. refundOrder와 동일하게, 이미 다른
+     * 상태로 바뀌었거나 존재하지 않는 주문이면 조용히 무시한다(이벤트 재전달 안전성 + 재고 이중 복원 방지).
+     */
+    @Transactional
+    public void cancelOrder(String orderId) {
+        boolean cancelled = repository.cancelOrderIfPending(orderId, OffsetDateTime.now(clock));
+        if (!cancelled) {
+            return;
+        }
+        Map<Long, Long> quantityByTicketId = repository.findItems(orderId).stream()
+                .collect(Collectors.groupingBy(ReservationOrderItem::ticketId, Collectors.counting()));
+        quantityByTicketId.forEach((ticketId, quantity) -> eventQueryPort.increaseTicketStock(ticketId, quantity.intValue()));
     }
 
     /**
@@ -199,6 +257,8 @@ public class ReservationService implements ReservationQueryPort {
     public record OrderDetail(ReservationOrder order, List<ReservationOrderItem> items) {}
 
     public record OrderWithTickets(ReservationOrder order, List<TicketQuantity> ticketQuantities) {}
+
+    public record MyOrdersPage(List<OrderWithTickets> orders, int page, int size, long totalElements) {}
 
     public record EventReservationSummary(
             long eventId, long totalOrders, Map<OrderStatus, Long> countsByStatus) {}

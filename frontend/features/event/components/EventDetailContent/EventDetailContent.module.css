@@ -61,7 +61,7 @@
 
 @media (min-width: 1024px) {
   .mainGrid {
-    grid-template-columns: 440px 1fr;
+    grid-template-columns: 680px 1fr;
     gap: 40px;
   }
 }

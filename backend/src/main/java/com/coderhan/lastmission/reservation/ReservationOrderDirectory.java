@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface ReservationOrderDirectory {
     /** orderId에 해당하는 주문의 총액을 조회한다. 존재하지 않는 주문이면 빈 Optional. */
     Optional<BigDecimal> findOrderAmount(String orderId);
+    /** orderId에 해당하는 주문이 속한 행사 ID를 조회한다. 존재하지 않는 주문이면 빈 Optional. */
+    Optional<Long> findEventIdByOrderId(String orderId);
     /**
      * 이 행사에 속한 모든 주문 ID를 조회한다(Payment 도메인이 정산 대상 매출을 계산할 때 사용).
      * 상태(PENDING/CONFIRMED/CANCELLED/REFUNDED) 구분 없이 전부 반환한다 — 실제 결제 여부는

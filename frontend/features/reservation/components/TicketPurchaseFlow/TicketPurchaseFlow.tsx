@@ -5,6 +5,7 @@ import { CheckCircle2, Ticket as TicketIcon, Users } from "lucide-react";
 import { TicketSelectionPanel } from "../TicketSelectionPanel";
 import type { TicketSelection, TicketTypeOption } from "../TicketSelectionPanel";
 import { useCreateReservationOrderMutation } from "../../api/reservationApi";
+import { queryErrorMessage } from "@/features/store/api/queryError";
 import { useWaitingRoom } from "../../hooks/useWaitingRoom";
 import type { OrderDetail } from "../../types/reservation";
 import styles from "./TicketPurchaseFlow.module.css";
@@ -38,7 +39,7 @@ export function TicketPurchaseFlow({ eventId, ticketTypes }: TicketPurchaseFlowP
       setOrder(detail);
       setPhase("success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "주문 생성에 실패했습니다.");
+      setError(queryErrorMessage(e, "주문 생성에 실패했습니다."));
       setPhase("selecting");
     }
   }

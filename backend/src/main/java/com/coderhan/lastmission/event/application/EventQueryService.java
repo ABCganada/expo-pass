@@ -74,7 +74,7 @@ public class EventQueryService {
     /**
      * 행사 상세 조회.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public EventDetail getEventDetail(long id, long viewerUserId) {
         LocalDate today = LocalDate.now(clock);
 

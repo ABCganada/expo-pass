@@ -37,11 +37,17 @@ interface EventDetailHeaderProps {
   eventId: string;
   detail: AdminEventDetail;
   onStatusChanged: (message: string) => void;
+  basePath?: string;
 }
 
 type DialogState = "none" | "publishInvalid" | "confirmPublish" | "confirmCancel";
 
-export function EventDetailHeader({ eventId, detail, onStatusChanged }: EventDetailHeaderProps) {
+export function EventDetailHeader({
+  eventId,
+  detail,
+  onStatusChanged,
+  basePath = "/admin/events",
+}: EventDetailHeaderProps) {
   const router = useRouter();
   const [changeStatus, { isLoading }] = useChangeAdminEventStatusMutation();
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +79,7 @@ export function EventDetailHeader({ eventId, detail, onStatusChanged }: EventDet
 
   return (
     <header className={styles.header}>
-      <button type="button" className={styles.backButton} onClick={() => router.push("/admin/events")}>
+      <button type="button" className={styles.backButton} onClick={() => router.push(basePath)}>
         <ArrowLeft size={16} />
         목록으로
       </button>

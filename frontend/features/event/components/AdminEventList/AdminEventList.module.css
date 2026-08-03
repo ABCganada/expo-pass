@@ -2,13 +2,13 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding-bottom: 40px;
+  padding: 32px 32px 40px;
 }
 
 .header {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
 }
@@ -39,7 +39,6 @@
   align-items: stretch;
   gap: 8px;
   min-width: 160px;
-  margin-top: 20px;
 }
 
 .primaryButton,
@@ -68,7 +67,7 @@
 }
 
 .secondaryButton {
-  padding: 8px 16px;
+  padding: 12px 18px;
   border: 1px solid var(--color-border);
   background: var(--color-card-background);
   color: var(--color-text-secondary);
