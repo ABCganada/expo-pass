@@ -1,10 +1,12 @@
 package com.coderhan.lastmission.reservation.infrastructure.persistence;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import com.coderhan.lastmission.reservation.domain.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -14,6 +16,24 @@ interface ReservationOrderJpaRepository extends JpaRepository<ReservationOrderEn
             + "AND (:status IS NULL OR o.status = :status) ORDER BY o.reservedAt DESC")
     Page<ReservationOrderEntity> findByUserIdAndOptionalStatus(
             @Param("userId") Long userId, @Param("status") OrderStatus status, Pageable pageable);
+
+    // 결제 승인(PaymentConfirmedEvent) 시 PENDING → CONFIRMED 전환. 이미 다른 상태면 0건 갱신(멱등).
+    @Modifying
+    @Query("""
+            UPDATE ReservationOrderEntity o
+            SET o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED, o.updatedAt = :now
+            WHERE o.orderId = :orderId AND o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.PENDING
+            """)
+    int confirmIfPending(@Param("orderId") String orderId, @Param("now") OffsetDateTime now);
+
+    // 결제 환불(PaymentRefundedEvent) 시 CONFIRMED → REFUNDED 전환. 이미 다른 상태면 0건 갱신(멱등).
+    @Modifying
+    @Query("""
+            UPDATE ReservationOrderEntity o
+            SET o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.REFUNDED, o.updatedAt = :now
+            WHERE o.orderId = :orderId AND o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED
+            """)
+    int refundIfConfirmed(@Param("orderId") String orderId, @Param("now") OffsetDateTime now);
 
     // 관리자 예약자 명단 조회용
     List<ReservationOrderEntity> findByEventIdOrderByReservedAtDesc(Long eventId);

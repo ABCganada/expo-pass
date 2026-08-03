@@ -18,6 +18,11 @@ class JpaReservationOrderDirectory implements ReservationOrderDirectory {
     }
 
     @Override
+    public Optional<Long> findEventIdByOrderId(String orderId) {
+        return orderJpaRepository.findById(orderId).map(ReservationOrderEntity::getEventId);
+    }
+
+    @Override
     public List<String> findOrderIdsByEventId(long eventId) {
         return orderJpaRepository.findOrderIdByEventId(eventId);
     }
