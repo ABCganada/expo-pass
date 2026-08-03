@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -39,78 +40,121 @@ class TicketServiceTest {
     @Mock EventRepository eventRepository;
     @Mock TicketRepository ticketRepository;
     @Mock ReservationQueryPort reservationQueryPort;
+    @Spy EventOwnershipValidator ownershipValidator = new EventOwnershipValidator();
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks TicketService service;
 
-    // ── createTicket ────────────────────────────────────────────────────────
+    // ── createTicketAsManager / createTicketAsAdmin ────────────────────────────
 
     @Test
-    void createTicket_담당_매니저는_생성_가능() {
+    void createTicketAsManager_담당_매니저는_생성_가능() {
         Event event = event(EventStatus.PUBLISHED);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(ticketRepository.save(org.mockito.ArgumentMatchers.any(Ticket.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Ticket created = service.createTicket(EVENT_ID, MANAGER_ID, false, createCommand());
+        Ticket created = service.createTicketAsManager(EVENT_ID, MANAGER_ID, createCommand());
 
         assertThat(created.getName()).isEqualTo("일반권");
         assertThat(created.getQuantityRemaining()).isEqualTo(created.getQuantityTotal());
     }
 
     @Test
-    void createTicket_담당이_아닌_매니저는_거부() {
+    void createTicketAsManager_담당이_아닌_매니저는_거부() {
         Event event = event(EventStatus.PUBLISHED);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> service.createTicket(EVENT_ID, OTHER_MANAGER_ID, false, createCommand()))
+        assertThatThrownBy(() -> service.createTicketAsManager(EVENT_ID, OTHER_MANAGER_ID, createCommand()))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
     }
 
     @Test
-    void createTicket_행사가_없으면_예외() {
+    void createTicketAsManager_행사가_없으면_예외() {
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.createTicket(EVENT_ID, MANAGER_ID, false, createCommand()))
+        assertThatThrownBy(() -> service.createTicketAsManager(EVENT_ID, MANAGER_ID, createCommand()))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_NOT_FOUND));
     }
 
-    // ── updateTicket ─────────────────────────────────────────────────────────
+    @Test
+    void createTicketAsManager_취소된_행사면_거부() {
+        Event event = event(EventStatus.CANCELLED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.createTicketAsManager(EVENT_ID, MANAGER_ID, createCommand()))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.TICKET_NOT_MUTABLE));
+    }
 
     @Test
-    void updateTicket_존재하면_필드_반영() {
+    void createTicketAsManager_종료된_행사면_거부() {
+        Event event = endedPublishedEvent();
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.createTicketAsManager(EVENT_ID, MANAGER_ID, createCommand()))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.TICKET_NOT_MUTABLE));
+    }
+
+    @Test
+    void createTicketAsAdmin_소유권_무관하게_생성_가능() {
+        Event event = event(EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+        when(ticketRepository.save(org.mockito.ArgumentMatchers.any(Ticket.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Ticket created = service.createTicketAsAdmin(EVENT_ID, createCommand());
+
+        assertThat(created.getName()).isEqualTo("일반권");
+    }
+
+    @Test
+    void createTicketAsAdmin_취소된_행사면_거부() {
+        Event event = event(EventStatus.CANCELLED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.createTicketAsAdmin(EVENT_ID, createCommand()))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.TICKET_NOT_MUTABLE));
+    }
+
+    // ── updateTicketAsManager ────────────────────────────────────────────────
+
+    @Test
+    void updateTicketAsManager_존재하면_필드_반영() {
         Event event = event(EventStatus.PUBLISHED);
         Ticket ticket = ticket(event, 100, 0);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(ticketRepository.findNotDeletedByIdAndEventId(TICKET_ID, EVENT_ID)).thenReturn(Optional.of(ticket));
 
-        Ticket updated = service.updateTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false, updateCommand());
+        Ticket updated = service.updateTicketAsManager(EVENT_ID, TICKET_ID, MANAGER_ID, updateCommand());
 
         assertThat(updated.getName()).isEqualTo("수정된 티켓");
         assertThat(updated.getPrice()).isEqualTo(20000);
     }
 
     @Test
-    void updateTicket_삭제된_티켓은_찾지_못함() {
+    void updateTicketAsManager_삭제된_티켓은_찾지_못함() {
         Event event = event(EventStatus.PUBLISHED);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(ticketRepository.findNotDeletedByIdAndEventId(TICKET_ID, EVENT_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.updateTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false, updateCommand()))
+        assertThatThrownBy(() -> service.updateTicketAsManager(EVENT_ID, TICKET_ID, MANAGER_ID, updateCommand()))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.TICKET_NOT_FOUND));
     }
 
     @Test
-    void updateTicket_판매_시작_전에는_총수량_변경_가능() {
+    void updateTicketAsManager_판매_시작_전에는_총수량_변경_가능() {
         Event event = event(EventStatus.PUBLISHED);
         Ticket ticket = ticket(event, 100, 0); // SALE_START는 clock 기준 미래
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(ticketRepository.findNotDeletedByIdAndEventId(TICKET_ID, EVENT_ID)).thenReturn(Optional.of(ticket));
 
-        Ticket updated = service.updateTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false,
+        Ticket updated = service.updateTicketAsManager(EVENT_ID, TICKET_ID, MANAGER_ID,
                 new UpdateTicketCommand("수정된 티켓", 20000, 150, 4, SALE_START, SALE_END));
 
         assertThat(updated.getQuantityTotal()).isEqualTo(150);
@@ -118,14 +162,14 @@ class TicketServiceTest {
     }
 
     @Test
-    void updateTicket_판매_시작_후에는_총수량_변경_불가() {
+    void updateTicketAsManager_판매_시작_후에는_총수량_변경_불가() {
         Event event = event(EventStatus.PUBLISHED);
         Instant pastSaleStart = Instant.parse("2026-07-01T00:00:00Z"); // clock(2026-07-23) 기준 이미 시작됨
         Ticket ticket = ticketWithSaleStart(event, 100, pastSaleStart);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(ticketRepository.findNotDeletedByIdAndEventId(TICKET_ID, EVENT_ID)).thenReturn(Optional.of(ticket));
 
-        assertThatThrownBy(() -> service.updateTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false,
+        assertThatThrownBy(() -> service.updateTicketAsManager(EVENT_ID, TICKET_ID, MANAGER_ID,
                 new UpdateTicketCommand("수정된 티켓", 20000, 150, 4, pastSaleStart, SALE_END)))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
@@ -133,44 +177,44 @@ class TicketServiceTest {
     }
 
     @Test
-    void updateTicket_판매_시작_후에도_총수량이_동일하면_허용() {
+    void updateTicketAsManager_판매_시작_후에도_총수량이_동일하면_허용() {
         Event event = event(EventStatus.PUBLISHED);
         Instant pastSaleStart = Instant.parse("2026-07-01T00:00:00Z");
         Ticket ticket = ticketWithSaleStart(event, 100, pastSaleStart);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(ticketRepository.findNotDeletedByIdAndEventId(TICKET_ID, EVENT_ID)).thenReturn(Optional.of(ticket));
 
-        Ticket updated = service.updateTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false,
+        Ticket updated = service.updateTicketAsManager(EVENT_ID, TICKET_ID, MANAGER_ID,
                 new UpdateTicketCommand("수정된 티켓", 20000, 100, 4, pastSaleStart, SALE_END));
 
         assertThat(updated.getName()).isEqualTo("수정된 티켓");
         assertThat(updated.getQuantityTotal()).isEqualTo(100);
     }
 
-    // ── deleteTicket ─────────────────────────────────────────────────────────
+    // ── deleteTicketAsManager ────────────────────────────────────────────────
 
     @Test
-    void deleteTicket_예약_이력이_없으면_소프트_삭제() {
+    void deleteTicketAsManager_예약_이력이_없으면_소프트_삭제() {
         Event event = event(EventStatus.PUBLISHED);
         Ticket ticket = ticket(event, 100, 0);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(ticketRepository.findNotDeletedByIdAndEventId(TICKET_ID, EVENT_ID)).thenReturn(Optional.of(ticket));
 
-        service.deleteTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false);
+        service.deleteTicketAsManager(EVENT_ID, TICKET_ID, MANAGER_ID);
 
         assertThat(ticket.isDeleted()).isTrue();
         assertThat(ticket.getDeletedAt()).isEqualTo(Instant.now(clock));
     }
 
     @Test
-    void deleteTicket_예약_이력이_있으면_거부되고_삭제되지_않음() {
+    void deleteTicketAsManager_예약_이력이_있으면_거부되고_삭제되지_않음() {
         Event event = event(EventStatus.PUBLISHED);
         Ticket ticket = ticket(event, 100, 0);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(ticketRepository.findNotDeletedByIdAndEventId(TICKET_ID, EVENT_ID)).thenReturn(Optional.of(ticket));
         when(reservationQueryPort.hasActiveReservationsForTicket(TICKET_ID)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.deleteTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false))
+        assertThatThrownBy(() -> service.deleteTicketAsManager(EVENT_ID, TICKET_ID, MANAGER_ID))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
         assertThat(ticket.isDeleted()).isFalse();
@@ -200,26 +244,26 @@ class TicketServiceTest {
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_NOT_FOUND));
     }
 
-    // ── getAdminTickets ──────────────────────────────────────────────────────
+    // ── getManagerTickets / getAdminTickets ─────────────────────────────────
 
     @Test
-    void getAdminTickets_ADMIN은_전체_행사_조회_가능() {
+    void getAdminTickets_전체_행사_조회_가능() {
         Event event = event(EventStatus.PUBLISHED);
         Ticket ticket = ticket(event, 100, 0);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(ticketRepository.findAllByEventIdOrderByCreatedAtAsc(EVENT_ID)).thenReturn(List.of(ticket));
 
-        List<Ticket> tickets = service.getAdminTickets(EVENT_ID, OTHER_MANAGER_ID, true);
+        List<Ticket> tickets = service.getAdminTickets(EVENT_ID);
 
         assertThat(tickets).containsExactly(ticket);
     }
 
     @Test
-    void getAdminTickets_담당이_아닌_매니저는_거부() {
+    void getManagerTickets_담당이_아닌_매니저는_거부() {
         Event event = event(EventStatus.PUBLISHED);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> service.getAdminTickets(EVENT_ID, OTHER_MANAGER_ID, false))
+        assertThatThrownBy(() -> service.getManagerTickets(EVENT_ID, OTHER_MANAGER_ID))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
     }
@@ -235,6 +279,14 @@ class TicketServiceTest {
         if (status == EventStatus.CANCELLED) {
             event.cancel();
         }
+        return event;
+    }
+
+    /** clock 기준 이미 종료일이 지난 PUBLISHED 행사 */
+    private Event endedPublishedEvent() {
+        Event event = event(EventStatus.PUBLISHED);
+        ReflectionTestUtils.setField(event, "startDate", LocalDate.parse("2026-01-01"));
+        ReflectionTestUtils.setField(event, "endDate", LocalDate.parse("2026-01-31"));
         return event;
     }
 
