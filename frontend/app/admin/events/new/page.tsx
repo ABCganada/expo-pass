@@ -102,13 +102,10 @@ export default function NewEventPage() {
 
   return (
     <section className={styles.page}>
-      <header className={styles.header}>
-        <button type="button" className={styles.backButton} onClick={() => router.push("/admin/events")}>
-          <ArrowLeft size={16} />
-          목록으로
-        </button>
-        <h1 className={styles.title}>새 행사 등록</h1>
-      </header>
+      <button type="button" className={styles.backButton} onClick={() => router.push("/admin/events")}>
+        <ArrowLeft size={16} />
+        목록으로
+      </button>
 
       <StepIndicator currentStep={step} maxReachedStep={maxReachedStep} onStepClick={goToStep} />
 
