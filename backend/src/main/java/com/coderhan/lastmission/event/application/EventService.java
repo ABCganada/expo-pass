@@ -2,7 +2,6 @@ package com.coderhan.lastmission.event.application;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Objects;
 
 import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
@@ -107,24 +106,49 @@ public class EventService {
     }
 
     /**
-     * 행사 상태 변경 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 게시 승인 - ADMIN 전용. DRAFT → PUBLISHED.
      */
     @Transactional
-    public Event changeStatus(long eventId, long callerUserId, boolean isAdmin, EventStatus targetStatus) {
+    public Event publishEvent(long eventId) {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        validateEventAccess(event, callerUserId, isAdmin, "상태를 변경");
-        if (event.getStatus() == EventStatus.CANCELLED) {
-            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "취소된 행사는 상태를 변경할 수 없습니다.");
+        if (event.getStatus() != EventStatus.DRAFT) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "초안 상태의 행사만 게시할 수 있습니다.");
         }
-        switch (targetStatus) {
-            case PUBLISHED -> {
-                validatePublishable(event);
-                event.publish();
-            }
-            case CANCELLED -> event.cancel();
-            case DRAFT -> throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "DRAFT로는 되돌릴 수 없습니다.");
+        validatePublishable(event);
+        event.publish();
+        return event;
+    }
+
+    /**
+     * 취소 - MANAGER 전용, 본인이 담당(manager_id)하는 행사만. PUBLISHED → CANCELLED.
+     */
+    @Transactional
+    public Event cancelEventAsManager(long eventId, long callerUserId) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        ownershipValidator.requireOwner(event, callerUserId, "취소");
+        return cancelEvent(event);
+    }
+
+    /**
+     * 취소 - ADMIN 전용, 전체. PUBLISHED → CANCELLED.
+     */
+    @Transactional
+    public Event cancelEventAsAdmin(long eventId) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        return cancelEvent(event);
+    }
+
+    private Event cancelEvent(Event event) {
+        if (event.getStatus() != EventStatus.PUBLISHED) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "게시된 행사만 취소할 수 있습니다.");
         }
+        if (event.isEnded(clock)) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "이미 종료된 행사는 취소할 수 없습니다.");
+        }
+        event.cancel();
         return event;
     }
 
@@ -136,13 +160,6 @@ public class EventService {
         int updated = eventRepository.increaseViewCount(eventId);
         if (updated == 0) {
             throw new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다.");
-        }
-    }
-
-    /** ADMIN은 전체 허용, 아니면 본인이 담당(manager_id)하는 행사인지 확인 */
-    private void validateEventAccess(Event event, long callerUserId, boolean isAdmin, String action) {
-        if (!isAdmin && !Objects.equals(event.getManagerId(), callerUserId)) {
-            throw new BusinessException(ErrorCode.EVENT_ACCESS_DENIED, "본인이 담당하는 행사만 " + action + "할 수 있습니다.");
         }
     }
 

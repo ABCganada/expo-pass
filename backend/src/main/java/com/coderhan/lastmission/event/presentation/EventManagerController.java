@@ -11,13 +11,12 @@ import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.event.presentation.response.EventManagementDetailResponse;
 import com.coderhan.lastmission.event.presentation.response.EventManagementListResponse;
+import com.coderhan.lastmission.event.presentation.response.EventSummaryResponse;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -53,27 +52,18 @@ class EventManagerController {
     }
 
     @PatchMapping("/api/v1/manager/events/{eventId}")
-    ApiResponse<UpdateEventResponse> updateEvent(@PathVariable long eventId,
+    ApiResponse<EventSummaryResponse> updateEvent(@PathVariable long eventId,
             @RequestBody UpdateEventRequest request,
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         Event event = eventService.updateEventAsManager(eventId, principal.userId(), request.toCommand());
-        return ApiResponse.success(UpdateEventResponse.from(event));
+        return ApiResponse.success(EventSummaryResponse.from(event));
     }
 
-    @PatchMapping("/api/v1/manager/events/{eventId}/status")
-    ApiResponse<UpdateEventResponse> changeStatus(@PathVariable long eventId,
-            @RequestBody ChangeStatusRequest request,
-            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
-        Event event = eventService.changeStatus(
-                eventId, principal.userId(), isAdmin(authentication), request.toEventStatus());
-        return ApiResponse.success(UpdateEventResponse.from(event));
-    }
-
-    private static boolean isAdmin(Authentication authentication) {
-        return authentication != null && authentication.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch("ROLE_ADMIN"::equals);
+    @PatchMapping("/api/v1/manager/events/{eventId}/cancel")
+    ApiResponse<EventSummaryResponse> cancelEvent(@PathVariable long eventId,
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        Event event = eventService.cancelEventAsManager(eventId, principal.userId());
+        return ApiResponse.success(EventSummaryResponse.from(event));
     }
 
     private static EventStatus parseStatus(String status) {
@@ -102,25 +92,4 @@ class EventManagerController {
         }
     }
 
-    record ChangeStatusRequest(String status) {
-        EventStatus toEventStatus() {
-            try {
-                return EventStatus.valueOf(status.toUpperCase(Locale.ROOT));
-            } catch (IllegalArgumentException | NullPointerException _) {
-                throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST,
-                        "status 값이 올바르지 않습니다. (PUBLISHED, DRAFT, CANCELLED 중 하나여야 합니다.)");
-            }
-        }
-    }
-
-    record UpdateEventResponse(String id, String title, String categoryName, String managerId, EventStatus status) {
-        static UpdateEventResponse from(Event event) {
-            return new UpdateEventResponse(
-                    Long.toString(event.getId()),
-                    event.getTitle(),
-                    event.getCategory().getName(),
-                    Long.toString(event.getManagerId()),
-                    event.getStatus());
-        }
-    }
 }

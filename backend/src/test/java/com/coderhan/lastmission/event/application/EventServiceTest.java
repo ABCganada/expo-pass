@@ -7,8 +7,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Optional;
 
@@ -16,6 +18,7 @@ import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventCategory;
+import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.UserAccess;
@@ -122,6 +125,91 @@ class EventServiceTest {
     }
 
     @Test
+    void publishEvent_필수정보가_모두_있으면_게시() {
+        Event event = publishableEvent(MANAGER_ID, LocalDate.parse("2026-08-01"), LocalDate.parse("2026-08-31"));
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        Event published = service.publishEvent(EVENT_ID);
+
+        assertThat(published.getStatus()).isEqualTo(EventStatus.PUBLISHED);
+    }
+
+    @Test
+    void publishEvent_DRAFT가_아니면_거부() {
+        Event event = publishableEvent(MANAGER_ID, LocalDate.parse("2026-08-01"), LocalDate.parse("2026-08-31"));
+        ReflectionTestUtils.setField(event, "status", EventStatus.CANCELLED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.publishEvent(EVENT_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+    }
+
+    @Test
+    void publishEvent_필수정보가_없으면_거부() {
+        Event event = event(MANAGER_ID);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.publishEvent(EVENT_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+    }
+
+    @Test
+    void cancelEventAsManager_본인_담당_게시된_행사_취소() {
+        Event event = publishableEvent(MANAGER_ID, LocalDate.parse("2026-07-01"), LocalDate.parse("2026-07-31"));
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        Event cancelled = service.cancelEventAsManager(EVENT_ID, MANAGER_ID);
+
+        assertThat(cancelled.getStatus()).isEqualTo(EventStatus.CANCELLED);
+    }
+
+    @Test
+    void cancelEventAsManager_담당하지_않는_행사면_거부() {
+        Event event = publishableEvent(OTHER_MANAGER_ID, LocalDate.parse("2026-07-01"), LocalDate.parse("2026-07-31"));
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.cancelEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
+    }
+
+    @Test
+    void cancelEventAsManager_DRAFT면_거부() {
+        Event event = publishableEvent(MANAGER_ID, LocalDate.parse("2026-07-01"), LocalDate.parse("2026-07-31"));
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.cancelEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+    }
+
+    @Test
+    void cancelEventAsManager_이미_종료된_행사면_거부() {
+        Event event = publishableEvent(MANAGER_ID, LocalDate.parse("2026-01-01"), LocalDate.parse("2026-01-31"));
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.cancelEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+    }
+
+    @Test
+    void cancelEventAsAdmin_소유권_무관하게_취소() {
+        Event event = publishableEvent(OTHER_MANAGER_ID, LocalDate.parse("2026-07-01"), LocalDate.parse("2026-07-31"));
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        Event cancelled = service.cancelEventAsAdmin(EVENT_ID);
+
+        assertThat(cancelled.getStatus()).isEqualTo(EventStatus.CANCELLED);
+    }
+
+    @Test
     void changeManager_새_담당자가_MANAGER_권한이면_담당자_변경() {
         long newManagerId = 200L;
         Event event = event(MANAGER_ID);
@@ -161,6 +249,20 @@ class EventServiceTest {
         EventCategory category = new EventCategory("MUSIC", "음악", true);
         Event event = new Event("테스트 행사", category, managerId);
         ReflectionTestUtils.setField(event, "id", EVENT_ID);
+        return event;
+    }
+
+    /** 게시(publish) 필수 항목이 전부 채워진 DRAFT 상태 이벤트 */
+    private Event publishableEvent(long managerId, LocalDate startDate, LocalDate endDate) {
+        Event event = event(managerId);
+        ReflectionTestUtils.setField(event, "hostName", "주최자");
+        ReflectionTestUtils.setField(event, "venueName", "장소");
+        ReflectionTestUtils.setField(event, "address", "주소");
+        ReflectionTestUtils.setField(event, "legalDongCode", "1111000000");
+        ReflectionTestUtils.setField(event, "latitude", BigDecimal.valueOf(37.5));
+        ReflectionTestUtils.setField(event, "longitude", BigDecimal.valueOf(127.0));
+        ReflectionTestUtils.setField(event, "startDate", startDate);
+        ReflectionTestUtils.setField(event, "endDate", endDate);
         return event;
     }
 

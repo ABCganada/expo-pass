@@ -8,6 +8,7 @@ import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.event.presentation.response.EventManagementDetailResponse;
 import com.coderhan.lastmission.event.presentation.response.EventManagementListResponse;
+import com.coderhan.lastmission.event.presentation.response.EventSummaryResponse;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
@@ -64,6 +65,18 @@ class EventAdminController {
         return ApiResponse.success("담당자를 변경했습니다.", EventSummaryResponse.from(event));
     }
 
+    @PatchMapping("/api/v1/admin/events/{eventId}/publish")
+    ApiResponse<EventSummaryResponse> publishEvent(@PathVariable long eventId) {
+        Event event = eventService.publishEvent(eventId);
+        return ApiResponse.success("행사를 게시했습니다.", EventSummaryResponse.from(event));
+    }
+
+    @PatchMapping("/api/v1/admin/events/{eventId}/cancel")
+    ApiResponse<EventSummaryResponse> cancelEvent(@PathVariable long eventId) {
+        Event event = eventService.cancelEventAsAdmin(eventId);
+        return ApiResponse.success("행사를 취소했습니다.", EventSummaryResponse.from(event));
+    }
+
     private static EventStatus parseStatus(String status) {
         if (status == null || status.isBlank()) {
             return null;
@@ -100,14 +113,4 @@ class EventAdminController {
         }
     }
 
-    record EventSummaryResponse(String id, String title, String categoryName, String managerId, EventStatus status) {
-        static EventSummaryResponse from(Event event) {
-            return new EventSummaryResponse(
-                    Long.toString(event.getId()),
-                    event.getTitle(),
-                    event.getCategory().getName(),
-                    Long.toString(event.getManagerId()),
-                    event.getStatus());
-        }
-    }
 }
