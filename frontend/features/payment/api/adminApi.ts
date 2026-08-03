@@ -27,6 +27,7 @@ const adminApi = baseApi.injectEndpoints({
       providesTags: ["Payment"],
     }),
   }),
+  overrideExisting: true,
 });
 
 export const {
