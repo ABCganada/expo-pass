@@ -19,14 +19,6 @@
   font-size: 15px;
 }
 
-.title {
-  font-size: 36px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  line-height: 1.3;
-  margin: 0 0 8px;
-}
-
 .subtitle {
   font-size: 16px;
   color: var(--color-text-secondary);
@@ -58,6 +50,16 @@
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: #fff;
+}
+
+.ticketTypeLabel {
+  margin: 20px 0 0;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .card {
@@ -128,7 +130,7 @@
 }
 
 .counter {
-  margin: 20px 0 4px;
+  margin: 12px 0 4px;
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-secondary);
@@ -187,10 +189,6 @@
 @media (max-width: 767px) {
   .page {
     padding: 16px;
-  }
-
-  .title {
-    font-size: 28px;
   }
 
   .card {

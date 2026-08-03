@@ -15,6 +15,8 @@ import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import com.coderhan.lastmission.user.UserRef;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,8 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 관리자 전용 예약 관리 API — 체크인, 예약자 명단, 행사별 예약 현황.
  *
- * <p>경로가 {@code /api/v1/manager/**} 라 SecurityConfig 에서 ROLE_ADMIN, ROLE_MANAGER 가 접근 가능하다
- * (박람회관리자가 자신이 담당하는 행사의 예약을 관리하기 위한 API — 컨트롤러엔 별도 권한 체크 코드 없음).</p>
+ * <p>경로가 {@code /api/v1/manager/**} 라 SecurityConfig 에서 ROLE_ADMIN, ROLE_MANAGER 가 접근 가능하다.
+ * 그 위에서 ADMIN이 아닌 MANAGER는 본인이 담당하는 행사만 접근할 수 있도록
+ * {@code ReservationService}가 매 호출마다 소유권을 검증한다(EventManagerController와 동일한 방식).</p>
  */
 @RestController
 @RequestMapping("/api/v1/manager/reservations")
@@ -37,15 +40,19 @@ class ReservationManagerController {
 
     @PostMapping("/checkin")
     ApiResponse<CheckinResponse> checkin(@RequestBody CheckinRequest request,
-                                         @AuthenticationPrincipal LastMissionPrincipal principal) {
-        ReservationOrderItem item = reservationService.checkin(principal.userId(), request.qrCodeHash());
+                                         @AuthenticationPrincipal LastMissionPrincipal principal,
+                                         Authentication authentication) {
+        ReservationOrderItem item = reservationService.checkin(
+                principal.userId(), isAdmin(authentication), request.qrCodeHash());
         return ApiResponse.success(CheckinResponse.from(item));
     }
 
     /** 예약자 명단 조회. 유저 이름/이메일까지 채워서 내려준다. */
     @GetMapping("/events/{eventId}/attendees")
-    ApiResponse<List<AttendeeResponse>> getAttendees(@PathVariable String eventId) {
-        List<AttendeeResponse> attendees = reservationService.getEventAttendees(parseEventId(eventId)).stream()
+    ApiResponse<List<AttendeeResponse>> getAttendees(@PathVariable String eventId,
+            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+        List<AttendeeResponse> attendees = reservationService
+                .getEventAttendees(parseEventId(eventId), principal.userId(), isAdmin(authentication)).stream()
                 .map(info -> AttendeeResponse.from(info.order(), info.userRef()))
                 .toList();
         return ApiResponse.success(attendees);
@@ -53,17 +60,26 @@ class ReservationManagerController {
 
     /** 행사별 예약 현황(상태별 건수). */
     @GetMapping("/events/{eventId}/summary")
-    ApiResponse<EventSummaryResponse> getEventSummary(@PathVariable String eventId) {
-        ReservationService.EventReservationSummary summary =
-                reservationService.getEventSummary(parseEventId(eventId));
+    ApiResponse<EventSummaryResponse> getEventSummary(@PathVariable String eventId,
+            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+        ReservationService.EventReservationSummary summary = reservationService.getEventSummary(
+                parseEventId(eventId), principal.userId(), isAdmin(authentication));
         return ApiResponse.success(EventSummaryResponse.from(summary));
     }
 
     @GetMapping("/events/{eventId}/checkin-status")
-    ApiResponse<CheckinProgressResponse> getCheckinStatus(@PathVariable String eventId){
-        CheckinProgress checkinStatus =
-                reservationService.getCheckinProgress(parseEventId(eventId));
+    ApiResponse<CheckinProgressResponse> getCheckinStatus(@PathVariable String eventId,
+            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+        CheckinProgress checkinStatus = reservationService.getCheckinProgress(
+                parseEventId(eventId), principal.userId(), isAdmin(authentication));
         return ApiResponse.success(CheckinProgressResponse.from(checkinStatus));
+    }
+
+    private static boolean isAdmin(Authentication authentication) {
+        return authentication != null && authentication.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch("ROLE_ADMIN"::equals);
     }
 
     private long parseEventId(String value) {

@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, QrCode as QrCodeIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useGetMyQrTicketsQuery } from "../../api/reservationApi";
-import { useGetEventForDisplayQuery } from "../../api/eventLookupApi";
+import { useGetEventForDisplayQuery, useGetEventTicketsForDisplayQuery } from "../../api/eventLookupApi";
 import styles from "./QrTicketContent.module.css";
 
 interface EventTabButtonProps {
@@ -37,6 +37,14 @@ export function QrTicketContent() {
   const [ticketIndex, setTicketIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
 
+  // 조기 return 전에 훅을 전부 호출해야 하므로, 로딩/빈 상태에서도 안전하게 계산해둔다.
+  const eventIds = Array.from(new Set(tickets.map((ticket) => ticket.eventId)));
+  const activeEventId = selectedEventId ?? eventIds[0];
+  const { data: eventTickets = [] } = useGetEventTicketsForDisplayQuery(activeEventId ?? "", {
+    skip: !activeEventId,
+  });
+  const ticketNameById = new Map(eventTickets.map((t) => [t.id, t.name]));
+
   if (isLoading) {
     return (
       <div className={styles.page}>
@@ -61,8 +69,6 @@ export function QrTicketContent() {
     );
   }
 
-  const eventIds = Array.from(new Set(tickets.map((ticket) => ticket.eventId)));
-  const activeEventId = selectedEventId ?? eventIds[0];
   const groupTickets = tickets.filter((ticket) => ticket.eventId === activeEventId);
   const safeIndex = Math.min(ticketIndex, groupTickets.length - 1);
   const ticket = groupTickets[safeIndex];
@@ -93,7 +99,6 @@ export function QrTicketContent() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>QR 티켓</h1>
         <p className={styles.subtitle}>입장 시 이 화면을 스캐너에 보여주세요.</p>
       </header>
 
@@ -137,6 +142,7 @@ export function QrTicketContent() {
         </button>
       </div>
 
+      <p className={styles.ticketTypeLabel}>{ticketNameById.get(ticket.ticketId) ?? "티켓"}</p>
       <p className={styles.counter}>
         {safeIndex + 1} / {groupTickets.length}
       </p>

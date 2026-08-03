@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { MoreVertical } from "lucide-react";
+import { ConfirmDialog } from "@/features/event/components/ConfirmDialog/ConfirmDialog";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import { useGetPaymentQuery, useRequestRefundMutation } from "../../api/paymentApi";
 import type { PaymentStatus } from "../../types/payment";
@@ -38,11 +40,23 @@ export function PaymentDetailContent({ orderId }: PaymentDetailContentProps) {
   const [requestRefund, { isLoading: isRefunding }] = useRequestRefundMutation();
   const [refundMessage, setRefundMessage] = useState<string | null>(null);
   const [refundError, setRefundError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   const handleRefund = async () => {
     if (!payment) return;
-    const confirmed = window.confirm("이 결제를 환불 신청할까요?");
-    if (!confirmed) return;
 
     setRefundMessage(null);
     setRefundError(null);
@@ -85,9 +99,38 @@ export function PaymentDetailContent({ orderId }: PaymentDetailContentProps) {
     <div className={styles.panel}>
       <div className={styles.header}>
         <h2 className={styles.title}>결제 정보</h2>
-        <span className={styles.badge} data-status={payment.status}>
-          {STATUS_LABEL[payment.status]}
-        </span>
+        <div className={styles.headerRight}>
+          <span className={styles.badge} data-status={payment.status}>
+            {STATUS_LABEL[payment.status]}
+          </span>
+          {payment.status === "COMPLETED" && (
+            <div className={styles.menuWrapper} ref={menuRef}>
+              <button
+                type="button"
+                className={styles.menuButton}
+                aria-label="더보기"
+                onClick={() => setMenuOpen((v) => !v)}
+              >
+                <MoreVertical size={18} />
+              </button>
+              {menuOpen && (
+                <div className={styles.menu}>
+                  <button
+                    type="button"
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowRefundConfirm(true);
+                    }}
+                    disabled={isRefunding}
+                  >
+                    {isRefunding ? "환불 신청 중..." : "환불 신청"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className={styles.rows}>
@@ -99,21 +142,21 @@ export function PaymentDetailContent({ orderId }: PaymentDetailContentProps) {
         ))}
       </div>
 
-      {payment.status === "COMPLETED" && (
-        <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.refundButton}
-            onClick={handleRefund}
-            disabled={isRefunding}
-          >
-            {isRefunding ? "환불 신청 중..." : "환불 신청"}
-          </button>
-        </div>
-      )}
-
       {refundMessage && <p className={styles.successMessage}>{refundMessage}</p>}
       {refundError && <p className={styles.errorMessage}>{refundError}</p>}
+
+      {showRefundConfirm && (
+        <ConfirmDialog
+          title="이 결제를 환불 신청할까요?"
+          confirmLabel="환불 신청"
+          danger
+          onConfirm={() => {
+            setShowRefundConfirm(false);
+            void handleRefund();
+          }}
+          onCancel={() => setShowRefundConfirm(false)}
+        />
+      )}
     </div>
   );
 }

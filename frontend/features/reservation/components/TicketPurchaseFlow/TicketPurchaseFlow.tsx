@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Ticket as TicketIcon, Users } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, Ticket as TicketIcon, Users } from "lucide-react";
 import { PaymentCheckoutButton } from "@/features/payment/components/PaymentCheckoutButton";
 import { TicketSelectionPanel } from "../TicketSelectionPanel";
 import type { TicketSelection, TicketTypeOption } from "../TicketSelectionPanel";
@@ -11,7 +12,7 @@ import { useWaitingRoom } from "../../hooks/useWaitingRoom";
 import type { OrderDetail } from "../../types/reservation";
 import styles from "./TicketPurchaseFlow.module.css";
 
-type Phase = "idle" | "waiting" | "selecting" | "submitting" | "redirecting";
+type Phase = "idle" | "waiting" | "selecting" | "submitting" | "redirecting" | "confirmed";
 
 interface TicketPurchaseFlowProps {
   eventId: string;
@@ -47,8 +48,13 @@ export function TicketPurchaseFlow({ eventId, ticketTypes }: TicketPurchaseFlowP
       });
       const detail = await createOrder({ eventId, items }).unwrap();
       setOrder(detail);
-      hasAutoClicked.current = false;
-      setPhase("redirecting");
+      if (detail.status === "CONFIRMED") {
+        // 무료(0원) 주문은 결제 자체가 없어 서버가 바로 CONFIRMED로 만들어준다 — 토스로 갈 필요가 없다.
+        setPhase("confirmed");
+      } else {
+        hasAutoClicked.current = false;
+        setPhase("redirecting");
+      }
     } catch (e) {
       setError(queryErrorMessage(e, "주문 생성에 실패했습니다."));
       setPhase("selecting");
@@ -112,6 +118,21 @@ export function TicketPurchaseFlow({ eventId, ticketTypes }: TicketPurchaseFlowP
                 successUrl="/reservations/payment/success"
                 failUrl="/reservations/payment/fail"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === "confirmed" && order && (
+        <div className={styles.overlay}>
+          <div className={styles.modal}>
+            <div className={styles.successPanel}>
+              <CheckCircle2 size={40} className={styles.successIcon} />
+              <p className={styles.waitingTitle}>예약이 완료되었습니다</p>
+              <p className={styles.waitingRank}>무료 티켓이라 결제 없이 바로 확정됐어요.</p>
+              <Link href="/reservations" className={styles.confirmedLink}>
+                예약 내역 바로가기
+              </Link>
             </div>
           </div>
         </div>

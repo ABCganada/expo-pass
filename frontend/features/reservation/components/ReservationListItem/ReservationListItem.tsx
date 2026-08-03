@@ -35,6 +35,8 @@ export function ReservationListItem({ order, onViewEvent, onViewPayment }: Reser
   const { data: event } = useGetEventForDisplayQuery(order.eventId);
   const { data: tickets = [] } = useGetEventTicketsForDisplayQuery(order.eventId);
 
+  const thumbnailUrl = event?.images.find((image) => image.imageType === "THUMBNAIL")?.imageUrl ?? null;
+
   const ticketNameById = new Map(tickets.map((ticket) => [ticket.id, ticket.name]));
   const ticketLines = order.ticketQuantities.map((tq) => ({
     label: ticketNameById.get(tq.ticketId) ?? `티켓 #${tq.ticketId}`,
@@ -47,9 +49,12 @@ export function ReservationListItem({ order, onViewEvent, onViewPayment }: Reser
 
   return (
     <article className={styles.card}>
-      {/* TODO: Event 도메인에서 박람회 썸네일 이미지가 오면 교체 */}
       <div className={styles.thumbnail}>
-        <Building2 size={40} />
+        {thumbnailUrl ? (
+          <img src={thumbnailUrl} alt="" className={styles.thumbnailImage} />
+        ) : (
+          <Building2 size={40} />
+        )}
       </div>
 
       <div className={styles.content}>
@@ -73,6 +78,7 @@ export function ReservationListItem({ order, onViewEvent, onViewPayment }: Reser
       <div className={styles.divider} />
 
       <div className={styles.ticketInfo}>
+        {order.totalAmount === 0 && <span className={styles.freeBadge}>무료 티켓</span>}
         <p className={styles.ticketInfoTitle}>티켓 정보</p>
         {ticketLines.map((line) => (
           <div key={line.label} className={styles.ticketLine}>
@@ -90,10 +96,12 @@ export function ReservationListItem({ order, onViewEvent, onViewPayment }: Reser
           박람회 보기
           <ExternalLink size={14} />
         </button>
-        <button type="button" className={styles.paymentButton} onClick={() => onViewPayment?.(order.orderId)}>
-          결제 정보 확인하기
-          <ChevronRight size={14} />
-        </button>
+        {order.status !== "CANCELLED" && order.totalAmount > 0 && (
+          <button type="button" className={styles.paymentButton} onClick={() => onViewPayment?.(order.orderId)}>
+            결제 정보 확인하기
+            <ChevronRight size={14} />
+          </button>
+        )}
       </div>
     </article>
   );

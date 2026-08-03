@@ -36,9 +36,9 @@ class JpaReservationRepository implements ReservationRepository {
 
     @Override
     public ReservationOrder createOrder(String orderId, long userId, long eventId, BigDecimal totalAmount,
-                                        OffsetDateTime now) {
+                                        OrderStatus initialStatus, OffsetDateTime now) {
         ReservationOrderEntity saved = orderJpaRepository.save(
-                new ReservationOrderEntity(orderId, userId, eventId, OrderStatus.PENDING, totalAmount, now, now));
+                new ReservationOrderEntity(orderId, userId, eventId, initialStatus, totalAmount, now, now));
         return toDomain(saved);
     }
 
