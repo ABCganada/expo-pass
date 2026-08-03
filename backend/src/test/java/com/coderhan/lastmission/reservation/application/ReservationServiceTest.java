@@ -226,16 +226,17 @@ class ReservationServiceTest {
                 OrderStatus.CONFIRMED, BigDecimal.valueOf(10000), NOW, NOW);
         ReservationOrder orderWithoutQuantities = new ReservationOrder("ORD-2", USER_ID, EVENT_ID,
                 OrderStatus.PENDING, BigDecimal.valueOf(5000), NOW, NOW);
-        when(repository.findOrdersByUserId(USER_ID))
-                .thenReturn(List.of(orderWithQuantities, orderWithoutQuantities));
-        when(repository.findTicketQuantitiesByUserId(USER_ID))
+        when(repository.findOrdersByUserId(USER_ID, null, 0, 10))
+                .thenReturn(new OrderPage(List.of(orderWithQuantities, orderWithoutQuantities), 0, 10, 2));
+        when(repository.findTicketQuantitiesByOrderIds(List.of("ORD-1", "ORD-2")))
                 .thenReturn(Map.of("ORD-1", List.of(new TicketQuantity(TICKET_ID, 2))));
 
-        List<ReservationService.OrderWithTickets> result = service.getMyOrders(USER_ID);
+        ReservationService.MyOrdersPage result = service.getMyOrders(USER_ID, null, 0, 10);
 
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).ticketQuantities()).containsExactly(new TicketQuantity(TICKET_ID, 2));
-        assertThat(result.get(1).ticketQuantities()).isEmpty();
+        assertThat(result.orders()).hasSize(2);
+        assertThat(result.orders().get(0).ticketQuantities()).containsExactly(new TicketQuantity(TICKET_ID, 2));
+        assertThat(result.orders().get(1).ticketQuantities()).isEmpty();
+        assertThat(result.totalElements()).isEqualTo(2);
     }
 
     // ---------- getMyQrTickets ----------

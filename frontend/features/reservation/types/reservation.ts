@@ -22,6 +22,20 @@ export interface OrderSummary {
   ticketQuantities: TicketQuantity[];
 }
 
+export interface OrdersPage {
+  orders: OrderSummary[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface MyOrdersQuery {
+  status?: OrderStatus;
+  page: number;
+  size: number;
+}
+
 export interface OrderDetail {
   orderId: string;
   userId: string;

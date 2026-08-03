@@ -8,10 +8,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.coderhan.lastmission.reservation.application.OrderPage;
 import com.coderhan.lastmission.reservation.application.ReservationRepository;
 import com.coderhan.lastmission.reservation.domain.*;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -69,10 +72,16 @@ class JpaReservationRepository implements ReservationRepository {
     }
 
     @Override
-    public List<ReservationOrder> findOrdersByUserId(long userId) {
-        return orderJpaRepository.findByUserIdOrderByReservedAtDesc(userId).stream()
-                .map(JpaReservationRepository::toDomain)
-                .toList();
+    public OrderPage findOrdersByUserId(long userId, OrderStatus status, int page, int size) {
+        int safeSize = Math.clamp(size, 1, 100);
+        int safePage = Math.max(page, 0);
+
+        Page<ReservationOrderEntity> result = orderJpaRepository.findByUserIdAndOptionalStatus(
+                userId, status, PageRequest.of(safePage, safeSize));
+
+        return new OrderPage(
+                result.stream().map(JpaReservationRepository::toDomain).toList(),
+                safePage, safeSize, result.getTotalElements());
     }
 
     @Override
@@ -95,8 +104,11 @@ class JpaReservationRepository implements ReservationRepository {
     }
 
     @Override
-    public Map<String, List<TicketQuantity>> findTicketQuantitiesByUserId(long userId) {
-        return itemJpaRepository.findTicketQuantitiesByUserId(userId).stream()
+    public Map<String, List<TicketQuantity>> findTicketQuantitiesByOrderIds(List<String> orderIds) {
+        if (orderIds.isEmpty()) {
+            return Map.of();
+        }
+        return itemJpaRepository.findTicketQuantitiesByOrderIds(orderIds).stream()
                 .collect(Collectors.groupingBy(
                         ReservationOrderItemJpaRepository.OrderTicketQuantityRow::getOrderId,
                         Collectors.mapping(

@@ -25,8 +25,8 @@ public interface ReservationRepository {
     Optional<ReservationOrderItem> findItemByQrCodeHash(String qrCodeHash);
     /** 체크인 처리(조건부 UPDATE). 이미 체크인됐거나 존재하지 않는 QR이면 false. */
     boolean checkin(String qrCodeHash, long adminUserId, OffsetDateTime now);
-    /** 이 유저의 모든 주문을 최신순으로 찾는다. */
-    List<ReservationOrder> findOrdersByUserId(long userId);
+    /** 이 유저의 주문을 최신순으로 페이지 단위로 찾는다(마이페이지 예약 내역용). status가 null이면 전체. */
+    OrderPage findOrdersByUserId(long userId, OrderStatus status, int page, int size);
     /** 이 행사의 모든 주문을 최신순으로 찾는다(관리자 예약자 명단용). */
     List<ReservationOrder> findOrdersByEventId(long eventId);
     /** 이 행사의 주문을 상태별로 집계한다(관리자 예약 현황용). */
@@ -34,10 +34,10 @@ public interface ReservationRepository {
     /** 이 유저가 이 티켓을 지금까지 총 몇 장 샀는지(1인당 구매 제한 검증용). */
     long countPurchasedQuantity(long userId, long ticketId);
     /**
-     * 이 유저의 모든 주문에 대해, 주문ID별 티켓 종류별 수량을 한 번에 집계한다(목록 화면에서
-     * 주문마다 상세를 따로 조회하는 N+1을 피하기 위한 일괄 조회).
+     * 주어진 주문ID들에 대해, 주문ID별 티켓 종류별 수량을 한 번에 집계한다(목록 화면에서
+     * 주문마다 상세를 따로 조회하는 N+1을 피하기 위한 일괄 조회 — 페이지 단위로만 조회한다).
      */
-    Map<String, List<TicketQuantity>> findTicketQuantitiesByUserId(long userId);
+    Map<String, List<TicketQuantity>> findTicketQuantitiesByOrderIds(List<String> orderIds);
     /** 이 유저의 QR 발급 대상(취소/환불 제외) 티켓을 전부 한 번에 조회한다(QR 화면 N+1 방지용). */
     List<QrTicketView> findQrTicketsByUserId(long userId);
     /** 해당 이벤트의 현재 체크인 현황 조회. */

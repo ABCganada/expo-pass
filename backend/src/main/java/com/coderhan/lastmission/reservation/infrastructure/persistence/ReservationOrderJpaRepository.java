@@ -2,12 +2,18 @@ package com.coderhan.lastmission.reservation.infrastructure.persistence;
 
 import java.util.List;
 import com.coderhan.lastmission.reservation.domain.OrderStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 interface ReservationOrderJpaRepository extends JpaRepository<ReservationOrderEntity, String> {
-    List<ReservationOrderEntity> findByUserIdOrderByReservedAtDesc(Long userId);
+    // status가 null이면 전체, 아니면 해당 상태만 (마이페이지 예약 내역 필터 탭용)
+    @Query("SELECT o FROM ReservationOrderEntity o WHERE o.userId = :userId "
+            + "AND (:status IS NULL OR o.status = :status) ORDER BY o.reservedAt DESC")
+    Page<ReservationOrderEntity> findByUserIdAndOptionalStatus(
+            @Param("userId") Long userId, @Param("status") OrderStatus status, Pageable pageable);
 
     // 관리자 예약자 명단 조회용
     List<ReservationOrderEntity> findByEventIdOrderByReservedAtDesc(Long eventId);
