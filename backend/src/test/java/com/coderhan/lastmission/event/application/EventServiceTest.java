@@ -2,6 +2,7 @@ package com.coderhan.lastmission.event.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,34 +52,105 @@ class EventServiceTest {
     @InjectMocks EventService service;
 
     @Test
-    void deleteEvent_소프트삭제_후_북마크_삭제() {
+    void createDraftEvent_본인을_담당자로_생성() {
+        EventCategory category = new EventCategory("MUSIC", "음악", true);
+        when(eventCategoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(eventRepository.save(any(Event.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Event created = service.createDraftEvent("새 행사", 1L, MANAGER_ID);
+
+        assertThat(created.getManagerId()).isEqualTo(MANAGER_ID);
+        assertThat(created.getStatus()).isEqualTo(EventStatus.DRAFT);
+    }
+
+    @Test
+    void deleteEventAsManager_DRAFT_본인_담당_행사_소프트삭제_후_북마크_삭제() {
         Event event = event(MANAGER_ID);
+
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
-        service.deleteEvent(EVENT_ID);
+        service.deleteEventAsManager(EVENT_ID, MANAGER_ID);
 
         assertThat(event.isDeleted()).isTrue();
         verify(eventBookmarkService).removeBookmarksForEvent(EVENT_ID);
     }
 
     @Test
-    void deleteEvent_예약_이력이_있으면_거부되고_삭제되지_않음() {
+    void deleteEventAsManager_담당하지_않는_행사면_거부() {
+        Event event = event(OTHER_MANAGER_ID);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.deleteEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
+        assertThat(event.isDeleted()).isFalse();
+    }
+
+    @Test
+    void deleteEventAsManager_DRAFT가_아니면_거부() {
+        Event event = event(MANAGER_ID);
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.deleteEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_DELETE_NOT_ALLOWED));
+        assertThat(event.isDeleted()).isFalse();
+    }
+
+    @Test
+    void deleteEventAsManager_예약_이력이_있으면_거부되고_삭제되지_않음() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(reservationQueryPort.hasActiveReservationsForEvent(EVENT_ID)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.deleteEvent(EVENT_ID))
+        assertThatThrownBy(() -> service.deleteEventAsManager(EVENT_ID, MANAGER_ID))
                 .isInstanceOfSatisfying(BusinessException.class,
-                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_DELETE_NOT_ALLOWED));
         assertThat(event.isDeleted()).isFalse();
         verify(eventBookmarkService, never()).removeBookmarksForEvent(anyLong());
     }
 
     @Test
-    void deleteEvent_존재하지_않는_행사면_예외() {
+    void deleteEventAsManager_존재하지_않는_행사면_예외() {
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.deleteEvent(EVENT_ID))
+        assertThatThrownBy(() -> service.deleteEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_NOT_FOUND));
+        verify(eventBookmarkService, never()).removeBookmarksForEvent(anyLong());
+    }
+
+    @Test
+    void deleteEventAsAdmin_상태_무관하게_소프트삭제() {
+        Event event = event(MANAGER_ID);
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        service.deleteEventAsAdmin(EVENT_ID);
+
+        assertThat(event.isDeleted()).isTrue();
+        verify(eventBookmarkService).removeBookmarksForEvent(EVENT_ID);
+    }
+
+    @Test
+    void deleteEventAsAdmin_예약_이력이_있으면_거부되고_삭제되지_않음() {
+        Event event = event(MANAGER_ID);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+        when(reservationQueryPort.hasActiveReservationsForEvent(EVENT_ID)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.deleteEventAsAdmin(EVENT_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_DELETE_NOT_ALLOWED));
+        assertThat(event.isDeleted()).isFalse();
+        verify(eventBookmarkService, never()).removeBookmarksForEvent(anyLong());
+    }
+
+    @Test
+    void deleteEventAsAdmin_존재하지_않는_행사면_예외() {
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.deleteEventAsAdmin(EVENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_NOT_FOUND));
         verify(eventBookmarkService, never()).removeBookmarksForEvent(anyLong());

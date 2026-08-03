@@ -13,13 +13,10 @@ import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,16 +43,9 @@ class EventAdminController {
         return ApiResponse.success(EventManagementDetailResponse.from(detail));
     }
 
-    @PostMapping("/api/v1/admin/events")
-    ResponseEntity<ApiResponse<EventSummaryResponse>> createDraftEvent(@RequestBody CreateEventRequest request) {
-        Event event = eventService.createDraftEvent(
-                request.title(), request.validateCategoryId(), request.validateManagerId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(EventSummaryResponse.from(event)));
-    }
-
     @DeleteMapping("/api/v1/admin/events/{eventId}")
     ApiResponse<Void> deleteEvent(@PathVariable long eventId) {
-        eventService.deleteEvent(eventId);
+        eventService.deleteEventAsAdmin(eventId);
         return ApiResponse.success("행사를 삭제했습니다.", null);
     }
 
@@ -94,22 +84,6 @@ class EventAdminController {
             if (managerId == null || managerId <= 0) {
                 throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "담당자 id가 올바르지 않습니다.");
             }
-        }
-    }
-
-    record CreateEventRequest(String title, Long categoryId, Long managerId) {
-        long validateCategoryId() {
-            if (categoryId == null || categoryId <= 0) {
-                throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "카테고리 id가 올바르지 않습니다.");
-            }
-            return categoryId;
-        }
-
-        long validateManagerId() {
-            if (managerId == null || managerId <= 0) {
-                throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "담당자 id가 올바르지 않습니다.");
-            }
-            return managerId;
         }
     }
 

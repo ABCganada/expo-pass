@@ -32,7 +32,7 @@ public class EventService {
     private final Clock clock;
 
     /**
-     * 행사 생성 - ADMIN 전용
+     * 행사 생성 - MANAGER 전용. 본인을 담당자로 자동 배정
      */
     @Transactional
     public Event createDraftEvent(String title, long categoryId, long managerId) {
@@ -41,7 +41,6 @@ public class EventService {
         }
         EventCategory category = eventCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_CATEGORY_NOT_FOUND, "카테고리를 찾을 수 없습니다."));
-        validateManager(managerId);
         return eventRepository.save(new Event(title, category, managerId));
     }
 
@@ -92,16 +91,34 @@ public class EventService {
     }
 
     /**
-     * 행사 삭제 - SUPER_ADMIN 전용
+     * 행사 삭제 - MANAGER 전용, 본인이 담당하는 DRAFT 상태 행사만.
      */
     @Transactional
-    public void deleteEvent(long eventId) {
+    public void deleteEventAsManager(long eventId, long callerUserId) {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        if (reservationQueryPort.hasActiveReservationsForEvent(eventId)) {
-            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "예약 이력이 있는 행사는 삭제할 수 없습니다.");
+        ownershipValidator.requireOwner(event, callerUserId, "삭제");
+        if (event.getStatus() != EventStatus.DRAFT) {
+            throw new BusinessException(ErrorCode.EVENT_DELETE_NOT_ALLOWED, "초안 상태의 행사만 삭제할 수 있습니다.");
         }
-        eventBookmarkService.removeBookmarksForEvent(eventId);
+        deleteEvent(event);
+    }
+
+    /**
+     * 행사 삭제 - ADMIN 전용, 전체 상태(활성 예약이 없는 경우에 한해).
+     */
+    @Transactional
+    public void deleteEventAsAdmin(long eventId) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        deleteEvent(event);
+    }
+
+    private void deleteEvent(Event event) {
+        if (reservationQueryPort.hasActiveReservationsForEvent(event.getId())) {
+            throw new BusinessException(ErrorCode.EVENT_DELETE_NOT_ALLOWED, "활성 예약이 있는 행사는 삭제할 수 없습니다.");
+        }
+        eventBookmarkService.removeBookmarksForEvent(event.getId());
         event.softDelete(Instant.now(clock));
     }
 
