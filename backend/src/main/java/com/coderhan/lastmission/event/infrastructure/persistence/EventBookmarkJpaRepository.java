@@ -18,6 +18,7 @@ interface EventBookmarkJpaRepository extends JpaRepository<EventBookmark, Long>,
         JOIN FETCH b.event e
         JOIN FETCH e.category
         WHERE b.userId = :userId
+        AND e.deletedAt IS NULL
         ORDER BY b.createdAt DESC
     """)
     List<EventBookmark> findAllByUserIdOrderByCreatedAtDesc(@Param("userId") long userId);
