@@ -1,0 +1,128 @@
+.state {
+  display: flex;
+  min-height: 120px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.segment {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.2s ease;
+}
+
+.segment:last-child {
+  border-bottom: none;
+}
+
+@media (min-width: 768px) {
+  .segment {
+    border-bottom: none;
+  }
+
+  .segment:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .segment:nth-child(odd) {
+    border-right: 1px solid var(--color-border);
+  }
+}
+
+@media (min-width: 1024px) {
+  .segment:nth-child(-n + 2) {
+    border-bottom: none;
+  }
+
+  .segment:nth-child(odd) {
+    border-right: none;
+  }
+
+  .segment:not(:last-child) {
+    border-right: 1px solid var(--color-border);
+  }
+}
+
+.iconBadge {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-button);
+  background: color-mix(in srgb, var(--color-text-secondary) 10%, transparent);
+  color: var(--color-text-secondary);
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.label {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.value {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: proportional-nums;
+  white-space: nowrap;
+}
+
+.segment[data-emphasis="true"] {
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+
+.segment[data-emphasis="true"] .iconBadge {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.segment[data-emphasis="true"] .value {
+  color: var(--color-primary);
+}
