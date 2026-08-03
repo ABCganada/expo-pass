@@ -1,4 +1,4 @@
-package com.coderhan.lastmission.payment;
+package com.coderhan.lastmission.shared.order;
 
 import java.util.Collection;
 import java.util.List;

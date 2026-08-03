@@ -2,7 +2,7 @@ package com.coderhan.lastmission.payment.infrastructure.persistence;
 
 import java.util.Collection;
 import java.util.List;
-import com.coderhan.lastmission.payment.PaymentOrderDirectory;
+import com.coderhan.lastmission.shared.order.PaymentOrderDirectory;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
