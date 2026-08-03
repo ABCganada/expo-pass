@@ -1,6 +1,7 @@
 "use client";
 
-import { CalendarRange, Check, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CalendarRange, Check, MoreVertical, Trash2, X } from "lucide-react";
 import type { MarketerBannerAd } from "../../types/marketerBanner";
 import { BANNER_AD_STATUS_LABEL } from "../../types/marketerBanner";
 import { useApproveAdMutation, useDeleteAdMutation, useRejectAdMutation } from "../../api/adminBannerApi";
@@ -24,6 +25,19 @@ export function AdminAdCard({ ad, slotName }: AdminAdCardProps) {
   const [rejectAd, { isLoading: rejecting }] = useRejectAdMutation();
   const [deleteAd, { isLoading: deleting }] = useDeleteAdMutation();
   const isActing = approving || rejecting || deleting;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   return (
     <div className={styles.card}>
@@ -32,9 +46,35 @@ export function AdminAdCard({ ad, slotName }: AdminAdCardProps) {
           <span className={styles.title}>{ad.title}</span>
           {slotName && <span className={styles.slot}>{slotName}</span>}
         </div>
-        <span className={styles.badge} data-status={ad.status}>
-          {BANNER_AD_STATUS_LABEL[ad.status]}
-        </span>
+        <div className={styles.headerRight}>
+          <span className={styles.badge} data-status={ad.status}>
+            {BANNER_AD_STATUS_LABEL[ad.status]}
+          </span>
+          <div className={styles.menuWrapper} ref={menuRef}>
+            <button
+              type="button"
+              className={styles.btnMenu}
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="더보기"
+              disabled={isActing}
+            >
+              <MoreVertical size={16} />
+            </button>
+            {menuOpen && (
+              <div className={styles.menu}>
+                <button
+                  type="button"
+                  className={styles.menuItemDanger}
+                  onClick={() => { setMenuOpen(false); deleteAd(ad.id); }}
+                  disabled={isActing}
+                >
+                  <Trash2 size={14} />
+                  삭제
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className={styles.meta}>
@@ -48,39 +88,28 @@ export function AdminAdCard({ ad, slotName }: AdminAdCardProps) {
         </div>
       </div>
 
-      <div className={styles.actions}>
-        {ad.status === "PAID" && (
-          <>
-            <button
-              type="button"
-              className={styles.btnReject}
-              onClick={() => rejectAd(ad.id)}
-              disabled={isActing}
-            >
-              <X size={14} />
-              거절
-            </button>
-            <button
-              type="button"
-              className={styles.btnApprove}
-              onClick={() => approveAd(ad.id)}
-              disabled={isActing}
-            >
-              <Check size={14} />
-              승인
-            </button>
-          </>
-        )}
-        <button
-          type="button"
-          className={styles.btnDelete}
-          onClick={() => deleteAd(ad.id)}
-          disabled={isActing}
-        >
-          <Trash2 size={14} />
-          삭제
-        </button>
-      </div>
+      {ad.status === "PAID" && (
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.btnReject}
+            onClick={() => rejectAd(ad.id)}
+            disabled={isActing}
+          >
+            <X size={14} />
+            거절
+          </button>
+          <button
+            type="button"
+            className={styles.btnApprove}
+            onClick={() => approveAd(ad.id)}
+            disabled={isActing}
+          >
+            <Check size={14} />
+            승인
+          </button>
+        </div>
+      )}
     </div>
   );
 }
