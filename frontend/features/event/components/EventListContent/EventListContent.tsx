@@ -39,14 +39,8 @@ export function EventListContent() {
   return (
     <div className={styles.page}>
       <div className={styles.bannerWrapper}>
-        <BannerSlider />
+         <BannerSlider />
       </div>
-
-      <header className={styles.header}>
-        <h1 className={styles.title}>박람회</h1>
-        <p className={styles.subtitle}>진행 중이거나 예정된 박람회를 둘러보세요.</p>
-      </header>
-
       <div className={styles.filterRow}>
         <div className={styles.categoryTabsWrap}>
           <CategoryTabs

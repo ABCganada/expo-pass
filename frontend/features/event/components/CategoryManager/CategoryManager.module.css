@@ -5,12 +5,6 @@
   padding-bottom: 40px;
 }
 
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
 .backButton {
   display: flex;
   align-items: center;
@@ -30,12 +24,6 @@
 .backButton:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
-}
-
-.title {
-  color: var(--color-text-primary);
-  font-size: 32px;
-  font-weight: 700;
 }
 
 .error {

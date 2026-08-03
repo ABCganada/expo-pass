@@ -61,16 +61,24 @@ export function AdminEventList({ basePath }: AdminEventListProps) {
 
   return (
     <section className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.titleGroup}>
-          <h1 className={styles.title}>박람회 관리</h1>
-        </div>
-        <div className={styles.headerActions}>
-          {isAdmin && (
-            <button type="button" className={styles.primaryButton} onClick={() => router.push(`${basePath}/new`)}>
-              <Plus size={16} />새 행사 등록
+      <div className={styles.topRow}>
+        <div className={styles.statusTabs} role="tablist" aria-label="행사 상태 필터">
+          {STATUS_TAB_VALUES.map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={statusFilter === value}
+              className={styles.statusTab}
+              data-active={statusFilter === value}
+              onClick={() => setStatusFilter(value)}
+            >
+              {statusTabLabel(value)}
             </button>
-          )}
+          ))}
+        </div>
+
+        <div className={styles.headerActions}>
           {isAdmin && (
             <button
               type="button"
@@ -81,29 +89,19 @@ export function AdminEventList({ basePath }: AdminEventListProps) {
               카테고리 관리
             </button>
           )}
+          {isAdmin && (
+            <button type="button" className={styles.primaryButton} onClick={() => router.push(`${basePath}/new`)}>
+              <Plus size={16} />새 행사 등록
+            </button>
+          )}
         </div>
-      </header>
+      </div>
+
+      <div className={styles.countRow}>
+        <span className={styles.countText}>전체 {events.length}건</span>
+      </div>
 
       <div className={styles.listSection}>
-        <div className={styles.filterRow}>
-          <div className={styles.statusTabs} role="tablist" aria-label="행사 상태 필터">
-            {STATUS_TAB_VALUES.map((value) => (
-              <button
-                key={value}
-                type="button"
-                role="tab"
-                aria-selected={statusFilter === value}
-                className={styles.statusTab}
-                data-active={statusFilter === value}
-                onClick={() => setStatusFilter(value)}
-              >
-                {statusTabLabel(value)}
-              </button>
-            ))}
-          </div>
-          <span className={styles.countText}>전체 {events.length}건</span>
-        </div>
-
         {deleteError && <p className={styles.deleteError}>{deleteError}</p>}
 
         {isError ? (

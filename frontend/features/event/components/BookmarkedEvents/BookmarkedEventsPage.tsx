@@ -26,11 +26,6 @@ export function BookmarkedEventsPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>내 북마크</h1>
-        <p className={styles.subtitle}>북마크한 박람회를 모아보세요.</p>
-      </header>
-
       <div className={styles.filterRow}>
         <StatusFilterDropdown
           label="상태"
