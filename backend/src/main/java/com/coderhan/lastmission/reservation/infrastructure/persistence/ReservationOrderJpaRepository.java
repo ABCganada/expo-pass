@@ -35,6 +35,23 @@ interface ReservationOrderJpaRepository extends JpaRepository<ReservationOrderEn
             """)
     int refundIfConfirmed(@Param("orderId") String orderId, @Param("now") OffsetDateTime now);
 
+    // 결제 실패(PaymentFailedEvent) 시 PENDING → CANCELLED 전환. 이미 다른 상태면 0건 갱신(멱등).
+    @Modifying
+    @Query("""
+            UPDATE ReservationOrderEntity o
+            SET o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.CANCELLED, o.updatedAt = :now
+            WHERE o.orderId = :orderId AND o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.PENDING
+            """)
+    int cancelIfPending(@Param("orderId") String orderId, @Param("now") OffsetDateTime now);
+
+    // 보정 스케줄러용 — PENDING 상태로 threshold 이전에 접수된 주문의 orderId 조회
+    @Query("""
+            SELECT o.orderId FROM ReservationOrderEntity o
+            WHERE o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.PENDING
+            AND o.reservedAt < :threshold
+            """)
+    List<String> findOrderIdsByPendingAndReservedAtBefore(@Param("threshold") OffsetDateTime threshold);
+
     // 관리자 예약자 명단 조회용
     List<ReservationOrderEntity> findByEventIdOrderByReservedAtDesc(Long eventId);
 
