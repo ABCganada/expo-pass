@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle2, Ticket as TicketIcon, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Ticket as TicketIcon, Users } from "lucide-react";
+import { PaymentCheckoutButton } from "@/features/payment/components/PaymentCheckoutButton";
 import { TicketSelectionPanel } from "../TicketSelectionPanel";
 import type { TicketSelection, TicketTypeOption } from "../TicketSelectionPanel";
 import { useCreateReservationOrderMutation } from "../../api/reservationApi";
@@ -10,17 +11,26 @@ import { useWaitingRoom } from "../../hooks/useWaitingRoom";
 import type { OrderDetail } from "../../types/reservation";
 import styles from "./TicketPurchaseFlow.module.css";
 
-type Phase = "idle" | "waiting" | "selecting" | "submitting" | "success";
+type Phase = "idle" | "waiting" | "selecting" | "submitting" | "redirecting";
 
 interface TicketPurchaseFlowProps {
   eventId: string;
   ticketTypes: TicketTypeOption[];
 }
 
+/** 토스 결제창에 표시할 주문명. 티켓 종류가 여러 개면 "A 외 N건"으로 축약한다. */
+function buildOrderName(order: OrderDetail, ticketTypes: TicketTypeOption[]): string {
+  const ticketIds = Array.from(new Set(order.items.map((item) => item.ticketId)));
+  const firstName = ticketTypes.find((t) => t.ticketId === ticketIds[0])?.name ?? "티켓";
+  return ticketIds.length > 1 ? `${firstName} 외 ${ticketIds.length - 1}건` : `${firstName} ${order.items.length}매`;
+}
+
 export function TicketPurchaseFlow({ eventId, ticketTypes }: TicketPurchaseFlowProps) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<OrderDetail | null>(null);
+  const checkoutWrapRef = useRef<HTMLDivElement>(null);
+  const hasAutoClicked = useRef(false);
 
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateReservationOrderMutation();
   const { rank, error: waitingError } = useWaitingRoom(eventId, phase === "waiting", () =>
@@ -37,18 +47,25 @@ export function TicketPurchaseFlow({ eventId, ticketTypes }: TicketPurchaseFlowP
       });
       const detail = await createOrder({ eventId, items }).unwrap();
       setOrder(detail);
-      setPhase("success");
+      hasAutoClicked.current = false;
+      setPhase("redirecting");
     } catch (e) {
       setError(queryErrorMessage(e, "주문 생성에 실패했습니다."));
       setPhase("selecting");
     }
   }
 
-  function handleReset() {
-    setPhase("idle");
-    setOrder(null);
-    setError(null);
-  }
+  // "결제하기"를 누른 순간의 클릭 한 번으로 주문 생성 + 토스 결제창까지 이어지도록,
+  // 결제 버튼이 화면에 나타나자마자 자동으로 한 번 클릭해준다(버튼 자체는 그대로 두고
+  // 위임만 함 — 결제 SDK 연동 로직은 Payment 도메인의 PaymentCheckoutButton이 캡슐화).
+  useEffect(() => {
+    if (phase !== "redirecting" || hasAutoClicked.current) return;
+    const button = checkoutWrapRef.current?.querySelector("button");
+    if (button) {
+      hasAutoClicked.current = true;
+      button.click();
+    }
+  }, [phase, order]);
 
   return (
     <div className={styles.container}>
@@ -84,38 +101,17 @@ export function TicketPurchaseFlow({ eventId, ticketTypes }: TicketPurchaseFlowP
         </div>
       )}
 
-      {phase === "success" && order && (
-        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && handleReset()}>
-          <div className={styles.modal}>
-            <div className={styles.successPanel}>
-              <CheckCircle2 size={40} className={styles.successIcon} />
-              <p className={styles.successTitle}>예약이 접수되었습니다</p>
-              <p className={styles.successDescription}>결제가 확인되면 예약이 확정돼요. 결제대기 상태로 저장됐어요.</p>
-              <div className={styles.successDetail}>
-                <div className={styles.successRow}>
-                  <span>예약번호</span>
-                  <strong>{order.orderId}</strong>
-                </div>
-                <div className={styles.successRow}>
-                  <span>티켓 수량</span>
-                  <strong>{order.items.length}매</strong>
-                </div>
-                <div className={styles.successRow}>
-                  <span>결제금액</span>
-                  <strong>{order.totalAmount.toLocaleString("ko-KR")}원</strong>
-                </div>
-              </div>
-
-              {/*
-                TODO: 실제 결제 진입 버튼은 Payment 도메인이 컴포넌트로 제공하기로 함.
-                orderId(+ totalAmount)를 props로 받아서 버튼 렌더링부터 결제창 연동까지
-                전부 캡슐화된 컴포넌트를 여기에 그대로 끼워넣으면 됨.
-                예: <PaymentCheckoutButton orderId={order.orderId} amount={order.totalAmount} />
-              */}
-
-              <button type="button" className={styles.resetButton} onClick={handleReset}>
-                닫기
-              </button>
+      {phase === "redirecting" && order && (
+        <div className={styles.card}>
+          <div className={styles.waitingPanel}>
+            <div ref={checkoutWrapRef}>
+              <PaymentCheckoutButton
+                orderId={order.orderId}
+                amount={order.totalAmount}
+                orderName={buildOrderName(order, ticketTypes)}
+                successUrl="/reservations/payment/success"
+                failUrl="/reservations/payment/fail"
+              />
             </div>
           </div>
         </div>

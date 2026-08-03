@@ -65,7 +65,7 @@ public class WaitingRoomService {
 
     public void admitAll() {
         var activeEventIds = waitingRoomQueue.getActiveEventIds();
-        log.info("[waiting-room] admitAll tick activeEventIds={}", activeEventIds);
+//        log.info("[waiting-room] admitAll tick activeEventIds={}", activeEventIds);
         for (Long eventId : activeEventIds) {
             List<Long> admittedUserIds = waitingRoomQueue.allowEntry(eventId, ADMIT_COUNT_PER_TICK);
             for (Long userId : admittedUserIds) {
