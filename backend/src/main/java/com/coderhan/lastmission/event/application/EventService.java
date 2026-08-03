@@ -32,7 +32,7 @@ public class EventService {
     private final Clock clock;
 
     /**
-     * 행사 생성 - SUPER_ADMIN 전용
+     * 행사 생성 - ADMIN 전용
      */
     @Transactional
     public Event createDraftEvent(String title, long categoryId, long managerId) {
@@ -41,11 +41,28 @@ public class EventService {
         }
         EventCategory category = eventCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_CATEGORY_NOT_FOUND, "카테고리를 찾을 수 없습니다."));
+        validateManager(managerId);
+        return eventRepository.save(new Event(title, category, managerId));
+    }
+
+    /**
+     * 담당자 재배정
+     */
+    @Transactional
+    public Event changeManager(long eventId, long newManagerId) {
+        Event event = eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        validateManager(newManagerId);
+        event.changeManager(newManagerId);
+        return event;
+    }
+
+    /** 새 담당자가 활성 상태의 MANAGER 권한 보유 계정인지 확인 */
+    private void validateManager(long managerId) {
         userDirectory.findActiveAccessById(managerId)
                 .filter(access -> access.roles().contains(UserRole.MANAGER))
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.EVENT_MANAGER_NOT_FOUND, "MANAGER 권한을 가진 담당자를 찾을 수 없습니다."));
-        return eventRepository.save(new Event(title, category, managerId));
     }
 
     /**

@@ -119,6 +119,10 @@ public class Event {
         this.startDate = startDate;
         this.endDate = endDate;
     }
+    
+    public void changeManager(long managerId) {
+        this.managerId = managerId;
+    }
 
     public void publish() {
         this.status = EventStatus.PUBLISHED;
