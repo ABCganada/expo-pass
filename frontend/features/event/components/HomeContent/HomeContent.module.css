@@ -3,22 +3,25 @@
   padding: 8px 0;
 }
 
-.bannerSlot {
-  width: 100%;
-  height: 240px;
-  margin-bottom: 40px;
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-card-background);
+/* 배너는 viewport 패딩을 일부 상쇄해 넓게 노출 */
+.bannerWrapper {
+  margin: -8px -8px 40px;
+}
+
+@media (min-width: 768px) {
+  .bannerWrapper {
+    margin: -8px -8px 40px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .bannerWrapper {
+    margin: -8px -16px 40px;
+  }
 }
 
 @media (max-width: 767px) {
   .page {
     padding: 16px;
-  }
-
-  .bannerSlot {
-    height: 160px;
-    margin-bottom: 24px;
   }
 }

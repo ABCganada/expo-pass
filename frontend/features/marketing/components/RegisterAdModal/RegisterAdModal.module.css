@@ -253,3 +253,34 @@
   color: var(--color-text-secondary);
   cursor: not-allowed;
 }
+
+/* ── 결제 단계 ── */
+.paymentDesc {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0 0 20px;
+}
+
+.paymentSummary {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.paymentRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.paymentRow span {
+  color: var(--color-text-secondary);
+}
+
+.paymentRow strong {
+  color: var(--color-text-primary);
+}

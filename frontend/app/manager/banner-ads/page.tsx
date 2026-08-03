@@ -7,6 +7,7 @@ import { MarketerAdCard } from "@/features/marketing/components/MarketerAdCard/M
 import { RegisterAdModal } from "@/features/marketing/components/RegisterAdModal/RegisterAdModal";
 import { AdStatsModal } from "@/features/marketing/components/AdStatsModal/AdStatsModal";
 import { AdPaymentModal } from "@/features/marketing/components/AdPaymentModal/AdPaymentModal";
+import { AdCheckoutModal } from "@/features/marketing/components/AdCheckoutModal/AdCheckoutModal";
 import type { MarketerBannerAd } from "@/features/marketing/types/marketerBanner";
 import styles from "./page.module.css";
 
@@ -16,8 +17,10 @@ export default function BannerAdsPage() {
   const [editTarget, setEditTarget] = useState<MarketerBannerAd | undefined>(undefined);
   const [statsTarget, setStatsTarget] = useState<MarketerBannerAd | undefined>(undefined);
   const [paymentTarget, setPaymentTarget] = useState<MarketerBannerAd | undefined>(undefined);
+  const [checkoutTarget, setCheckoutTarget] = useState<MarketerBannerAd | undefined>(undefined);
 
   const handleEdit = (ad: MarketerBannerAd) => setEditTarget(ad);
+  const handlePay = (ad: MarketerBannerAd) => setCheckoutTarget(ad);
   const handleStats = (ad: MarketerBannerAd) => setStatsTarget(ad);
   const handlePaymentDetail = (ad: MarketerBannerAd) => setPaymentTarget(ad);
 
@@ -25,6 +28,7 @@ export default function BannerAdsPage() {
   const handleCloseEdit = () => setEditTarget(undefined);
   const handleCloseStats = () => setStatsTarget(undefined);
   const handleClosePayment = () => setPaymentTarget(undefined);
+  const handleCloseCheckout = () => setCheckoutTarget(undefined);
 
   return (
     <div className={styles.page}>
@@ -56,6 +60,7 @@ export default function BannerAdsPage() {
               key={ad.id}
               ad={ad}
               onEdit={handleEdit}
+              onPay={handlePay}
               onStats={handleStats}
               onPaymentDetail={handlePaymentDetail}
             />
@@ -77,6 +82,14 @@ export default function BannerAdsPage() {
           orderId={paymentTarget.orderId}
           adTitle={paymentTarget.title}
           onClose={handleClosePayment}
+        />
+      )}
+      {checkoutTarget && (
+        <AdCheckoutModal
+          orderId={checkoutTarget.orderId}
+          amount={checkoutTarget.totalAmount}
+          orderName={checkoutTarget.title}
+          onClose={handleCloseCheckout}
         />
       )}
     </div>

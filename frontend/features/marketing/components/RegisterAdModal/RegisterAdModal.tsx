@@ -5,6 +5,7 @@ import type { BannerSlot, MarketerBannerAd } from "../../types/marketerBanner";
 import { BANNER_SLOT_TYPE_LABEL } from "../../types/marketerBanner";
 import { useGetBannerSlotsQuery, useRegisterAdMutation, useUpdateAdMutation } from "../../api/marketerBannerApi";
 import { marketerBannerService } from "../../services/marketerBannerService";
+import { PaymentCheckoutButton } from "@/features/payment/components/PaymentCheckoutButton";
 import styles from "./RegisterAdModal.module.css";
 
 interface RegisterAdModalProps {
@@ -59,6 +60,11 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingAd, setUploadingAd] = useState(false);
   const [error, setError] = useState("");
+  const [pendingPayment, setPendingPayment] = useState<{
+    orderId: string;
+    amount: number;
+    title: string;
+  } | null>(null);
   const bannerFileRef = useRef<HTMLInputElement>(null);
   const adFileRef = useRef<HTMLInputElement>(null);
 
@@ -121,8 +127,9 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
           startsAt: toOffsetDateTime(form.startsAt),
           endsAt: toOffsetDateTime(form.endsAt),
         }).unwrap();
+        onClose();
       } else {
-        await registerAd({
+        const created = await registerAd({
           slotIds: form.slotIds,
           title: form.title,
           bannerImageUrl: form.bannerImageUrl || undefined,
@@ -131,12 +138,43 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
           startsAt: toOffsetDateTime(form.startsAt),
           endsAt: toOffsetDateTime(form.endsAt),
         }).unwrap();
+        setPendingPayment({ orderId: created.orderId, amount: created.totalAmount, title: created.title });
       }
-      onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "저장에 실패했습니다.");
     }
   };
+
+  if (pendingPayment) {
+    return (
+      <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className={styles.modal}>
+          <h2 className={styles.title}>광고 결제</h2>
+          <p className={styles.paymentDesc}>광고가 등록되었습니다. 결제를 완료해야 검토가 시작됩니다.</p>
+          <div className={styles.paymentSummary}>
+            <div className={styles.paymentRow}>
+              <span>광고 제목</span>
+              <strong>{pendingPayment.title}</strong>
+            </div>
+            <div className={styles.paymentRow}>
+              <span>결제 금액</span>
+              <strong>{pendingPayment.amount.toLocaleString("ko-KR")}원</strong>
+            </div>
+          </div>
+          <PaymentCheckoutButton
+            orderId={pendingPayment.orderId}
+            amount={pendingPayment.amount}
+            orderName={pendingPayment.title}
+            successUrl="/manager/banner-ads/payment/success"
+            failUrl="/manager/banner-ads/payment/fail"
+          />
+          <button type="button" className={styles.btnCancel} onClick={onClose}>
+            나중에 결제
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
