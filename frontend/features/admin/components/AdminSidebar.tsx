@@ -44,6 +44,7 @@ export function AdminSidebar({
         { href: "/manager/reservations", label: "예약자 명단 관리", icon: ClipboardList },
         { href: "/manager/check-in", label: "QR 체크인", icon: ScanLine },
         { href: "/manager/check-in/status", label: "체크인 현황", icon: QrCode },
+        { href: "/manager/settlements", label: "정산 현황", icon: LineChart },
         { type: "section" as const, label: "마케팅" },
         { href: "/manager/banner-ads", label: "광고 관리", icon: Megaphone },
       ]
