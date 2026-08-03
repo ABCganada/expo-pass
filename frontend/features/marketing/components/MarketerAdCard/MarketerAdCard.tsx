@@ -9,6 +9,7 @@ interface MarketerAdCardProps {
   ad: MarketerBannerAd;
   slotName?: string;
   onEdit: (ad: MarketerBannerAd) => void;
+  onPay: (ad: MarketerBannerAd) => void;
   onStats: (ad: MarketerBannerAd) => void;
   onPaymentDetail: (ad: MarketerBannerAd) => void;
 }
@@ -21,7 +22,7 @@ function formatDate(iso: string) {
   });
 }
 
-export function MarketerAdCard({ ad, slotName, onEdit, onStats, onPaymentDetail }: MarketerAdCardProps) {
+export function MarketerAdCard({ ad, slotName, onEdit, onPay, onStats, onPaymentDetail }: MarketerAdCardProps) {
   return (
     <div className={styles.card}>
       <div className={styles.header}>
@@ -48,10 +49,16 @@ export function MarketerAdCard({ ad, slotName, onEdit, onStats, onPaymentDetail 
 
       <div className={styles.actions}>
         {ad.status === "PENDING" && (
-          <button type="button" className={styles.btnOutline} onClick={() => onEdit(ad)}>
-            <Edit2 size={14} />
-            수정
-          </button>
+          <>
+            <button type="button" className={styles.btnOutline} onClick={() => onEdit(ad)}>
+              <Edit2 size={14} />
+              수정
+            </button>
+            <button type="button" className={styles.btnPrimary} onClick={() => onPay(ad)}>
+              <CreditCard size={14} />
+              결제하기
+            </button>
+          </>
         )}
         <button type="button" className={styles.btnOutline} onClick={() => onPaymentDetail(ad)}>
           <CreditCard size={14} />
