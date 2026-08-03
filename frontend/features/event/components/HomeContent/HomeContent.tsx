@@ -4,6 +4,7 @@ import { useGetEventCategoriesQuery } from "../../api/eventApi";
 import { CategoryQuickLinks } from "../CategoryQuickLinks/CategoryQuickLinks";
 import { HomeEventSection } from "../HomeEventSection/HomeEventSection";
 import styles from "./HomeContent.module.css";
+import {HomeInfoStrip} from "@/features/event/components/HomeInfoStrip/HomeInfoStrip";
 
 export function HomeContent() {
   const { data: categories = [] } = useGetEventCategoriesQuery();
@@ -16,6 +17,8 @@ export function HomeContent() {
       <CategoryQuickLinks categories={categories} />
 
       <HomeEventSection />
+
+      <HomeInfoStrip />
     </div>
   );
 }
