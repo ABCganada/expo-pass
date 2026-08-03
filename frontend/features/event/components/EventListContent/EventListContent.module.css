@@ -22,6 +22,17 @@
   line-height: 1.6;
 }
 
+.filterRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.categoryTabsWrap {
+  flex: 1;
+  min-width: 0;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr;
