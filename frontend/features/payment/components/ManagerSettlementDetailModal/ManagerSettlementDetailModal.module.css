@@ -176,6 +176,11 @@
   transition: background 0.15s ease;
 }
 
-.downloadButton:hover {
+.downloadButton:hover:not(:disabled) {
   background: var(--color-primary-hover);
+}
+
+.downloadButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }

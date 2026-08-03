@@ -164,7 +164,8 @@ export function ManagerSettlementDetailModal({
               <button
                 type="button"
                 className={styles.downloadButton}
-                onClick={() => exportSettlementXlsx(settlement)}
+                onClick={() => exportSettlementXlsx(settlement, payments ?? [])}
+                disabled={isPaymentsLoading}
               >
                 <Download size={16} aria-hidden="true" />
                 리포트 다운로드
