@@ -6,10 +6,12 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.coderhan.lastmission.event.EventManagerQueryPort;
 import com.coderhan.lastmission.event.EventQueryPort;
 import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.TicketInfo;
@@ -27,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReservationService implements ReservationQueryPort {
     private final ReservationRepository repository;
     private final EventQueryPort eventQueryPort;
+    private final EventManagerQueryPort eventManagerQueryPort;
     private final WaitingRoomService waitingRoomService;
     private final UserDirectory userDirectory;
     private final Clock clock;
@@ -136,27 +139,30 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
-     * 관리자 QR 체크인. 존재하지 않는 QR·이미 체크인됨·주문이 CONFIRMED가 아님(결제대기/취소/환불)
-     * 이면 예외 — 특히 환불된 결제의 QR을 캡처해뒀다가 현장에서 스캔하는 경우를 막기 위해,
+     * 관리자 QR 체크인. 본인이 담당하는 행사가 아니면 거부 — 그래서 원래는 조건부 UPDATE 하나로
+     * 끝나던 걸, eventId를 먼저 알아야 권한을 검증할 수 있어 주문 조회가 선행된다.
+     * 존재하지 않는 QR·이미 체크인됨·주문이 CONFIRMED가 아님(결제대기/취소/환불)이면 예외 —
+     * 특히 환불된 결제의 QR을 캡처해뒀다가 현장에서 스캔하는 경우를 막기 위해,
      * DB 쪽 조건부 UPDATE 자체가 주문 상태까지 함께 확인한다(체크인 성공은 CONFIRMED일 때만).
      */
     @Transactional
-    public ReservationOrderItem checkin(long adminUserId, String qrCodeHash) {
+    public ReservationOrderItem checkin(long adminUserId, boolean isAdmin, String qrCodeHash) {
+        ReservationOrderItem existing = repository.findItemByQrCodeHash(qrCodeHash)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_QR_NOT_FOUND,
+                        "존재하지 않는 QR입니다."));
+        ReservationOrder order = repository.findOrder(existing.orderId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND, "주문을 찾을 수 없습니다."));
+        validateManagerAccess(order.eventId(), adminUserId, isAdmin);
+
         OffsetDateTime now = OffsetDateTime.now(clock);
         boolean checkedIn = repository.checkin(qrCodeHash, adminUserId, now);
         if (!checkedIn) {
-            ReservationOrderItem existing = repository.findItemByQrCodeHash(qrCodeHash)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_QR_NOT_FOUND,
-                            "존재하지 않는 QR입니다."));
             if (existing.checkedInAt() != null) {
                 throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CHECKED_IN,
                         "이미 체크인된 티켓입니다. (체크인 시각: " + existing.checkedInAt() + ")");
             }
-            OrderStatus status = repository.findOrder(existing.orderId())
-                    .map(ReservationOrder::status)
-                    .orElse(null);
             throw new BusinessException(ErrorCode.RESERVATION_INVALID_TICKET_STATUS,
-                    "체크인할 수 없는 티켓입니다. (주문 상태: " + status + ")");
+                    "체크인할 수 없는 티켓입니다. (주문 상태: " + order.status() + ")");
         }
         return repository.findItemByQrCodeHash(qrCodeHash).orElseThrow();
     }
@@ -216,9 +222,11 @@ public class ReservationService implements ReservationQueryPort {
 
     /**
      * 관리자용 — 이 행사의 예약자 명단을 유저 이름/이메일까지 채워서 조회한다.
+     * 본인이 담당하는 행사가 아니면 거부(PII가 섞여 있어 소유권 검증이 특히 중요하다).
      */
     @Transactional(readOnly = true)
-    public List<AttendeeInfo> getEventAttendees(long eventId) {
+    public List<AttendeeInfo> getEventAttendees(long eventId, long callerUserId, boolean isAdmin) {
+        validateManagerAccess(eventId, callerUserId, isAdmin);
         List<ReservationOrder> orders = repository.findOrdersByEventId(eventId);
 
         List<Long> userIds = orders.stream().map(ReservationOrder::userId).distinct().toList();
@@ -234,14 +242,28 @@ public class ReservationService implements ReservationQueryPort {
      * 관리자용 — 이 행사의 예약 현황(상태별 건수)을 조회한다.
      */
     @Transactional(readOnly = true)
-    public EventReservationSummary getEventSummary(long eventId) {
+    public EventReservationSummary getEventSummary(long eventId, long callerUserId, boolean isAdmin) {
+        validateManagerAccess(eventId, callerUserId, isAdmin);
         Map<OrderStatus, Long> countsByStatus = repository.countOrdersByEventIdGroupedByStatus(eventId);
         long totalOrders = countsByStatus.values().stream().mapToLong(Long::longValue).sum();
         return new EventReservationSummary(eventId, totalOrders, countsByStatus);
     }
 
-    public CheckinProgress getCheckinProgress(long eventId) {
+    public CheckinProgress getCheckinProgress(long eventId, long callerUserId, boolean isAdmin) {
+        validateManagerAccess(eventId, callerUserId, isAdmin);
         return repository.countCheckinProgressByEventId(eventId);
+    }
+
+    /** ADMIN은 전체 허용, 아니면 본인이 담당하는 행사인지 확인한다(event 도메인의 validateEventAccess와 동일한 규칙). */
+    private void validateManagerAccess(long eventId, long callerUserId, boolean isAdmin) {
+        if (isAdmin) {
+            return;
+        }
+        Long managerId = eventManagerQueryPort.findEventManagerId(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+        if (!Objects.equals(managerId, callerUserId)) {
+            throw new BusinessException(ErrorCode.RESERVATION_ACCESS_DENIED, "본인이 담당하는 행사만 관리할 수 있습니다.");
+        }
     }
 
     @Override
