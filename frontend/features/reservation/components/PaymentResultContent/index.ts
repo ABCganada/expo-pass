@@ -1,1 +1,0 @@
-export { PaymentResultContent } from "./PaymentResultContent";
