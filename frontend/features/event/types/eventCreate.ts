@@ -3,7 +3,6 @@ import type { AdminEventStatus } from "./eventList";
 export interface CreateEventPayload {
   title: string;
   categoryId: string;
-  managerId: string;
 }
 
 export interface EventSummary {

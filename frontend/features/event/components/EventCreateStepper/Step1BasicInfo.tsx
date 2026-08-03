@@ -1,7 +1,6 @@
 "use client";
 
 import { BasicInfoForm, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 import formStyles from "../EventDetail/EventDetail.module.css";
 import styles from "./EventCreateStepper.module.css";
 
@@ -15,10 +14,8 @@ interface Step1BasicInfoProps {
   submitError: string | null;
 }
 
+/** 담당자는 항상 작성자 본인으로 self-assign되므로 읽기 전용으로만 표시한다. */
 export function Step1BasicInfo({ values, onChange, onNext, isSubmitting, submitError }: Step1BasicInfoProps) {
-  const { user } = useAuth();
-  const isAdmin = user?.roles.includes("ADMIN") ?? false;
-
   return (
     <div className={styles.pageCenter}>
       <div className={styles.stepBody}>
@@ -26,7 +23,6 @@ export function Step1BasicInfo({ values, onChange, onNext, isSubmitting, submitE
           values={values}
           onChange={onChange}
           onValidSubmit={onNext}
-          canEditManager={isAdmin}
           footer={
             <>
               {submitError && <p className={formStyles.error}>{submitError}</p>}

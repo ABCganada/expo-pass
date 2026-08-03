@@ -7,10 +7,9 @@ import { useGetAdminEventsQuery, useDeleteAdminEventMutation } from "../../api/a
 import { useGetManagerEventsQuery, useDeleteManagerEventMutation } from "../../api/managerEventApi";
 import { ConfirmDialog } from "../ConfirmDialog/ConfirmDialog";
 import { Toast } from "../Toast/Toast";
-import type { AdminEventStatus } from "../../types/eventList";
+import type { AdminEventStatus, EventListItem } from "../../types/eventList";
 import { getEventsBasePath, type EventRole } from "../../types/eventRole";
 import { formatPeriod } from "../../utils/eventPhase";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./EventList.module.css";
 
@@ -42,10 +41,12 @@ function useDeleteEvent(mode: EventRole) {
   return mode === "admin" ? ([deleteAsAdmin, adminState] as const) : ([deleteAsManager, managerState] as const);
 }
 
+function canDeleteEvent(mode: EventRole, event: EventListItem): boolean {
+  return mode === "admin" || event.status === "DRAFT";
+}
+
 export function EventList({ mode }: EventListProps) {
   const router = useRouter();
-  const { user } = useAuth();
-  const isAdmin = user?.roles.includes("ADMIN") ?? false;
   const basePath = getEventsBasePath(mode);
 
   const [statusFilter, setStatusFilter] = useState<AdminEventStatus | "ALL">("ALL");
@@ -94,7 +95,7 @@ export function EventList({ mode }: EventListProps) {
         </div>
 
         <div className={styles.headerActions}>
-          {isAdmin && (
+          {mode === "admin" && (
             <button
               type="button"
               className={styles.secondaryButton}
@@ -104,7 +105,7 @@ export function EventList({ mode }: EventListProps) {
               카테고리 관리
             </button>
           )}
-          {isAdmin && (
+          {mode === "manager" && (
             <button type="button" className={styles.primaryButton} onClick={() => router.push(`${basePath}/new`)}>
               <Plus size={16} />새 행사 등록
             </button>
@@ -137,7 +138,7 @@ export function EventList({ mode }: EventListProps) {
                   <th className={styles.periodCol}>기간</th>
                   <th className={styles.statusCol}>상태</th>
                   <th className={styles.createdCol}>등록일</th>
-                  {isAdmin && <th className={styles.manageCol} aria-label="관리" />}
+                  <th className={styles.manageCol} aria-label="관리" />
                 </tr>
               </thead>
               <tbody>
@@ -164,8 +165,8 @@ export function EventList({ mode }: EventListProps) {
                       </span>
                     </td>
                     <td>{new Date(event.createdAt).toLocaleDateString("ko-KR")}</td>
-                    {isAdmin && (
-                      <td className={styles.manageCol}>
+                    <td className={styles.manageCol}>
+                      {canDeleteEvent(mode, event) && (
                         <button
                           type="button"
                           className={styles.deleteButton}
@@ -178,8 +179,8 @@ export function EventList({ mode }: EventListProps) {
                         >
                           <Trash2 size={16} />
                         </button>
-                      </td>
-                    )}
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
