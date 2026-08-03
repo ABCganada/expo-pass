@@ -2,6 +2,7 @@ import { baseApi } from "@/features/store/api/baseApi";
 import { queryResult } from "@/features/store/api/queryError";
 import { adminService } from "../services/adminService";
 import type {
+  AdSettlementDashboardSummary,
   DashboardSummary,
   PaymentLogDetail,
   PaymentLogPage,
@@ -12,6 +13,11 @@ const adminApi = baseApi.injectEndpoints({
     getPaymentDashboard: build.query<DashboardSummary, void>({
       queryFn: (_arg, api) =>
         queryResult(adminService.getDashboard(api.signal)),
+      providesTags: ["Payment"],
+    }),
+    getAdSettlementDashboard: build.query<AdSettlementDashboardSummary, void>({
+      queryFn: (_arg, api) =>
+        queryResult(adminService.getAdSettlementDashboard(api.signal)),
       providesTags: ["Payment"],
     }),
     getPaymentLogs: build.query<PaymentLogPage, { page: number; size: number }>(
@@ -32,6 +38,7 @@ const adminApi = baseApi.injectEndpoints({
 
 export const {
   useGetPaymentDashboardQuery,
+  useGetAdSettlementDashboardQuery,
   useGetPaymentLogsQuery,
   useGetPaymentLogDetailQuery,
 } = adminApi;
