@@ -84,6 +84,10 @@ dependencies {
     // 도메인 모듈 경계 및 구조 검증
     implementation("org.springframework.modulith:spring-modulith-starter-core")
 
+    // 모듈 간 도메인 이벤트 발행 durability 보장
+    // event_publication 테이블에 발행 이력 기록, 리스너가 처리 못 끝낸 이벤트는 재시작 시 재발행
+    implementation("org.springframework.modulith:spring-modulith-starter-jdbc")
+
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     annotationProcessor("org.projectlombok:lombok")

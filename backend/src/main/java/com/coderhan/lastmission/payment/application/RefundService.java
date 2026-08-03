@@ -33,6 +33,7 @@ public class RefundService {
     private final PaymentRepository paymentRepository;
     private final PaymentGateway paymentGateway;
     private final EventScheduleReader eventScheduleReader;
+    private final PaymentEventRecorder eventRecorder;
     private final Clock clock;
 
     /**
@@ -82,7 +83,9 @@ public class RefundService {
         }
 
         try {
-            return refundRepository.save(payment.id(), amount, reason, OffsetDateTime.now(clock));
+            /** 저장 + 이벤트 발행은 PaymentEventRecorder의 @Transactional 메서드가 하나로 묶어서 처리한다. */
+            return eventRecorder.reportRefund(payment.id(), payment.orderId(), payment.orderType(), amount, reason,
+                    OffsetDateTime.now(clock));
         } catch (DataIntegrityViolationException e) {
             throw new BusinessException(ErrorCode.PAYMENT_REFUND_ALREADY_EXISTS, "이미 진행 중인 환불 신청이 있습니다.");
         }

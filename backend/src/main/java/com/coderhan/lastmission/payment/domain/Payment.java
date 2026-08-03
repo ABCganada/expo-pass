@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
+import com.coderhan.lastmission.shared.order.OrderType;
 import lombok.Builder;
 
 @Builder
