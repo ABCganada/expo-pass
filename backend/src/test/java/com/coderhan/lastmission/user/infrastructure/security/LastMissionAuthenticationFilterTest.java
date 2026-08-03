@@ -23,6 +23,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.web.client.RestClientException;
 
 class LastMissionAuthenticationFilterTest {
@@ -38,7 +39,8 @@ class LastMissionAuthenticationFilterTest {
         authClient = org.mockito.Mockito.mock(AuthClient.class);
         service = org.mockito.Mockito.mock(UserProvisioningService.class);
         chain = org.mockito.Mockito.mock(FilterChain.class);
-        filter = new LastMissionAuthenticationFilter(authClient, service);
+        filter = new LastMissionAuthenticationFilter(authClient, service,
+                new RequestAttributeSecurityContextRepository());
         request = new MockHttpServletRequest("GET", "/api/v1/chat/rooms");
         response = new MockHttpServletResponse();
     }
