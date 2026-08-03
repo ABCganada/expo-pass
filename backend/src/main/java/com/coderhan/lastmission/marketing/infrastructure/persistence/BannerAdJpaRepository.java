@@ -30,4 +30,9 @@ interface BannerAdJpaRepository extends JpaRepository<BannerAdEntity, UUID> {
                                       @Param("statuses") List<BannerAdStatus> statuses);
 
     java.util.Optional<BannerAdEntity> findByOrderId(String orderId);
+
+    @Query("SELECT a.orderId FROM BannerAdEntity a WHERE a.status = :status AND a.createdAt < :threshold")
+    List<String> findOrderIdsByStatusAndCreatedAtBefore(
+            @Param("status") BannerAdStatus status,
+            @Param("threshold") OffsetDateTime threshold);
 }

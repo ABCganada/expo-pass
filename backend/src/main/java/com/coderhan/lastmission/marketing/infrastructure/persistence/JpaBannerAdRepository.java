@@ -96,6 +96,16 @@ class JpaBannerAdRepository implements BannerAdRepository {
                 Arrays.asList(BannerAdStatus.PENDING, BannerAdStatus.APPROVED));
     }
 
+    @Override
+    public Optional<BannerAd> findByOrderId(String orderId) {
+        return jpaRepository.findByOrderId(orderId).map(JpaBannerAdRepository::toDomain);
+    }
+
+    @Override
+    public List<String> findPendingOrderIdsOlderThan(OffsetDateTime threshold) {
+        return jpaRepository.findOrderIdsByStatusAndCreatedAtBefore(BannerAdStatus.PENDING, threshold);
+    }
+
     private static BannerAd toDomain(BannerAdEntity entity) {
         return new BannerAd(entity.getId(), entity.getSlotIds(), entity.getOrderId(), entity.getTitle(),
                 entity.getBannerImageUrl(), entity.getAdImageUrl(),

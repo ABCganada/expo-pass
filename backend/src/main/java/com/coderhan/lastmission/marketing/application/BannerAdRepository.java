@@ -23,4 +23,6 @@ public interface BannerAdRepository {
     List<BannerAd> findExpiredApproved(OffsetDateTime now);
     void deleteById(UUID id);
     boolean existsActiveOrPendingBySlotId(UUID slotId);
+    Optional<BannerAd> findByOrderId(String orderId);
+    List<String> findPendingOrderIdsOlderThan(OffsetDateTime threshold);
 }
