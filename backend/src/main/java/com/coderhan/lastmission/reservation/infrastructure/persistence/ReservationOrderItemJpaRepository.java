@@ -30,9 +30,12 @@ interface ReservationOrderItemJpaRepository extends JpaRepository<ReservationOrd
     int checkin(@Param("qrCodeHash") String qrCodeHash, @Param("adminUserId") long adminUserId,
                 @Param("now") OffsetDateTime now);
 
-    // 이 유저가 이 티켓을 지금까지(모든 주문에 걸쳐) 총 몇 장 샀는지 센다 (1인당 구매 제한 검증용)
+    // 이 유저가 이 티켓을 지금까지 몇 장 "유효하게"(취소/환불 제외) 샀는지 센다 (1인당 구매 제한 검증용) —
+    // 취소/환불된 주문까지 세면 한 번 취소한 사람이 다시는 그 티켓을 못 사게 되므로 PENDING/CONFIRMED만 카운트한다.
     @Query("SELECT COUNT(i) FROM ReservationOrderItemEntity i, ReservationOrderEntity o "
-            + "WHERE i.orderId = o.orderId AND o.userId = :userId AND i.ticketId = :ticketId")
+            + "WHERE i.orderId = o.orderId AND o.userId = :userId AND i.ticketId = :ticketId AND o.status IN "
+            + "(com.coderhan.lastmission.reservation.domain.OrderStatus.PENDING, "
+            + "com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED)")
     long countByUserIdAndTicketId(@Param("userId") Long userId, @Param("ticketId") Long ticketId);
 
     // 주어진 주문들에 대해 주문ID·티켓ID별 수량을 한 번의 쿼리로 집계 (목록 화면 N+1 방지용 — 페이지 단위로만 조회)
