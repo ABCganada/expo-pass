@@ -3,7 +3,10 @@ package com.coderhan.lastmission.payment.presentation;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import com.coderhan.lastmission.payment.application.SettlementPaymentDetail;
 import com.coderhan.lastmission.payment.application.SettlementService;
+import com.coderhan.lastmission.payment.domain.Payment;
+import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Settlement;
 import com.coderhan.lastmission.payment.domain.SettlementStatus;
 import com.coderhan.lastmission.shared.ApiResponse;
@@ -45,6 +48,23 @@ class SettlementController {
         return ApiResponse.success(SettlementResponse.from(settlement));
     }
 
+    /**
+     * 정산에 포함된 결제 내역 조회(감사용). 총매출 계산에 쓰인 것과 동일한 완료 결제 목록에
+     * 각 결제의 활성 환불액(refundAmount)을 같이 내려준다 — 환불이 없으면 0.
+     */
+    @GetMapping("/{settlementId}/payments")
+    ApiResponse<List<SettlementPaymentResponse>> payments(
+            @PathVariable String settlementId,
+            @AuthenticationPrincipal LastMissionPrincipal principal
+    ) {
+        List<SettlementPaymentResponse> payments = settlementService
+                .getSettlementPayments(principal.userId(), parseSettlementId(settlementId)).stream()
+                .map(SettlementPaymentResponse::from)
+                .toList();
+
+        return ApiResponse.success(payments);
+    }
+
     private long parseSettlementId(String value) {
         try {
             long id = Long.parseLong(value);
@@ -64,6 +84,18 @@ class SettlementController {
             return new SettlementResponse(Long.toString(settlement.id()), Long.toString(settlement.eventId()),
                     settlement.totalSales(), settlement.commissionRate(), settlement.commissionAmount(),
                     settlement.netAmount(), settlement.status(), settlement.settledAt(), settlement.createdAt());
+        }
+    }
+
+    record SettlementPaymentResponse(
+        String id, String orderId, BigDecimal amount, BigDecimal refundAmount, String method, PaymentStatus status,
+        String pgProvider, String pgTransactionId, OffsetDateTime paidAt, OffsetDateTime createdAt
+    ) {
+        static SettlementPaymentResponse from(SettlementPaymentDetail detail) {
+            Payment payment = detail.payment();
+            return new SettlementPaymentResponse(Long.toString(payment.id()), payment.orderId(), payment.amount(),
+                    detail.refundedAmount(), payment.method(), payment.status(), payment.pgProvider(),
+                    payment.pgTransactionId(), payment.paidAt(), payment.createdAt());
         }
     }
 }
