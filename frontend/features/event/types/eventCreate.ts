@@ -6,7 +6,7 @@ export interface CreateEventPayload {
   managerId: string;
 }
 
-export interface CreatedEvent {
+export interface EventSummary {
   id: string;
   title: string;
   categoryName: string;

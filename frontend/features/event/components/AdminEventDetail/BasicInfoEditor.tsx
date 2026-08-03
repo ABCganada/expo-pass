@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useUpdateAdminEventMutation } from "../../api/adminEventDetailApi";
-import { useChangeEventManagerMutation } from "../../api/eventCreateApi";
+import { useChangeAdminEventManagerMutation } from "../../api/adminEventApi";
 import { BasicInfoForm, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
 import type { AdminEventDetail } from "../../types/adminEventDetail";
 import { queryErrorMessage } from "@/features/store/api/queryError";
@@ -47,7 +47,7 @@ export function BasicInfoEditor({
   onSaved,
 }: BasicInfoEditorProps) {
   const [updateEvent, { isLoading: isUpdating }] = useUpdateAdminEventMutation();
-  const [changeManager, { isLoading: isChangingManager }] = useChangeEventManagerMutation();
+  const [changeManager, { isLoading: isChangingManager }] = useChangeAdminEventManagerMutation();
   const [values, setValues] = useState<BasicInfoFormValues>(() => toFormValues(detail, initialCategoryId));
   const [error, setError] = useState<string | null>(null);
 

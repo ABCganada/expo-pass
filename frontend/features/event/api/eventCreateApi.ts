@@ -1,31 +1,15 @@
 import { baseApi } from "@/features/store/api/baseApi";
 import { queryResult } from "@/features/store/api/queryError";
 import { eventCreateService } from "../services/eventCreateService";
-import type { CreateEventPayload, CreatedEvent } from "../types/eventCreate";
+import type { CreateEventPayload, EventSummary } from "../types/eventCreate";
 
 const eventCreateApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
-    createDraftEvent: build.mutation<CreatedEvent, CreateEventPayload>({
+    createDraftEvent: build.mutation<EventSummary, CreateEventPayload>({
       queryFn: (payload) => queryResult(eventCreateService.createDraftEvent(payload)),
       invalidatesTags: [{ type: "Event", id: "LIST" }],
-    }),
-
-    changeEventManager: build.mutation<CreatedEvent, { eventId: string; managerId: string }>({
-      queryFn: ({ eventId, managerId }) => queryResult(eventCreateService.changeManager(eventId, managerId)),
-      invalidatesTags: (_result, _error, { eventId }) => [
-        { type: "Event", id: eventId },
-        { type: "Event", id: "LIST" },
-      ],
-    }),
-
-    deleteEvent: build.mutation<void, string>({
-      queryFn: (eventId) => queryResult(eventCreateService.deleteEvent(eventId)),
-      invalidatesTags: (_result, _error, eventId) => [
-        { type: "Event", id: eventId },
-        { type: "Event", id: "LIST" },
-      ],
     }),
   }),
 });
 
-export const { useCreateDraftEventMutation, useChangeEventManagerMutation, useDeleteEventMutation } = eventCreateApi;
+export const { useCreateDraftEventMutation } = eventCreateApi;

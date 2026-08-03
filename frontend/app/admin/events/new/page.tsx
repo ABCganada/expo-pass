@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { useCreateDraftEventMutation, useChangeEventManagerMutation } from "@/features/event/api/eventCreateApi";
+import { useCreateDraftEventMutation } from "@/features/event/api/eventCreateApi";
+import { useChangeAdminEventManagerMutation } from "@/features/event/api/adminEventApi";
 import { useUpdateAdminEventMutation, useGetAdminEventDetailQuery } from "@/features/event/api/adminEventDetailApi";
 import { StepIndicator } from "@/features/event/components/EventCreateStepper/StepIndicator";
 import { Step1BasicInfo, type Step1Values } from "@/features/event/components/EventCreateStepper/Step1BasicInfo";
@@ -39,7 +40,7 @@ export default function NewEventPage() {
 
   const [createDraftEvent, { isLoading: isCreating }] = useCreateDraftEventMutation();
   const [updateEvent, { isLoading: isUpdating }] = useUpdateAdminEventMutation();
-  const [changeManager, { isLoading: isChangingManager }] = useChangeEventManagerMutation();
+  const [changeManager, { isLoading: isChangingManager }] = useChangeAdminEventManagerMutation();
   const { data: detail } = useGetAdminEventDetailQuery(eventId ?? "", { skip: !eventId });
 
   const updateValues = (patch: Partial<Step1Values>) => setValues((prev) => ({ ...prev, ...patch }));

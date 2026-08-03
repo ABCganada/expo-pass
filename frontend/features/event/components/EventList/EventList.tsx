@@ -3,15 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Plus, Settings, Trash2 } from "lucide-react";
-import { useGetAdminEventsQuery } from "../../api/adminEventApi";
-import { useDeleteEventMutation } from "../../api/eventCreateApi";
+import { useGetAdminEventsQuery, useDeleteAdminEventMutation } from "../../api/adminEventApi";
+import { useGetManagerEventsQuery, useDeleteManagerEventMutation } from "../../api/managerEventApi";
 import { ConfirmDialog } from "../ConfirmDialog/ConfirmDialog";
 import { Toast } from "../Toast/Toast";
 import type { AdminEventStatus } from "../../types/adminEvent";
+import { getEventsBasePath, type EventRole } from "../../types/eventRole";
 import { formatPeriod } from "../../utils/eventPhase";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { queryErrorMessage } from "@/features/store/api/queryError";
-import styles from "./AdminEventList.module.css";
+import styles from "./EventList.module.css";
 
 const STATUS_LABEL: Record<AdminEventStatus, string> = {
   DRAFT: "초안",
@@ -25,29 +26,38 @@ function statusTabLabel(value: AdminEventStatus | "ALL"): string {
   return value === "ALL" ? "전체" : STATUS_LABEL[value];
 }
 
-interface AdminEventListProps {
-  basePath: string;
+interface EventListProps {
+  mode: EventRole;
 }
 
-export function AdminEventList({ basePath }: AdminEventListProps) {
+function useEventListQuery(mode: EventRole, status: AdminEventStatus | undefined) {
+  const adminResult = useGetAdminEventsQuery(status, { skip: mode !== "admin" });
+  const managerResult = useGetManagerEventsQuery(status, { skip: mode !== "manager" });
+  return mode === "admin" ? adminResult : managerResult;
+}
+
+function useDeleteEvent(mode: EventRole) {
+  const [deleteAsAdmin, adminState] = useDeleteAdminEventMutation();
+  const [deleteAsManager, managerState] = useDeleteManagerEventMutation();
+  return mode === "admin" ? ([deleteAsAdmin, adminState] as const) : ([deleteAsManager, managerState] as const);
+}
+
+export function EventList({ mode }: EventListProps) {
   const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.roles.includes("ADMIN") ?? false;
+  const basePath = getEventsBasePath(mode);
 
   const [statusFilter, setStatusFilter] = useState<AdminEventStatus | "ALL">("ALL");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  const { data: allEvents = [], isLoading, isFetching, isError, error } = useGetAdminEventsQuery(
+  const { data: events = [], isLoading, isFetching, isError, error } = useEventListQuery(
+    mode,
     statusFilter === "ALL" ? undefined : statusFilter,
   );
-  const [deleteEvent, { isLoading: isDeleting }] = useDeleteEventMutation();
-
-  // ADMIN+MANAGER 겸직 계정이 /manager/events에서 전체 관리자로 보이는 문제 (임시 해결 TODO)
-  const events = basePath.startsWith("/manager")
-    ? allEvents.filter((event) => event.managerId === user?.id)
-    : allEvents;
+  const [deleteEvent, { isLoading: isDeleting }] = useDeleteEvent(mode);
 
   const goToDetail = (eventId: string) => router.push(`${basePath}/${eventId}`);
 
