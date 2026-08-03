@@ -15,7 +15,7 @@ export function Step3Images({ eventId, images, onBack, onNext }: Step3ImagesProp
   return (
     <div className={styles.pageCenter}>
       <div className={styles.stepBody}>
-        <ImageGridManager eventId={eventId} images={images} />
+        <ImageGridManager eventId={eventId} images={images} mode="manager" />
         <div className={styles.stepActions}>
           <button type="button" className={styles.backButton} onClick={onBack}>
             이전
