@@ -3,6 +3,10 @@
   padding: 24px 0 8px;
 }
 
+.bannerWrapper {
+  margin-bottom: 32px;
+}
+
 .filterRow {
   display: flex;
   align-items: flex-start;
