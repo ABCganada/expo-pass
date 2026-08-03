@@ -26,6 +26,15 @@ interface ReservationOrderJpaRepository extends JpaRepository<ReservationOrderEn
             """)
     int confirmIfPending(@Param("orderId") String orderId, @Param("now") OffsetDateTime now);
 
+    // 결제 환불(PaymentRefundedEvent) 시 CONFIRMED → REFUNDED 전환. 이미 다른 상태면 0건 갱신(멱등).
+    @Modifying
+    @Query("""
+            UPDATE ReservationOrderEntity o
+            SET o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.REFUNDED, o.updatedAt = :now
+            WHERE o.orderId = :orderId AND o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED
+            """)
+    int refundIfConfirmed(@Param("orderId") String orderId, @Param("now") OffsetDateTime now);
+
     // 관리자 예약자 명단 조회용
     List<ReservationOrderEntity> findByEventIdOrderByReservedAtDesc(Long eventId);
 

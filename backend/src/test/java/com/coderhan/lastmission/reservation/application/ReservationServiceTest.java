@@ -294,6 +294,33 @@ class ReservationServiceTest {
         verify(repository).confirmOrderIfPending(ORDER_ID, NOW);
     }
 
+    // ---------- refundOrder ----------
+
+    @Test
+    void refundOrderRestoresStockPerTicketWhenTransitionSucceeds() {
+        long otherTicketId = TICKET_ID + 1;
+        when(repository.refundOrderIfConfirmed(ORDER_ID, NOW)).thenReturn(true);
+        when(repository.findItems(ORDER_ID)).thenReturn(List.of(
+                new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-1", null),
+                new ReservationOrderItem(2L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-2", null),
+                new ReservationOrderItem(3L, ORDER_ID, otherTicketId, BigDecimal.valueOf(5000), "qr-3", null)));
+
+        service.refundOrder(ORDER_ID);
+
+        verify(eventQueryPort).increaseTicketStock(TICKET_ID, 2);
+        verify(eventQueryPort).increaseTicketStock(otherTicketId, 1);
+    }
+
+    @Test
+    void refundOrderDoesNothingWhenOrderWasNotConfirmed() {
+        when(repository.refundOrderIfConfirmed(ORDER_ID, NOW)).thenReturn(false);
+
+        service.refundOrder(ORDER_ID);
+
+        verify(repository, never()).findItems(anyString());
+        verify(eventQueryPort, never()).increaseTicketStock(anyLong(), anyInt());
+    }
+
     // ---------- 관리자 조회 / ReservationQueryPort ----------
 
     @Test

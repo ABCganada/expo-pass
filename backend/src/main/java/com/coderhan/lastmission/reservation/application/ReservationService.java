@@ -161,6 +161,24 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
+     * 결제 환불(PaymentRefundedEvent) 시 호출 — CONFIRMED 주문을 REFUNDED로 전환하고,
+     * 주문 시점에 차감했던 티켓 재고를 되돌린다. 이미 다른 상태로 바뀌었거나 존재하지 않는
+     * 주문이면 조용히 무시한다(이벤트 재전달에 안전해야 할 뿐 아니라, 재고를 두 번 복원하는
+     * 사고를 막기 위해서도 이 가드가 꼭 필요하다 — 그래서 재고 복원 전에 먼저 상태 전환이
+     * 실제로 일어났는지부터 확인한다).
+     */
+    @Transactional
+    public void refundOrder(String orderId) {
+        boolean refunded = repository.refundOrderIfConfirmed(orderId, OffsetDateTime.now(clock));
+        if (!refunded) {
+            return;
+        }
+        Map<Long, Long> quantityByTicketId = repository.findItems(orderId).stream()
+                .collect(Collectors.groupingBy(ReservationOrderItem::ticketId, Collectors.counting()));
+        quantityByTicketId.forEach((ticketId, quantity) -> eventQueryPort.increaseTicketStock(ticketId, quantity.intValue()));
+    }
+
+    /**
      * 관리자용 — 이 행사의 모든 주문(예약자 명단)을 최신순으로 조회한다.
      */
     @Transactional(readOnly = true)
