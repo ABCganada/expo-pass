@@ -25,6 +25,7 @@ const INITIAL_VALUES: Step1Values = {
   latitude: null,
   longitude: null,
   kakaoPlaceId: null,
+  legalDongCode: null,
 };
 
 export default function NewEventPage() {
@@ -62,7 +63,7 @@ export default function NewEventPage() {
     address: values.address || null,
     detailAddress: values.detailAddress || null,
     kakaoPlaceId: values.kakaoPlaceId,
-    legalDongCode: null,
+    legalDongCode: values.legalDongCode,
     latitude: values.latitude,
     longitude: values.longitude,
     startDate: values.startDate || null,

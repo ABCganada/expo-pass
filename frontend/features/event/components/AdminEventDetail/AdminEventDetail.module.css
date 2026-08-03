@@ -1,78 +1,62 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 40px;
+}
+
+.state {
+  display: flex;
+  min-height: 240px;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.tabBar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabButton {
+  padding: 12px 20px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.tabButton:hover {
+  color: var(--color-text-primary);
+}
+
+.tabButton[data-active="true"] {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tabPanel {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-sm);
+}
+
 .form {
   display: flex;
   flex-direction: column;
   gap: 24px;
   width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.fieldRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.field,
-.fieldFull {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.field span,
-.fieldFull span {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.field input,
-.field select,
-.fieldFull input,
-.fieldFull select {
-  height: 44px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-input);
-  background: var(--color-card-background);
-  color: var(--color-text-primary);
-  font-size: 14px;
-}
-
-.field textarea,
-.fieldFull textarea {
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-input);
-  background: var(--color-card-background);
-  color: var(--color-text-primary);
-  font-size: 14px;
-}
-
-.field input[data-invalid="true"],
-.field select[data-invalid="true"],
-.fieldFull input[data-invalid="true"],
-.fieldFull select[data-invalid="true"] {
-  border-color: var(--color-danger);
-}
-
-.field input:disabled,
-.field select:disabled,
-.fieldFull input:disabled,
-.fieldFull select:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.field input:focus,
-.field select:focus,
-.field textarea:focus,
-.fieldFull input:focus,
-.fieldFull select:focus,
-.fieldFull textarea:focus {
-  outline: none;
-  border-color: var(--color-primary);
 }
 
 .error {
@@ -83,6 +67,7 @@
 .formActions {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
 }
 
 .saveButton {
@@ -105,8 +90,44 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 767px) {
-  .fieldRow {
-    grid-template-columns: 1fr;
-  }
+.cancelButton {
+  padding: 10px 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelButton:hover:not(:disabled) {
+  border-color: var(--color-text-secondary);
+}
+
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.viewHeader {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.editButton {
+  padding: 10px 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.editButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
