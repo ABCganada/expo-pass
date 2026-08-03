@@ -53,10 +53,15 @@ public class TicketService {
 
         Ticket ticket = ticketRepository.findNotDeletedByIdAndEventId(ticketId, event.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.TICKET_NOT_FOUND, "티켓을 찾을 수 없습니다."));
-        validateTicketFields(command.name(), command.price(), ticket.getQuantityTotal(),
+        validateTicketFields(command.name(), command.price(), command.quantityTotal(),
                 command.maxPurchasePerUser(), command.saleStartAt(), command.saleEndAt());
 
-        ticket.updateDetails(command.name(), command.price(), command.maxPurchasePerUser(),
+        boolean saleAlreadyStarted = !ticket.getSaleStartAt().isAfter(Instant.now(clock));
+        if (saleAlreadyStarted && !Objects.equals(command.quantityTotal(), ticket.getQuantityTotal())) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "판매 시작 이후에는 총 수량을 수정할 수 없습니다.");
+        }
+
+        ticket.updateDetails(command.name(), command.price(), command.quantityTotal(), command.maxPurchasePerUser(),
                 command.saleStartAt(), command.saleEndAt());
         return ticket;
     }
@@ -109,12 +114,6 @@ public class TicketService {
     }
 
     private void validateTicketCreation(CreateTicketCommand command) {
-        if (command.quantityTotal() == null) {
-            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "총 수량은 필수입니다.");
-        }
-        if (command.quantityTotal() <= 0) {
-            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "총 수량은 1 이상이어야 합니다.");
-        }
         validateTicketFields(command.name(), command.price(), command.quantityTotal(),
                 command.maxPurchasePerUser(), command.saleStartAt(), command.saleEndAt());
     }
@@ -129,6 +128,12 @@ public class TicketService {
         }
         if (price < 0) {
             throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "가격은 0 이상이어야 합니다.");
+        }
+        if (quantityTotal == null) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "총 수량은 필수입니다.");
+        }
+        if (quantityTotal <= 0) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "총 수량은 1 이상이어야 합니다.");
         }
         if (maxPurchasePerUser == null) {
             throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "인당 최대 구매 수량은 필수입니다.");

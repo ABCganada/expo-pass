@@ -7,7 +7,10 @@ const adminEventApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     getAdminEvents: build.query<AdminEventListItem[], AdminEventStatus | undefined>({
       queryFn: (status, api) => queryResult(adminEventService.getAdminEvents(status, api.signal)),
-      providesTags: ["Event"],
+      providesTags: (result) =>
+        result
+          ? [...result.map((event) => ({ type: "Event" as const, id: event.id })), { type: "Event" as const, id: "LIST" }]
+          : [{ type: "Event" as const, id: "LIST" }],
     }),
   }),
 });

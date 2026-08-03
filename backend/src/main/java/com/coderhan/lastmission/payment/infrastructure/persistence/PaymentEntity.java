@@ -2,7 +2,7 @@ package com.coderhan.lastmission.payment.infrastructure.persistence;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import com.coderhan.lastmission.payment.domain.OrderType;
+import com.coderhan.lastmission.shared.order.OrderType;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -87,5 +87,10 @@ class PaymentEntity {
         this.paidAt = paidAt;
         this.createdAt = now;
         this.updatedAt = now;
+    }
+
+    void markRefunded(OffsetDateTime refundedAt) {
+        this.status = PaymentStatus.REFUNDED;
+        this.updatedAt = refundedAt;
     }
 }

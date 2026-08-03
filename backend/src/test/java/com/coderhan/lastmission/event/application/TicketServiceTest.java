@@ -103,6 +103,50 @@ class TicketServiceTest {
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.TICKET_NOT_FOUND));
     }
 
+    @Test
+    void updateTicket_판매_시작_전에는_총수량_변경_가능() {
+        Event event = event(EventStatus.PUBLISHED);
+        Ticket ticket = ticket(event, 100, 0); // SALE_START는 clock 기준 미래
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+        when(ticketRepository.findNotDeletedByIdAndEventId(TICKET_ID, EVENT_ID)).thenReturn(Optional.of(ticket));
+
+        Ticket updated = service.updateTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false,
+                new UpdateTicketCommand("수정된 티켓", 20000, 150, 4, SALE_START, SALE_END));
+
+        assertThat(updated.getQuantityTotal()).isEqualTo(150);
+        assertThat(updated.getQuantityRemaining()).isEqualTo(150);
+    }
+
+    @Test
+    void updateTicket_판매_시작_후에는_총수량_변경_불가() {
+        Event event = event(EventStatus.PUBLISHED);
+        Instant pastSaleStart = Instant.parse("2026-07-01T00:00:00Z"); // clock(2026-07-23) 기준 이미 시작됨
+        Ticket ticket = ticketWithSaleStart(event, 100, pastSaleStart);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+        when(ticketRepository.findNotDeletedByIdAndEventId(TICKET_ID, EVENT_ID)).thenReturn(Optional.of(ticket));
+
+        assertThatThrownBy(() -> service.updateTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false,
+                new UpdateTicketCommand("수정된 티켓", 20000, 150, 4, pastSaleStart, SALE_END)))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+        assertThat(ticket.getQuantityTotal()).isEqualTo(100);
+    }
+
+    @Test
+    void updateTicket_판매_시작_후에도_총수량이_동일하면_허용() {
+        Event event = event(EventStatus.PUBLISHED);
+        Instant pastSaleStart = Instant.parse("2026-07-01T00:00:00Z");
+        Ticket ticket = ticketWithSaleStart(event, 100, pastSaleStart);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+        when(ticketRepository.findNotDeletedByIdAndEventId(TICKET_ID, EVENT_ID)).thenReturn(Optional.of(ticket));
+
+        Ticket updated = service.updateTicket(EVENT_ID, TICKET_ID, MANAGER_ID, false,
+                new UpdateTicketCommand("수정된 티켓", 20000, 100, 4, pastSaleStart, SALE_END));
+
+        assertThat(updated.getName()).isEqualTo("수정된 티켓");
+        assertThat(updated.getQuantityTotal()).isEqualTo(100);
+    }
+
     // ── deleteTicket ─────────────────────────────────────────────────────────
 
     @Test
@@ -199,7 +243,15 @@ class TicketServiceTest {
     }
 
     private Ticket ticket(Event event, int quantityTotal, int sold) {
-        Ticket ticket = new Ticket(event, "일반권", 10000, quantityTotal, 4, SALE_START, SALE_END);
+        return ticketWithSaleStart(event, quantityTotal, sold, SALE_START);
+    }
+
+    private Ticket ticketWithSaleStart(Event event, int quantityTotal, Instant saleStartAt) {
+        return ticketWithSaleStart(event, quantityTotal, 0, saleStartAt);
+    }
+
+    private Ticket ticketWithSaleStart(Event event, int quantityTotal, int sold, Instant saleStartAt) {
+        Ticket ticket = new Ticket(event, "일반권", 10000, quantityTotal, 4, saleStartAt, SALE_END);
         ReflectionTestUtils.setField(ticket, "id", TICKET_ID);
         if (sold > 0) {
             ReflectionTestUtils.setField(ticket, "quantityRemaining", quantityTotal - sold);
@@ -212,6 +264,6 @@ class TicketServiceTest {
     }
 
     private UpdateTicketCommand updateCommand() {
-        return new UpdateTicketCommand("수정된 티켓", 20000, 4, SALE_START, SALE_END);
+        return new UpdateTicketCommand("수정된 티켓", 20000, 100, 4, SALE_START, SALE_END);
     }
 }

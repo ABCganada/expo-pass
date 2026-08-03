@@ -18,13 +18,21 @@ export default function AdminBannersPage() {
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>("deadline");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const slotMap = new Map<string, string>(slots.map((s: BannerSlot) => [s.id, s.name]));
-  const pendingAds = ads.filter((ad) => ad.status === "PENDING");
-  const otherAds = ads.filter((ad) => ad.status !== "PENDING");
+
+  const matchesSearch = (ad: MarketerBannerAd) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return ad.title.toLowerCase().includes(q) || ad.createdBy.toLowerCase().includes(q);
+  };
+
+  const pendingAds = ads.filter((ad) => ad.status === "PENDING" && matchesSearch(ad));
+  const otherAds = ads.filter((ad) => ad.status !== "PENDING" && matchesSearch(ad));
 
   const slotAds = selectedSlotId
-    ? [...ads.filter((ad) => ad.slotIds.includes(selectedSlotId))].sort((a, b) => {
+    ? [...ads.filter((ad) => ad.slotIds.includes(selectedSlotId) && matchesSearch(ad))].sort((a, b) => {
         if (sortOrder === "deadline") return new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime();
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       })
@@ -32,6 +40,17 @@ export default function AdminBannersPage() {
 
   return (
     <div className={styles.page}>
+      {/* 검색 */}
+      <div className={styles.searchBar}>
+        <input
+          type="text"
+          className={styles.searchInput}
+          placeholder="광고 제목 또는 등록자 이메일로 검색"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       {/* 슬롯 탭 */}
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
@@ -88,9 +107,14 @@ export default function AdminBannersPage() {
                 {slotAds.map((ad: MarketerBannerAd) => (
                   <div key={ad.id} className={styles.slotAdItem}>
                     <span className={styles.slotAdTitle}>{ad.title}</span>
-                    <span className={styles.slotAdDeadline}>
-                      ~{new Date(ad.endsAt).toLocaleDateString("ko-KR")}
-                    </span>
+                    <div className={styles.slotAdDates}>
+                      <span className={styles.slotAdCreatedAt}>
+                        {new Date(ad.createdAt).toLocaleDateString("ko-KR")} 등록
+                      </span>
+                      <span className={styles.slotAdDeadline}>
+                        ~{new Date(ad.endsAt).toLocaleDateString("ko-KR")}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
