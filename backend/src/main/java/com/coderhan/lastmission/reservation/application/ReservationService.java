@@ -151,6 +151,16 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
+     * 결제 승인(PaymentConfirmedEvent) 시 호출 — PENDING 주문을 CONFIRMED로 전환한다.
+     * 이미 다른 상태로 바뀌었거나 존재하지 않는 주문이면 조용히 무시한다(이벤트는 재전달·중복
+     * 처리될 수 있으므로 리스너가 예외 없이 멱등하게 동작해야 한다).
+     */
+    @Transactional
+    public void confirmOrder(String orderId) {
+        repository.confirmOrderIfPending(orderId, OffsetDateTime.now(clock));
+    }
+
+    /**
      * 관리자용 — 이 행사의 모든 주문(예약자 명단)을 최신순으로 조회한다.
      */
     @Transactional(readOnly = true)

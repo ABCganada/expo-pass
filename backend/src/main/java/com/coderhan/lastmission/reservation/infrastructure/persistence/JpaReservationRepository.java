@@ -72,6 +72,11 @@ class JpaReservationRepository implements ReservationRepository {
     }
 
     @Override
+    public boolean confirmOrderIfPending(String orderId, OffsetDateTime now) {
+        return orderJpaRepository.confirmIfPending(orderId, now) > 0;
+    }
+
+    @Override
     public OrderPage findOrdersByUserId(long userId, OrderStatus status, int page, int size) {
         int safeSize = Math.clamp(size, 1, 100);
         int safePage = Math.max(page, 0);

@@ -285,6 +285,15 @@ class ReservationServiceTest {
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_QR_NOT_FOUND));
     }
 
+    // ---------- confirmOrder ----------
+
+    @Test
+    void confirmOrderTransitionsPendingOrderUsingCurrentTime() {
+        service.confirmOrder(ORDER_ID);
+
+        verify(repository).confirmOrderIfPending(ORDER_ID, NOW);
+    }
+
     // ---------- 관리자 조회 / ReservationQueryPort ----------
 
     @Test
