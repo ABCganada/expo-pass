@@ -1,11 +1,7 @@
 .slider {
   position: relative;
   width: 100%;
-  max-width: 728px;
-  margin: 16px 0 0 auto;
-  border-radius: var(--radius-card);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
 }
 
 .track {
@@ -15,7 +11,7 @@
 .banner {
   display: block;
   width: 100%;
-  height: 200px;
+  height: 220px;
   border: none;
   padding: 0;
   cursor: pointer;
@@ -107,10 +103,7 @@
 /* skeleton */
 .skeleton {
   width: 100%;
-  max-width: 728px;
-  height: 200px;
-  margin: 16px 0 0 auto;
-  border-radius: var(--radius-card);
+  height: 220px;
   background: linear-gradient(
     90deg,
     var(--color-border) 25%,
@@ -128,18 +121,11 @@
 
 /* 반응형 */
 @media (max-width: 767px) {
-  .slider {
-    max-width: 100%;
-    margin: 16px 0 0 0;
-  }
-
   .banner {
     height: 180px;
   }
 
   .skeleton {
-    max-width: 100%;
     height: 180px;
-    margin: 16px 0 0 0;
   }
 }
