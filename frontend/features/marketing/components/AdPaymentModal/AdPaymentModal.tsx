@@ -22,7 +22,7 @@ export function AdPaymentModal({ orderId, adTitle, onClose }: AdPaymentModalProp
             ✕
           </button>
         </div>
-        <PaymentDetailContent orderId={orderId} />
+        <PaymentDetailContent orderId={orderId} hideRefund />
       </div>
     </div>
   );

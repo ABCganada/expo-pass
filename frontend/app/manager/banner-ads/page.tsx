@@ -33,10 +33,7 @@ export default function BannerAdsPage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <div>
-          <h1 className={styles.pageTitle}>광고 관리</h1>
-          <p className={styles.pageDesc}>등록한 배너 광고를 관리하고 성과를 확인하세요.</p>
-        </div>
+        <div />
         <button type="button" className={styles.btnRegister} onClick={() => setRegisterOpen(true)}>
           <Plus size={16} />
           광고 등록

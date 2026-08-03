@@ -10,6 +10,7 @@ import styles from "./PaymentDetailContent.module.css";
 
 interface PaymentDetailContentProps {
   orderId: string;
+  hideRefund?: boolean;
 }
 
 const STATUS_LABEL: Record<PaymentStatus, string> = {
@@ -35,7 +36,7 @@ function formatDate(value: string | null): string {
   });
 }
 
-export function PaymentDetailContent({ orderId }: PaymentDetailContentProps) {
+export function PaymentDetailContent({ orderId, hideRefund = false }: PaymentDetailContentProps) {
   const { data: payment, isLoading, isError } = useGetPaymentQuery(orderId);
   const [requestRefund, { isLoading: isRefunding }] = useRequestRefundMutation();
   const [refundMessage, setRefundMessage] = useState<string | null>(null);
@@ -103,7 +104,7 @@ export function PaymentDetailContent({ orderId }: PaymentDetailContentProps) {
           <span className={styles.badge} data-status={payment.status}>
             {STATUS_LABEL[payment.status]}
           </span>
-          {payment.status === "COMPLETED" && (
+          {!hideRefund && payment.status === "COMPLETED" && (
             <div className={styles.menuWrapper} ref={menuRef}>
               <button
                 type="button"
@@ -141,6 +142,7 @@ export function PaymentDetailContent({ orderId }: PaymentDetailContentProps) {
           </div>
         ))}
       </div>
+
 
       {refundMessage && <p className={styles.successMessage}>{refundMessage}</p>}
       {refundError && <p className={styles.errorMessage}>{refundError}</p>}
