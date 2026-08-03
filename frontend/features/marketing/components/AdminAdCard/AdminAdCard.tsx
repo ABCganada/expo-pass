@@ -49,7 +49,7 @@ export function AdminAdCard({ ad, slotName }: AdminAdCardProps) {
       </div>
 
       <div className={styles.actions}>
-        {ad.status === "PENDING" && (
+        {ad.status === "PAID" && (
           <>
             <button
               type="button"
