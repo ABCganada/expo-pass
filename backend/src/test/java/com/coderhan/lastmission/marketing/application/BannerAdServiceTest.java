@@ -213,6 +213,17 @@ class BannerAdServiceTest {
     }
 
     @Test
+    void approve_결제전_PENDING이면_예외() {
+        // Arrange
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.approve(AD_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_PAYMENT_REQUIRED));
+    }
+
+    @Test
     void approve_이미_처리된_광고면_예외() {
         // Arrange
         when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.APPROVED)));
@@ -224,10 +235,10 @@ class BannerAdServiceTest {
     }
 
     @Test
-    void approve_PENDING_광고면_APPROVED로_변경() {
+    void approve_PAID_광고면_APPROVED로_변경() {
         // Arrange
         BannerAd approved = ad(BannerAdStatus.APPROVED);
-        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PAID)));
         when(adRepository.updateStatus(AD_ID, BannerAdStatus.APPROVED)).thenReturn(approved);
 
         // Act
@@ -243,10 +254,21 @@ class BannerAdServiceTest {
     // ─────────────────────────────────────────────────────────────────────────
 
     @Test
-    void reject_PENDING_광고면_REJECTED로_변경() {
+    void reject_결제전_PENDING이면_예외() {
+        // Arrange
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.reject(AD_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_PAYMENT_REQUIRED));
+    }
+
+    @Test
+    void reject_PAID_광고면_REJECTED로_변경() {
         // Arrange
         BannerAd rejected = ad(BannerAdStatus.REJECTED);
-        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PENDING)));
+        when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PAID)));
         when(adRepository.updateStatus(AD_ID, BannerAdStatus.REJECTED)).thenReturn(rejected);
 
         // Act

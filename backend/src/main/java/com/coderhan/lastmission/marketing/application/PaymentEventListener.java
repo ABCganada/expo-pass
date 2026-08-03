@@ -1,7 +1,6 @@
 package com.coderhan.lastmission.marketing.application;
 
 import com.coderhan.lastmission.shared.event.PaymentConfirmedEvent;
-import com.coderhan.lastmission.shared.event.PaymentRefundedEvent;
 import com.coderhan.lastmission.shared.order.OrderType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -18,14 +17,6 @@ class PaymentEventListener {
         if (event.orderType() != OrderType.ADVERTISEMENT) {
             return;
         }
-        bannerAdService.approveByOrderId(event.orderId());
-    }
-
-    @ApplicationModuleListener
-    public void on(PaymentRefundedEvent event) {
-        if (event.orderType() != OrderType.ADVERTISEMENT) {
-            return;
-        }
-        bannerAdService.refundByOrderId(event.orderId());
+        bannerAdService.markAsPaidByOrderId(event.orderId());
     }
 }

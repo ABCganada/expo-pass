@@ -67,7 +67,10 @@ public class BannerAdService {
     public BannerAd approve(UUID id) {
         BannerAd ad = adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
-        if (ad.status() != BannerAdStatus.PENDING) {
+        if (ad.status() == BannerAdStatus.PENDING) {
+            throw new BusinessException(ErrorCode.BANNER_AD_PAYMENT_REQUIRED, "결제가 완료되지 않은 광고입니다.");
+        }
+        if (ad.status() != BannerAdStatus.PAID) {
             throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "이미 처리된 광고입니다.");
         }
         return adRepository.updateStatus(id, BannerAdStatus.APPROVED);
@@ -77,7 +80,10 @@ public class BannerAdService {
     public BannerAd reject(UUID id) {
         BannerAd ad = adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
-        if (ad.status() != BannerAdStatus.PENDING) {
+        if (ad.status() == BannerAdStatus.PENDING) {
+            throw new BusinessException(ErrorCode.BANNER_AD_PAYMENT_REQUIRED, "결제가 완료되지 않은 광고입니다.");
+        }
+        if (ad.status() != BannerAdStatus.PAID) {
             throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "이미 처리된 광고입니다.");
         }
         return adRepository.updateStatus(id, BannerAdStatus.REJECTED);
@@ -112,33 +118,15 @@ public class BannerAdService {
         adRepository.deleteById(id);
     }
 
-    /** 결제 완료 이벤트 리스너용 — 멱등 (이미 APPROVED면 스킵). */
+    /** 결제 완료 이벤트 리스너용 — 멱등 (이미 PAID 이상이면 스킵). */
     @Transactional
-    public void approveByOrderId(String orderId) {
+    public void markAsPaidByOrderId(String orderId) {
         adRepository.findByOrderId(orderId).ifPresent(ad -> {
-            if (ad.status() == BannerAdStatus.APPROVED) {
-                return;
-            }
             if (ad.status() != BannerAdStatus.PENDING) {
-                log.warn("approveByOrderId: 예상 밖 상태. orderId={}, status={}", orderId, ad.status());
+                log.warn("markAsPaidByOrderId: 예상 밖 상태. orderId={}, status={}", orderId, ad.status());
                 return;
             }
-            adRepository.updateStatus(ad.id(), BannerAdStatus.APPROVED);
-        });
-    }
-
-    /** 환불 이벤트 리스너용 — 멱등 (이미 REFUNDED면 스킵). */
-    @Transactional
-    public void refundByOrderId(String orderId) {
-        adRepository.findByOrderId(orderId).ifPresent(ad -> {
-            if (ad.status() == BannerAdStatus.REFUNDED) {
-                return;
-            }
-            if (ad.status() != BannerAdStatus.APPROVED) {
-                log.warn("refundByOrderId: 예상 밖 상태. orderId={}, status={}", orderId, ad.status());
-                return;
-            }
-            adRepository.updateStatus(ad.id(), BannerAdStatus.REFUNDED);
+            adRepository.updateStatus(ad.id(), BannerAdStatus.PAID);
         });
     }
 

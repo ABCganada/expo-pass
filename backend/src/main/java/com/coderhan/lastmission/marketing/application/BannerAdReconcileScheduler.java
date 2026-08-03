@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 /**
  * 결제 이벤트 유실 등으로 PENDING 상태로 남은 광고를 주기적으로 정리한다.
  *
- * <p>결제가 완료됐는데 이벤트가 유실된 경우 → APPROVED로 보정.
+ * <p>결제가 완료됐는데 이벤트가 유실된 경우 → PAID로 보정(관리자 검토 대기).
  * 결제 시도 없이 타임아웃된 경우 → CANCELLED 처리.
  * 타임아웃 기준: 등록 후 1시간 경과.
  */
@@ -43,7 +43,7 @@ class BannerAdReconcileScheduler {
         for (String orderId : pendingOrderIds) {
             if (paidOrderIds.contains(orderId)) {
                 log.info("reconcile: 결제 완료됐으나 PENDING 광고 보정. orderId={}", orderId);
-                bannerAdService.approveByOrderId(orderId);
+                bannerAdService.markAsPaidByOrderId(orderId);
             } else {
                 log.info("reconcile: 미결제 타임아웃 광고 취소. orderId={}", orderId);
                 bannerAdService.cancelByOrderId(orderId);

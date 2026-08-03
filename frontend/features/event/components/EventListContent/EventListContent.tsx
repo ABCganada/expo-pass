@@ -12,6 +12,7 @@ import {
 import { CategoryTabs } from "../CategoryTabs/CategoryTabs";
 import { EventCard } from "../EventCard/EventCard";
 import { StatusFilterDropdown } from "../StatusFilterDropdown/StatusFilterDropdown";
+import { BannerSlider } from "@/features/marketing/components/BannerSlider/BannerSlider";
 import styles from "./EventListContent.module.css";
 
 type PhaseFilter = "ALL" | "UPCOMING" | "ONGOING" | "ENDED";
@@ -37,6 +38,10 @@ export function EventListContent() {
 
   return (
     <div className={styles.page}>
+      <div className={styles.bannerWrapper}>
+        <BannerSlider />
+      </div>
+
       <header className={styles.header}>
         <h1 className={styles.title}>박람회</h1>
         <p className={styles.subtitle}>진행 중이거나 예정된 박람회를 둘러보세요.</p>
