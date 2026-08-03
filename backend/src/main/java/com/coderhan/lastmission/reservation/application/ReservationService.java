@@ -134,7 +134,9 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
-     * 관리자 QR 체크인. 이미 체크인됐거나 존재하지 않는 QR이면 예외.
+     * 관리자 QR 체크인. 존재하지 않는 QR·이미 체크인됨·주문이 CONFIRMED가 아님(결제대기/취소/환불)
+     * 이면 예외 — 특히 환불된 결제의 QR을 캡처해뒀다가 현장에서 스캔하는 경우를 막기 위해,
+     * DB 쪽 조건부 UPDATE 자체가 주문 상태까지 함께 확인한다(체크인 성공은 CONFIRMED일 때만).
      */
     @Transactional
     public ReservationOrderItem checkin(long adminUserId, String qrCodeHash) {
@@ -144,8 +146,15 @@ public class ReservationService implements ReservationQueryPort {
             ReservationOrderItem existing = repository.findItemByQrCodeHash(qrCodeHash)
                     .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_QR_NOT_FOUND,
                             "존재하지 않는 QR입니다."));
-            throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CHECKED_IN,
-                    "이미 체크인된 티켓입니다. (체크인 시각: " + existing.checkedInAt() + ")");
+            if (existing.checkedInAt() != null) {
+                throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CHECKED_IN,
+                        "이미 체크인된 티켓입니다. (체크인 시각: " + existing.checkedInAt() + ")");
+            }
+            OrderStatus status = repository.findOrder(existing.orderId())
+                    .map(ReservationOrder::status)
+                    .orElse(null);
+            throw new BusinessException(ErrorCode.RESERVATION_INVALID_TICKET_STATUS,
+                    "체크인할 수 없는 티켓입니다. (주문 상태: " + status + ")");
         }
         return repository.findItemByQrCodeHash(qrCodeHash).orElseThrow();
     }
