@@ -45,13 +45,14 @@ export function CategoryManager() {
 
   return (
     <section className={styles.page}>
-      <header className={styles.header}>
-        <button type="button" className={styles.backButton} onClick={() => router.push("/admin/events")}>
-          <ArrowLeft size={16} />
-          목록으로
-        </button>
-        <h1 className={styles.title}>카테고리 관리</h1>
-      </header>
+      <button
+        type="button"
+        className={styles.backButton}
+        onClick={() => router.push("/admin/events")}
+      >
+        <ArrowLeft size={16} />
+        목록으로
+      </button>
 
       {actionError && <p className={styles.error}>{actionError}</p>}
 

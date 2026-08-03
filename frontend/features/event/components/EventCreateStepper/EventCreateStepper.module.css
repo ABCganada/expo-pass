@@ -85,6 +85,7 @@
 .pageCenter {
   display: flex;
   justify-content: center;
+  margin-top: 24px;
 }
 
 .stepBody {
