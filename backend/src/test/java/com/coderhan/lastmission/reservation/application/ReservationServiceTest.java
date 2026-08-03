@@ -73,7 +73,8 @@ class ReservationServiceTest {
         BigDecimal totalAmount = realPrice.multiply(BigDecimal.valueOf(2));
         ReservationOrder order =
                 new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID, OrderStatus.PENDING, totalAmount, NOW, NOW);
-        when(repository.createOrder(ORDER_ID, USER_ID, EVENT_ID, totalAmount, NOW)).thenReturn(order);
+        when(repository.createOrder(ORDER_ID, USER_ID, EVENT_ID, totalAmount, OrderStatus.PENDING, NOW))
+                .thenReturn(order);
 
         ReservationOrderItem item1 = new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, realPrice, "qr-1", null);
         ReservationOrderItem item2 = new ReservationOrderItem(2L, ORDER_ID, TICKET_ID, realPrice, "qr-2", null);
@@ -103,7 +104,8 @@ class ReservationServiceTest {
         BigDecimal totalAmount = realPrice.multiply(BigDecimal.valueOf(3));
         ReservationOrder order =
                 new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID, OrderStatus.PENDING, totalAmount, NOW, NOW);
-        when(repository.createOrder(ORDER_ID, USER_ID, EVENT_ID, totalAmount, NOW)).thenReturn(order);
+        when(repository.createOrder(ORDER_ID, USER_ID, EVENT_ID, totalAmount, OrderStatus.PENDING, NOW))
+                .thenReturn(order);
         when(repository.addItem(eq(ORDER_ID), eq(TICKET_ID), eq(realPrice), anyString()))
                 .thenReturn(
                         new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, realPrice, "qr-1", null),
@@ -178,7 +180,29 @@ class ReservationServiceTest {
         assertThatThrownBy(() -> service.createOrder(USER_ID, EVENT_ID, items))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.TICKET_SOLD_OUT));
-        verify(repository, never()).createOrder(any(), anyLong(), anyLong(), any(), any());
+        verify(repository, never()).createOrder(any(), anyLong(), anyLong(), any(), any(), any());
+    }
+
+    @Test
+    void createOrderConfirmsImmediatelyWhenTotalAmountIsZero() {
+        List<ReservationService.OrderItemRequest> items =
+                List.of(new ReservationService.OrderItemRequest(TICKET_ID, BigDecimal.ZERO, 1));
+        when(repository.nextOrderId(NOW.toLocalDate())).thenReturn(ORDER_ID);
+        when(eventQueryPort.getTicketInfo(TICKET_ID)).thenReturn(Optional.of(ticketInfo(0, 5)));
+        when(repository.countPurchasedQuantity(USER_ID, TICKET_ID)).thenReturn(0L);
+        when(eventQueryPort.decreaseTicketStock(TICKET_ID, 1)).thenReturn(true);
+
+        ReservationOrder order = new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID,
+                OrderStatus.CONFIRMED, BigDecimal.ZERO, NOW, NOW);
+        when(repository.createOrder(ORDER_ID, USER_ID, EVENT_ID, BigDecimal.ZERO, OrderStatus.CONFIRMED, NOW))
+                .thenReturn(order);
+        when(repository.addItem(eq(ORDER_ID), eq(TICKET_ID), eq(BigDecimal.ZERO), anyString()))
+                .thenReturn(new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, BigDecimal.ZERO, "qr-1", null));
+
+        ReservationService.OrderDetail result = service.createOrder(USER_ID, EVENT_ID, items);
+
+        assertThat(result.order().status()).isEqualTo(OrderStatus.CONFIRMED);
+        verify(repository).createOrder(ORDER_ID, USER_ID, EVENT_ID, BigDecimal.ZERO, OrderStatus.CONFIRMED, NOW);
     }
 
     // ---------- getOrder ----------

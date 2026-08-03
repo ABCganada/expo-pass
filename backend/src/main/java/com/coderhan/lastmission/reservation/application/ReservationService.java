@@ -84,7 +84,9 @@ public class ReservationService implements ReservationQueryPort {
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        ReservationOrder order = repository.createOrder(orderId, userId, eventId, totalAmount, now);
+        // 무료(0원) 주문은 결제 자체가 필요 없으므로 PENDING을 거치지 않고 바로 CONFIRMED로 생성한다.
+        OrderStatus initialStatus = totalAmount.signum() == 0 ? OrderStatus.CONFIRMED : OrderStatus.PENDING;
+        ReservationOrder order = repository.createOrder(orderId, userId, eventId, totalAmount, initialStatus, now);
         // 티켓 한 장 = row 한 개. 같은 티켓을 quantity장 사면 addItem을 quantity번 호출해 각 장을 개별 row로 만든다
         // (장마다 현장에서 독립적으로 QR 체크인되어야 하므로 하나의 row에 quantity로 뭉쳐두지 않는다).
         List<ReservationOrderItem> savedItems = items.stream()

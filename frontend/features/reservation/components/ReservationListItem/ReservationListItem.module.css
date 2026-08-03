@@ -164,6 +164,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 176px;
   flex-shrink: 0;
 }
 
@@ -204,13 +205,14 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   white-space: nowrap;
 }
 
 .paymentButton:hover {
-  background: var(--color-page-background);
-  transform: translateY(-2px);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
 }
 
 @media (max-width: 1023px) {
