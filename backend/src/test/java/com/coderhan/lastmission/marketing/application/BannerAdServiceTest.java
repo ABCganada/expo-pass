@@ -38,8 +38,8 @@ class BannerAdServiceTest {
     private static final UUID SLOT_ID = UUID.randomUUID();
     private static final UUID AD_ID = UUID.randomUUID();
     private static final Set<UUID> SLOT_IDS = Set.of(SLOT_ID);
-    private static final String MARKETER = "marketer@example.com";
-    private static final String OTHER = "other@example.com";
+    private static final long MARKETER = 1001L;
+    private static final long OTHER = 9999L;
     private static final OffsetDateTime NOW = OffsetDateTime.parse("2026-07-28T00:00:00Z");
     private static final OffsetDateTime STARTS_AT = NOW.plusDays(1);
     private static final OffsetDateTime ENDS_AT = NOW.plusDays(8); // 7일
@@ -128,6 +128,7 @@ class BannerAdServiceTest {
         when(slotRepository.findAllByIds(SLOT_IDS)).thenReturn(List.of(bannerSlot()));
         when(adRepository.save(eq(SLOT_IDS), anyString(), eq("여름 세일"), eq("https://img.example.com/banner.png"),
                 isNull(), isNull(), eq(STARTS_AT), eq(ENDS_AT), eq(MARKETER), eq(expectedAmount))).thenReturn(expected);
+
 
         // Act
         BannerAd result = service.registerAd(
@@ -288,7 +289,7 @@ class BannerAdServiceTest {
                 null, status, STARTS_AT, ENDS_AT, MARKETER, NOW, null);
     }
 
-    private BannerAd ad(BannerAdStatus status, Long totalAmount) {
+    private BannerAd ad(BannerAdStatus status, long totalAmount) {
         return new BannerAd(AD_ID, SLOT_IDS, null, "여름 세일",
                 "https://img.example.com/banner.png", null,
                 null, status, STARTS_AT, ENDS_AT, MARKETER, NOW, totalAmount);

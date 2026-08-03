@@ -63,7 +63,7 @@ class BannerMarketerController {
 
     @GetMapping
     ApiResponse<List<BannerAdResponse>> getMyAds(@AuthenticationPrincipal LastMissionPrincipal principal) {
-        return ApiResponse.success(bannerAdService.getMyAds(principal.email()).stream()
+        return ApiResponse.success(bannerAdService.getMyAds(principal.userId()).stream()
                 .map(BannerAdResponse::from)
                 .toList());
     }
@@ -74,7 +74,7 @@ class BannerMarketerController {
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAd ad = bannerAdService.registerAd(
                 request.slotIds(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
-                request.linkUrl(), request.startsAt(), request.endsAt(), principal.email());
+                request.linkUrl(), request.startsAt(), request.endsAt(), principal.userId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(BannerAdResponse.from(ad)));
     }
 
@@ -84,7 +84,7 @@ class BannerMarketerController {
             @RequestBody UpdateAdRequest request,
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAd ad = bannerAdService.updateAd(
-                id, principal.email(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
+                id, principal.userId(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
                 request.linkUrl(), request.startsAt(), request.endsAt());
         return ApiResponse.success(BannerAdResponse.from(ad));
     }
