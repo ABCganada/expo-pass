@@ -71,7 +71,7 @@ export function PaymentCheckoutButton({
         onClick={handleClick}
         disabled={disabled || isRequesting}
       >
-        {isRequesting ? "결제 준비 중..." : "결제하기"}
+        {isRequesting ? "결제 진행 중..." : "결제하기"}
       </button>
       {error && <p className={styles.error}>{error}</p>}
     </div>
