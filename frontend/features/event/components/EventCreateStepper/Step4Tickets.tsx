@@ -15,7 +15,7 @@ export function Step4Tickets({ eventId, tickets, onBack, onComplete }: Step4Tick
   return (
     <div className={styles.pageCenter}>
       <div className={styles.stepBody}>
-        <TicketCardList eventId={eventId} tickets={tickets} />
+        <TicketCardList eventId={eventId} tickets={tickets} mode="manager" />
         <div className={styles.stepActions}>
           <button type="button" className={styles.backButton} onClick={onBack}>
             이전

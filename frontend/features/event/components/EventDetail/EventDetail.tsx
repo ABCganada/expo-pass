@@ -65,7 +65,7 @@ export function EventDetail({ eventId, mode }: EventDetailProps) {
         {activeTab === "basic" && <BasicInfoTab eventId={eventId} detail={detail} mode={mode} onSaved={setToast} />}
         {activeTab === "content" && <ContentTab eventId={eventId} detail={detail} mode={mode} onSaved={setToast} />}
         {activeTab === "images" && <ImageGridManager eventId={eventId} images={detail.images} mode={mode} />}
-        {activeTab === "tickets" && <TicketCardList eventId={eventId} tickets={detail.tickets} />}
+        {activeTab === "tickets" && <TicketCardList eventId={eventId} tickets={detail.tickets} mode={mode} />}
       </div>
 
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}

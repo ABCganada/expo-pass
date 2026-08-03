@@ -8,15 +8,17 @@ import { TicketCard } from "./TicketCard";
 import { TicketCardEditForm } from "./TicketCardEditForm";
 import { useTicketMutations } from "./useTicketMutations";
 import { EMPTY_DRAFT, draftFromTicket, type TicketDraft } from "./ticketUtils";
+import type { EventRole } from "../../types/eventRole";
 import styles from "./TicketCardList.module.css";
 
 interface TicketCardListProps {
   eventId: string;
   tickets: EventTicket[];
+  mode: EventRole;
 }
 
-export function TicketCardList({ eventId, tickets }: TicketCardListProps) {
-  const { create, update, remove, isCreating, isUpdating, error, setError } = useTicketMutations(eventId);
+export function TicketCardList({ eventId, tickets, mode }: TicketCardListProps) {
+  const { create, update, remove, isCreating, isUpdating, error, setError } = useTicketMutations(eventId, mode);
 
   const [editingTicketId, setEditingTicketId] = useState<string | "new" | null>(null);
   const [draft, setDraft] = useState<TicketDraft>(EMPTY_DRAFT);
