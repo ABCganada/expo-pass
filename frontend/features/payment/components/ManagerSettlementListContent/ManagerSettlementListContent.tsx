@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { CircleHelp } from "lucide-react";
 import { useGetSettlementsQuery } from "../../api/settlementApi";
+import { ManagerSettlementDetailModal } from "../ManagerSettlementDetailModal";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./ManagerSettlementListContent.module.css";
 
@@ -22,6 +24,9 @@ function formatDate(value: string): string {
 export function ManagerSettlementListContent() {
   const { data, isLoading, isFetching, isError, error } =
     useGetSettlementsQuery();
+  const [selectedSettlementId, setSelectedSettlementId] = useState<
+    string | undefined
+  >(undefined);
 
   const settlements = data ?? [];
 
@@ -45,7 +50,11 @@ export function ManagerSettlementListContent() {
                 <th>
                   <span className={styles.thWithHelp}>
                     수수료
-                    <span className={styles.helpTrigger} tabIndex={0}>
+                    <span
+                      className={styles.helpTrigger}
+                      tabIndex={0}
+                      onClick={(event) => event.stopPropagation()}
+                    >
                       <CircleHelp
                         aria-hidden="true"
                         className={styles.helpIcon}
@@ -62,7 +71,20 @@ export function ManagerSettlementListContent() {
             </thead>
             <tbody>
               {settlements.map((settlement) => (
-                <tr key={settlement.id}>
+                <tr
+                  key={settlement.id}
+                  className={styles.row}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`정산 ${settlement.id} 상세 보기`}
+                  onClick={() => setSelectedSettlementId(settlement.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedSettlementId(settlement.id);
+                    }
+                  }}
+                >
                   <td className={styles.mono}>{settlement.eventId}</td>
                   <td>{formatAmount(settlement.totalSales)}</td>
                   <td>{formatAmount(settlement.commissionAmount)}</td>
@@ -75,6 +97,13 @@ export function ManagerSettlementListContent() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {selectedSettlementId && (
+        <ManagerSettlementDetailModal
+          settlementId={selectedSettlementId}
+          onClose={() => setSelectedSettlementId(undefined)}
+        />
       )}
     </div>
   );

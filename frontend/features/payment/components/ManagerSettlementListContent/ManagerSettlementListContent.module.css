@@ -58,6 +58,20 @@
   border-bottom: none;
 }
 
+.row {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.row:hover {
+  background: var(--color-content-background);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 .mono {
   color: var(--color-text-secondary);
   font-size: 13px;

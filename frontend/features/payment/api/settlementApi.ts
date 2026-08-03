@@ -1,7 +1,7 @@
 import { baseApi } from "@/features/store/api/baseApi";
 import { queryResult } from "@/features/store/api/queryError";
 import { settlementService } from "../services/settlementService";
-import type { Settlement } from "../types/settlement";
+import type { Settlement, SettlementPayment } from "../types/settlement";
 
 const settlementApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
@@ -17,9 +17,19 @@ const settlementApi = baseApi.injectEndpoints({
         ),
       providesTags: ["Payment"],
     }),
+    getSettlementPayments: build.query<SettlementPayment[], string>({
+      queryFn: (settlementId, api) =>
+        queryResult(
+          settlementService.getSettlementPayments(settlementId, api.signal),
+        ),
+      providesTags: ["Payment"],
+    }),
   }),
   overrideExisting: true,
 });
 
-export const { useGetSettlementsQuery, useGetSettlementDetailQuery } =
-  settlementApi;
+export const {
+  useGetSettlementsQuery,
+  useGetSettlementDetailQuery,
+  useGetSettlementPaymentsQuery,
+} = settlementApi;

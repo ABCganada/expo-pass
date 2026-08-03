@@ -75,6 +75,17 @@ public class SettlementService {
         return settlementRepository.getDashboardSummary();
     }
 
+    /**
+     * 정산에 포함된 결제 내역 조회(감사용). 접근 권한 검증은 get()과 동일하다.
+     * 총매출 계산에 쓰인 것과 동일한 완료 결제 목록에, 각 결제의 활성 환불액을 같이 반환한다.
+     */
+    public List<SettlementPaymentDetail> getSettlementPayments(long userId, long settlementId) {
+        Settlement settlement = get(userId, settlementId);
+        return findCompletedPayments(settlement.eventId()).stream()
+                .map(payment -> new SettlementPaymentDetail(payment, refundedAmount(payment)))
+                .toList();
+    }
+
     private void validateSettlementAccess(long userId, Long managerId) {
         if (!Objects.equals(managerId, userId)) {
             throw new BusinessException(ErrorCode.PAYMENT_SETTLEMENT_ACCESS_DENIED, "본인이 담당하는 행사의 정산만 조회할 수 있습니다.");
@@ -82,17 +93,24 @@ public class SettlementService {
     }
 
     private BigDecimal calculateTotalSales(long eventId) {
-        return reservationOrderDirectory.findOrderIdsByEventId(eventId).stream()
-                .flatMap(orderId -> paymentRepository.findByOrderIdAndStatus(orderId, PaymentStatus.COMPLETED).stream())
+        return findCompletedPayments(eventId).stream()
                 .map(this::netAmountAfterRefund)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    private List<Payment> findCompletedPayments(long eventId) {
+        return reservationOrderDirectory.findOrderIdsByEventId(eventId).stream()
+                .flatMap(orderId -> paymentRepository.findByOrderIdAndStatus(orderId, PaymentStatus.COMPLETED).stream())
+                .toList();
+    }
+
     private BigDecimal netAmountAfterRefund(Payment payment) {
-        BigDecimal refunded = refundRepository.findActiveByPaymentId(payment.id())
+        return payment.amount().subtract(refundedAmount(payment));
+    }
+
+    private BigDecimal refundedAmount(Payment payment) {
+        return refundRepository.findActiveByPaymentId(payment.id())
                 .map(Refund::amount)
                 .orElse(BigDecimal.ZERO);
-
-        return payment.amount().subtract(refunded);
     }
 }
