@@ -228,6 +228,7 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
           {(needsBannerImage || (isEdit && editTarget?.bannerImageUrl)) && (
             <div className={styles.field}>
               <label className={styles.label}>배너 이미지</label>
+              <p className={styles.hint}>권장 사이즈: 1200 x 220px · 중요 내용은 중앙에 배치 권장 (반응형으로 좌우가 잘릴 수 있음)</p>
               <div className={styles.fileRow}>
                 <input ref={bannerFileRef} type="file" accept="image/*" className={styles.fileInput}
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, "bannerImageUrl", setUploadingBanner); }} />
@@ -247,6 +248,7 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
           {(needsAdImage || (isEdit && editTarget?.adImageUrl)) && (
             <div className={styles.field}>
               <label className={styles.label}>광고탭 이미지</label>
+              <p className={styles.hint}>권장 사이즈: 1280 x 720px (16:9) · 중요 내용은 중앙에 배치 권장</p>
               <div className={styles.fileRow}>
                 <input ref={adFileRef} type="file" accept="image/*" className={styles.fileInput}
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, "adImageUrl", setUploadingAd); }} />

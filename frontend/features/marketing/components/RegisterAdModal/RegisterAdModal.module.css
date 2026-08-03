@@ -47,6 +47,12 @@
   text-transform: uppercase;
 }
 
+.hint {
+  margin: 2px 0 6px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
 .input,
 .select {
   padding: 10px 12px;
