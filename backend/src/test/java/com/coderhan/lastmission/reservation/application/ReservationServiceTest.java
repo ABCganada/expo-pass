@@ -285,6 +285,21 @@ class ReservationServiceTest {
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_QR_NOT_FOUND));
     }
 
+    @Test
+    void checkinThrowsWhenOrderIsNotConfirmed() {
+        when(repository.checkin("qr-1", 9L, NOW)).thenReturn(false);
+        ReservationOrderItem notYetCheckedIn =
+                new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-1", null);
+        when(repository.findItemByQrCodeHash("qr-1")).thenReturn(Optional.of(notYetCheckedIn));
+        ReservationOrder refundedOrder = new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID,
+                OrderStatus.REFUNDED, BigDecimal.valueOf(10000), NOW, NOW);
+        when(repository.findOrder(ORDER_ID)).thenReturn(Optional.of(refundedOrder));
+
+        assertThatThrownBy(() -> service.checkin(9L, "qr-1"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_INVALID_TICKET_STATUS));
+    }
+
     // ---------- confirmOrder ----------
 
     @Test
