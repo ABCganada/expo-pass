@@ -1,5 +1,7 @@
 .page {
-  padding: 32px;
+  /* 감싸는 매니저 레이아웃 셸이 이미 32px 여백을 주고 있어서, 좌우/아래는 셸에 맡기고
+     위쪽만 최소로 둔다(EventSelectContent/ReservationListContent와 같은 방식). */
+  padding: 8px 0 32px;
   width: 100%;
 }
 

@@ -124,14 +124,16 @@ export function TicketPurchaseFlow({ eventId, ticketTypes }: TicketPurchaseFlowP
       )}
 
       {phase === "confirmed" && order && (
-        <div className={styles.card}>
-          <div className={styles.waitingPanel}>
-            <CheckCircle2 size={40} className={styles.successIcon} />
-            <p className={styles.waitingTitle}>예약이 완료되었습니다</p>
-            <p className={styles.waitingRank}>무료 티켓이라 결제 없이 바로 확정됐어요.</p>
-            <Link href="/reservations" className={styles.confirmedLink}>
-              예약 내역 바로가기
-            </Link>
+        <div className={styles.overlay}>
+          <div className={styles.modal}>
+            <div className={styles.successPanel}>
+              <CheckCircle2 size={40} className={styles.successIcon} />
+              <p className={styles.waitingTitle}>예약이 완료되었습니다</p>
+              <p className={styles.waitingRank}>무료 티켓이라 결제 없이 바로 확정됐어요.</p>
+              <Link href="/reservations" className={styles.confirmedLink}>
+                예약 내역 바로가기
+              </Link>
+            </div>
           </div>
         </div>
       )}
