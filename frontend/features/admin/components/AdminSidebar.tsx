@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, CalendarDays, ClipboardList, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, Receipt, ScanLine, TicketCheck, Users } from "lucide-react";
+import { BarChart3, CalendarDays, ClipboardList, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, LineChart, ScanLine, TicketCheck, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "@/features/shell/constants/navigation";
 import styles from "./AdminSidebar.module.css";
@@ -32,7 +32,7 @@ export function AdminSidebar({
     exhibitions: CalendarDays,
     reservations: ClipboardList,
     "qr-ticket": QrCode,
-    payments: Receipt,
+    payments: LineChart,
     "vip-ads": Megaphone,
   };
   const items: NavItem[] = mode === "user"
@@ -50,6 +50,7 @@ export function AdminSidebar({
         { href: "/admin/reservations-summary", label: "행사별 예약 현황", icon: BarChart3 },
         { href: "/admin/members", label: "회원 관리", icon: Users },
         { href: "/admin/banners", label: "광고 관리", icon: Megaphone },
+        { href: "/admin/payments", label: "매출 현황", icon: LineChart },
       ];
   return (
     <>
