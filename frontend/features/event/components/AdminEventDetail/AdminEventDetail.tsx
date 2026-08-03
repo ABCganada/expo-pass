@@ -22,9 +22,10 @@ const TABS: { key: TabKey; label: string }[] = [
 
 interface AdminEventDetailProps {
   eventId: string;
+  basePath?: string;
 }
 
-export function AdminEventDetail({ eventId }: AdminEventDetailProps) {
+export function AdminEventDetail({ eventId, basePath = "/admin/events" }: AdminEventDetailProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("basic");
   const [toast, setToast] = useState<string | null>(null);
   const { data: detail, isLoading, isError, error } = useGetAdminEventDetailQuery(eventId);
@@ -36,7 +37,7 @@ export function AdminEventDetail({ eventId }: AdminEventDetailProps) {
 
   return (
     <section className={styles.page}>
-      <EventDetailHeader eventId={eventId} detail={detail} onStatusChanged={setToast} />
+      <EventDetailHeader eventId={eventId} detail={detail} onStatusChanged={setToast} basePath={basePath} />
 
       <nav className={styles.tabBar}>
         {TABS.map((tab) => (
