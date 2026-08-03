@@ -29,7 +29,7 @@ public class BannerAdService {
     @Transactional
     public BannerAd registerAd(Set<UUID> slotIds, String title, String bannerImageUrl, String adImageUrl,
                                String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt,
-                               String createdBy) {
+                               long createdBy) {
         if (slotIds == null || slotIds.isEmpty()) {
             throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "광고 슬롯을 하나 이상 선택해야 합니다.");
         }
@@ -49,11 +49,11 @@ public class BannerAdService {
     }
 
     @Transactional
-    public BannerAd updateAd(UUID id, String createdBy, String title, String bannerImageUrl, String adImageUrl,
+    public BannerAd updateAd(UUID id, long createdBy, String title, String bannerImageUrl, String adImageUrl,
                               String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt) {
         BannerAd ad = adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
-        if (!ad.createdBy().equals(createdBy)) {
+        if (ad.createdBy() != createdBy) {
             throw new BusinessException(ErrorCode.BANNER_AD_ACCESS_DENIED, "본인의 광고만 수정할 수 있습니다.");
         }
         if (ad.status() != BannerAdStatus.PENDING) {
@@ -89,8 +89,8 @@ public class BannerAdService {
     }
 
     @Transactional(readOnly = true)
-    public List<BannerAd> getMyAds(String email) {
-        return adRepository.findByCreatedBy(email);
+    public List<BannerAd> getMyAds(long userId) {
+        return adRepository.findByCreatedBy(userId);
     }
 
     @Transactional(readOnly = true)

@@ -20,7 +20,7 @@ class JpaBannerAdRepository implements BannerAdRepository {
     @Override
     public BannerAd save(Set<UUID> slotIds, String orderId, String title, String bannerImageUrl, String adImageUrl,
                          String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt,
-                         String createdBy, long totalAmount) {
+                         long createdBy, long totalAmount) {
         BannerAdEntity entity = new BannerAdEntity(
                 null, slotIds, orderId, title, bannerImageUrl, adImageUrl, linkUrl,
                 BannerAdStatus.PENDING, startsAt, endsAt, createdBy, OffsetDateTime.now(), totalAmount);
@@ -64,8 +64,8 @@ class JpaBannerAdRepository implements BannerAdRepository {
     }
 
     @Override
-    public List<BannerAd> findByCreatedBy(String email) {
-        return jpaRepository.findByCreatedByOrderByCreatedAtDesc(email).stream()
+    public List<BannerAd> findByCreatedBy(long userId) {
+        return jpaRepository.findByCreatedByOrderByCreatedAtDesc(userId).stream()
                 .map(JpaBannerAdRepository::toDomain)
                 .toList();
     }

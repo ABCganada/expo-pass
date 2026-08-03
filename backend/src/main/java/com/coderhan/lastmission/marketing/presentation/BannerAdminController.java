@@ -105,7 +105,7 @@ class BannerAdminController {
             BannerAdStatus status,
             OffsetDateTime startsAt,
             OffsetDateTime endsAt,
-            String createdBy,
+            long createdBy,
             OffsetDateTime createdAt,
             Long totalAmount
     ) {
