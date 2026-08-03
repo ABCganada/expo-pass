@@ -39,10 +39,15 @@ export function AdminEventList({ basePath }: AdminEventListProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  const { data: events = [], isLoading, isFetching, isError, error } = useGetAdminEventsQuery(
+  const { data: allEvents = [], isLoading, isFetching, isError, error } = useGetAdminEventsQuery(
     statusFilter === "ALL" ? undefined : statusFilter,
   );
   const [deleteEvent, { isLoading: isDeleting }] = useDeleteEventMutation();
+
+  // ADMIN+MANAGER 겸직 계정이 /manager/events에서 전체 관리자로 보이는 문제 (임시 해결 TODO)
+  const events = basePath.startsWith("/manager")
+    ? allEvents.filter((event) => event.managerId === user?.id)
+    : allEvents;
 
   const goToDetail = (eventId: string) => router.push(`${basePath}/${eventId}`);
 
