@@ -1,5 +1,5 @@
 export interface NavigationItem {
-  id: "home" | "exhibitions" | "reservations" | "qr-ticket" | "vip-ads";
+  id: "home" | "exhibitions" | "reservations" | "qr-ticket" | "bookmarks" | "vip-ads";
   label: string;
   path: string;
 }
@@ -9,5 +9,6 @@ export const USER_MENU_ITEMS: NavigationItem[] = [
   { id: "exhibitions", label: "박람회", path: "/exhibitions" },
   { id: "reservations", label: "내 예약 내역", path: "/reservations" },
   { id: "qr-ticket", label: "QR 티켓", path: "/tickets/qr" },
+  { id: "bookmarks", label: "내 북마크", path: "/my/bookmarks" },
   { id: "vip-ads", label: "VIP 광고", path: "/vip-ads" },
 ];
