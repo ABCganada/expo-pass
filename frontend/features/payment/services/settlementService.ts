@@ -19,8 +19,48 @@ async function parseData<T>(
   return body.data;
 }
 
+// TODO(mock): 아래 MOCK_SETTLEMENTS와 getSettlements의 조기 return은 디자인 확인용 임시 데이터다.
+// 브랜치 작업 끝나면 반드시 제거할 것.
+const MOCK_SETTLEMENTS: Settlement[] = [
+  {
+    id: "1",
+    eventId: "101",
+    totalSales: 45_200_000,
+    commissionRate: 5.0,
+    commissionAmount: 2_260_000,
+    netAmount: 42_940_000,
+    status: "COMPLETED",
+    settledAt: "2026-07-20T10:00:00+09:00",
+    createdAt: "2026-07-20T10:00:00+09:00",
+  },
+  {
+    id: "2",
+    eventId: "102",
+    totalSales: 12_850_000,
+    commissionRate: 5.0,
+    commissionAmount: 642_500,
+    netAmount: 12_207_500,
+    status: "COMPLETED",
+    settledAt: "2026-07-15T09:30:00+09:00",
+    createdAt: "2026-07-15T09:30:00+09:00",
+  },
+  {
+    id: "3",
+    eventId: "104",
+    totalSales: 3_400_000,
+    commissionRate: 5.0,
+    commissionAmount: 170_000,
+    netAmount: 3_230_000,
+    status: "COMPLETED",
+    settledAt: "2026-06-30T18:00:00+09:00",
+    createdAt: "2026-06-30T18:00:00+09:00",
+  },
+];
+
 export const settlementService = {
   async getSettlements(signal?: AbortSignal): Promise<Settlement[]> {
+    return MOCK_SETTLEMENTS; // TODO(mock): remove before push
+
     const res = await fetch(BASE, {
       credentials: "include",
       cache: "no-store",

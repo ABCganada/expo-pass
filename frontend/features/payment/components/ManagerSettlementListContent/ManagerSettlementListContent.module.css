@@ -1,0 +1,147 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.state {
+  display: flex;
+  min-height: 200px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-sm);
+  transition: opacity 0.15s ease;
+}
+
+.tableWrap[data-fetching="true"] {
+  opacity: 0.6;
+}
+
+.table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th,
+.table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.table thead th {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: var(--color-content-background);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.mono {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.thWithHelp {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.helpTrigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.helpTrigger:hover,
+.helpTrigger:focus-visible {
+  color: var(--color-primary);
+}
+
+.helpTrigger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.helpIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.tooltip {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 10px);
+  z-index: 100;
+  width: max-content;
+  max-width: 220px;
+  transform: translate(-4px, -50%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-lg);
+  padding: 6px 12px;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.4;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.tooltip::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: var(--color-card-background);
+}
+
+.helpTrigger:hover .tooltip,
+.helpTrigger:focus-visible .tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(0, -50%);
+}
+
+.netAmount {
+  color: var(--color-primary);
+  font-weight: 700;
+}
