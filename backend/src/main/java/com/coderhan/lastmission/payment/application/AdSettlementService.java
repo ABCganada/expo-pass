@@ -4,7 +4,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
+import com.coderhan.lastmission.payment.domain.AdSettlement;
+import com.coderhan.lastmission.payment.domain.AdSettlementSummary;
+import com.coderhan.lastmission.shared.error.BusinessException;
+import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -35,5 +40,21 @@ public class AdSettlementService {
 
         adSettlementRepository.save(adId, totalAmountDecimal, COMMISSION_RATE_PERCENT,
             commissionAmount, netAmount, OffsetDateTime.now(clock));
+    }
+
+    /** 광고 정산 목록 조회 (ADMIN 전용 — 소유자별 필터링 없음). */
+    public List<AdSettlement> list() {
+        return adSettlementRepository.findAll();
+    }
+
+    /** 광고 정산 상세 조회 (ADMIN 전용). */
+    public AdSettlement get(long adSettlementId) {
+        return adSettlementRepository.findById(adSettlementId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_AD_SETTLEMENT_NOT_FOUND, "광고 정산 내역을 찾을 수 없습니다."));
+    }
+
+    /** 전체 광고 매출 대시보드 조회. 전체 광고 정산을 합산한다(ADMIN 전용). */
+    public AdSettlementSummary getDashboardSummary() {
+        return adSettlementRepository.getDashboardSummary();
     }
 }
