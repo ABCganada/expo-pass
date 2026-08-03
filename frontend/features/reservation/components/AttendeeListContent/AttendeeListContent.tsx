@@ -1,7 +1,9 @@
 "use client";
 
-import { Mail, User } from "lucide-react";
+import { useState } from "react";
+import { Download, Mail, User } from "lucide-react";
 import { useGetEventAttendeesQuery } from "../../api/adminApi";
+import { exportAttendeesXlsx } from "../../utils/exportAttendeesXlsx";
 import type { OrderStatus } from "../../types/reservation";
 import styles from "./AttendeeListContent.module.css";
 
@@ -32,6 +34,16 @@ function formatDate(value: string): string {
 
 export function AttendeeListContent({ eventId }: AttendeeListContentProps) {
   const { data: attendees = [], isLoading } = useGetEventAttendeesQuery(eventId);
+  const [downloadError, setDownloadError] = useState("");
+
+  const handleDownload = () => {
+    setDownloadError("");
+    try {
+      exportAttendeesXlsx(attendees, eventId);
+    } catch {
+      setDownloadError("다운로드에 실패했습니다.");
+    }
+  };
 
   if (isLoading) {
     return <div className={styles.state}>불러오는 중...</div>;
@@ -40,8 +52,19 @@ export function AttendeeListContent({ eventId }: AttendeeListContentProps) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>예약자 명단</h1>
-        <p className={styles.subtitle}>행사 예약자 {attendees.length}명</p>
+        <div>
+          <p className={styles.subtitle}>행사 예약자 {attendees.length}명</p>
+          {downloadError && <p className={styles.downloadError}>{downloadError}</p>}
+        </div>
+        <button
+          type="button"
+          className={styles.downloadButton}
+          onClick={handleDownload}
+          disabled={attendees.length === 0}
+        >
+          <Download size={16} />
+          XLSX 다운로드
+        </button>
       </header>
 
       <div className={styles.tableContainer}>
@@ -61,12 +84,16 @@ export function AttendeeListContent({ eventId }: AttendeeListContentProps) {
               <tr key={attendee.orderId}>
                 <td className={styles.orderId}>{attendee.orderId}</td>
                 <td className={styles.name}>
-                  <User size={14} />
-                  {attendee.userName ?? "탈퇴 사용자"}
+                  <span className={styles.iconCell}>
+                    <User size={14} />
+                    {attendee.userName ?? "탈퇴 사용자"}
+                  </span>
                 </td>
                 <td className={styles.email}>
-                  <Mail size={14} />
-                  {attendee.userEmail ?? "—"}
+                  <span className={styles.iconCell}>
+                    <Mail size={14} />
+                    {attendee.userEmail ?? "—"}
+                  </span>
                 </td>
                 <td className={styles.status} data-status={attendee.status}>
                   {STATUS_LABEL[attendee.status]}

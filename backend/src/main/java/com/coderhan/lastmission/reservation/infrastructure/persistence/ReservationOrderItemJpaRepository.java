@@ -41,13 +41,13 @@ interface ReservationOrderItemJpaRepository extends JpaRepository<ReservationOrd
         long getQuantity();
     }
 
-    // 이 유저의 QR 발급 대상 티켓(취소/환불 제외)을 전부 한 번의 쿼리로 가져온다 (QR 화면 N+1 방지용)
+    // QR 자체는 주문 생성 시 바로 발급되지만(ReservationOrderItem 참고), 결제 확인 전엔 이 화면에
+    // 노출하지 않는다 — 그래서 PENDING(결제대기)은 제외하고 CONFIRMED(결제완료)만 가져온다.
     @Query("SELECT i.orderId as orderId, o.eventId as eventId, i.orderItemId as orderItemId, "
             + "i.ticketId as ticketId, i.qrCodeHash as qrCodeHash, i.checkedInAt as checkedInAt "
             + "FROM ReservationOrderItemEntity i, ReservationOrderEntity o "
             + "WHERE i.orderId = o.orderId AND o.userId = :userId "
-            + "AND o.status IN (com.coderhan.lastmission.reservation.domain.OrderStatus.PENDING, "
-            + "com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED)")
+            + "AND o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED")
     List<QrTicketRow> findQrTicketsByUserId(@Param("userId") Long userId);
 
     interface QrTicketRow {
