@@ -2,19 +2,19 @@
 
 import { useState } from "react";
 import { ContentSectionsEditor } from "../ContentSectionsEditor/ContentSectionsEditor";
-import { useUpsertAdminEventContentsMutation } from "../../api/adminEventDetailApi";
-import type { AdminEventDetail, EventContentType } from "../../types/adminEventDetail";
+import { useUpsertManagerEventContentsMutation } from "../../api/managerEventDetailApi";
+import type { EventManagementDetail, EventContentType } from "../../types/eventManagementDetail";
 import { queryErrorMessage } from "@/features/store/api/queryError";
-import styles from "./AdminEventDetail.module.css";
+import styles from "./EventDetail.module.css";
 
 interface ContentTabProps {
   eventId: string;
-  detail: AdminEventDetail;
+  detail: EventManagementDetail;
   onSaved: (message: string) => void;
 }
 
 export function ContentTab({ eventId, detail, onSaved }: ContentTabProps) {
-  const [upsertContents, { isLoading }] = useUpsertAdminEventContentsMutation();
+  const [upsertContents, { isLoading }] = useUpsertManagerEventContentsMutation();
   const [sections, setSections] = useState<Partial<Record<EventContentType, string>>>(() => {
     const initial: Partial<Record<EventContentType, string>> = {};
     detail.contents.forEach((content) => {

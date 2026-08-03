@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useChangeAdminEventStatusMutation } from "../../api/adminEventDetailApi";
+import { usePublishAdminEventMutation, useCancelAdminEventMutation } from "../../api/adminEventDetailApi";
+import { useCancelManagerEventMutation } from "../../api/managerEventDetailApi";
 import { ConfirmDialog } from "../ConfirmDialog/ConfirmDialog";
 import { AlertDialog } from "../AlertDialog/AlertDialog";
-import type { AdminEventStatus } from "../../types/adminEvent";
-import type { AdminEventDetail } from "../../types/adminEventDetail";
+import type { AdminEventStatus } from "../../types/eventList";
+import type { EventManagementDetail } from "../../types/eventManagementDetail";
+import { getEventsBasePath, type EventRole } from "../../types/eventRole";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./EventDetailHeader.module.css";
 
@@ -20,7 +22,7 @@ const STATUS_LABEL: Record<AdminEventStatus, string> = {
 const PUBLISH_REQUIREMENT_MESSAGE =
   "게시하려면 주최자명, 행사 기간, 장소 정보를 모두 입력해 주세요.";
 
-function isPublishReady(detail: AdminEventDetail): boolean {
+function isPublishReady(detail: EventManagementDetail): boolean {
   return Boolean(
     detail.hostName &&
       detail.venueName &&
@@ -35,31 +37,41 @@ function isPublishReady(detail: AdminEventDetail): boolean {
 
 interface EventDetailHeaderProps {
   eventId: string;
-  detail: AdminEventDetail;
+  detail: EventManagementDetail;
   onStatusChanged: (message: string) => void;
-  basePath?: string;
+  mode: EventRole;
 }
 
 type DialogState = "none" | "publishInvalid" | "confirmPublish" | "confirmCancel";
 
-export function EventDetailHeader({
-  eventId,
-  detail,
-  onStatusChanged,
-  basePath = "/admin/events",
-}: EventDetailHeaderProps) {
+export function EventDetailHeader({ eventId, detail, onStatusChanged, mode }: EventDetailHeaderProps) {
   const router = useRouter();
-  const [changeStatus, { isLoading }] = useChangeAdminEventStatusMutation();
+  const basePath = getEventsBasePath(mode);
+  const [publishAdminEvent, { isLoading: isPublishing }] = usePublishAdminEventMutation();
+  const [cancelAdminEvent, { isLoading: isCancellingAsAdmin }] = useCancelAdminEventMutation();
+  const [cancelManagerEvent, { isLoading: isCancellingAsManager }] = useCancelManagerEventMutation();
+  const isLoading = isPublishing || isCancellingAsAdmin || isCancellingAsManager;
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogState>("none");
 
-  const applyStatus = async (next: AdminEventStatus) => {
+  const applyPublish = async () => {
     setError(null);
     try {
-      await changeStatus({ eventId, status: next }).unwrap();
-      onStatusChanged(next === "PUBLISHED" ? "행사가 게시되었습니다." : "행사가 취소되었습니다.");
+      await publishAdminEvent(eventId).unwrap();
+      onStatusChanged("행사가 게시되었습니다.");
     } catch (reason) {
-      setError(queryErrorMessage(reason, "상태 변경에 실패했습니다."));
+      setError(queryErrorMessage(reason, "게시에 실패했습니다."));
+    }
+  };
+
+  const applyCancel = async () => {
+    setError(null);
+    try {
+      const cancelEvent = mode === "admin" ? cancelAdminEvent : cancelManagerEvent;
+      await cancelEvent(eventId).unwrap();
+      onStatusChanged("행사가 취소되었습니다.");
+    } catch (reason) {
+      setError(queryErrorMessage(reason, "취소에 실패했습니다."));
     }
   };
 
@@ -69,12 +81,12 @@ export function EventDetailHeader({
 
   const handleConfirmPublish = () => {
     setDialog("none");
-    void applyStatus("PUBLISHED");
+    void applyPublish();
   };
 
   const handleConfirmCancel = () => {
     setDialog("none");
-    void applyStatus("CANCELLED");
+    void applyCancel();
   };
 
   return (
@@ -93,7 +105,7 @@ export function EventDetailHeader({
         </div>
 
         <div className={styles.actions}>
-          {detail.status === "DRAFT" && (
+          {mode === "admin" && detail.status === "DRAFT" && (
             <button
               type="button"
               className={styles.publishButton}

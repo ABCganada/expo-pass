@@ -2,21 +2,21 @@
 
 import { useRef, useState } from "react";
 import { ImagePlus, X } from "lucide-react";
-import { useUploadAdminEventImageMutation, useDeleteAdminEventImageMutation } from "../../api/adminEventDetailApi";
-import type { AdminEventImageItem } from "../../types/adminEventDetail";
+import { useUploadManagerEventImageMutation, useDeleteManagerEventImageMutation } from "../../api/managerEventDetailApi";
+import type { EventImageItem } from "../../types/eventManagementDetail";
 import { ConfirmDialog } from "../ConfirmDialog/ConfirmDialog";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./ImageGridManager.module.css";
 
 interface ImageGridManagerProps {
   eventId: string;
-  images: AdminEventImageItem[];
+  images: EventImageItem[];
 }
 
 export function ImageGridManager({ eventId, images }: ImageGridManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadImage, { isLoading: isUploading }] = useUploadAdminEventImageMutation();
-  const [deleteImage, { isLoading: isDeleting }] = useDeleteAdminEventImageMutation();
+  const [uploadImage, { isLoading: isUploading }] = useUploadManagerEventImageMutation();
+  const [deleteImage, { isLoading: isDeleting }] = useDeleteManagerEventImageMutation();
   const [error, setError] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 

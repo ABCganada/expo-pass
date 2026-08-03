@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import type { AdminEventTicket } from "../../types/adminEventDetail";
+import type { EventTicket } from "../../types/eventManagementDetail";
 import { ConfirmDialog } from "../ConfirmDialog/ConfirmDialog";
 import { TicketCard } from "./TicketCard";
 import { TicketCardEditForm } from "./TicketCardEditForm";
@@ -12,7 +12,7 @@ import styles from "./TicketCardList.module.css";
 
 interface TicketCardListProps {
   eventId: string;
-  tickets: AdminEventTicket[];
+  tickets: EventTicket[];
 }
 
 export function TicketCardList({ eventId, tickets }: TicketCardListProps) {
@@ -28,7 +28,7 @@ export function TicketCardList({ eventId, tickets }: TicketCardListProps) {
     setError(null);
   };
 
-  const startEdit = (ticket: AdminEventTicket) => {
+  const startEdit = (ticket: EventTicket) => {
     setEditingTicketId(ticket.id);
     setDraft(draftFromTicket(ticket));
     setError(null);

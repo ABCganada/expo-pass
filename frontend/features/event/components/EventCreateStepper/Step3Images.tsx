@@ -1,12 +1,12 @@
 "use client";
 
 import { ImageGridManager } from "../ImageGridManager/ImageGridManager";
-import type { AdminEventImageItem } from "../../types/adminEventDetail";
+import type { EventImageItem } from "../../types/eventManagementDetail";
 import styles from "./EventCreateStepper.module.css";
 
 interface Step3ImagesProps {
   eventId: string;
-  images: AdminEventImageItem[];
+  images: EventImageItem[];
   onBack: () => void;
   onNext: () => void;
 }

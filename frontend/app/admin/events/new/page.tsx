@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useCreateDraftEventMutation } from "@/features/event/api/eventCreateApi";
 import { useChangeAdminEventManagerMutation } from "@/features/event/api/adminEventApi";
-import { useUpdateAdminEventMutation, useGetAdminEventDetailQuery } from "@/features/event/api/adminEventDetailApi";
+import { useGetAdminEventDetailQuery } from "@/features/event/api/adminEventDetailApi";
+import { useUpdateManagerEventMutation } from "@/features/event/api/managerEventDetailApi";
 import { StepIndicator } from "@/features/event/components/EventCreateStepper/StepIndicator";
 import { Step1BasicInfo, type Step1Values } from "@/features/event/components/EventCreateStepper/Step1BasicInfo";
 import { Step2Content } from "@/features/event/components/EventCreateStepper/Step2Content";
@@ -39,7 +40,7 @@ export default function NewEventPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [createDraftEvent, { isLoading: isCreating }] = useCreateDraftEventMutation();
-  const [updateEvent, { isLoading: isUpdating }] = useUpdateAdminEventMutation();
+  const [updateEvent, { isLoading: isUpdating }] = useUpdateManagerEventMutation();
   const [changeManager, { isLoading: isChangingManager }] = useChangeAdminEventManagerMutation();
   const { data: detail } = useGetAdminEventDetailQuery(eventId ?? "", { skip: !eventId });
 

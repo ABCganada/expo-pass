@@ -1,9 +1,9 @@
 "use client";
 
 import { use } from "react";
-import { AdminEventDetail } from "@/features/event/components/AdminEventDetail/AdminEventDetail";
+import { EventDetail } from "@/features/event/components/EventDetail/EventDetail";
 
 export default function AdminEventDetailPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  return <AdminEventDetail eventId={eventId} />;
+  return <EventDetail eventId={eventId} mode="admin" />;
 }

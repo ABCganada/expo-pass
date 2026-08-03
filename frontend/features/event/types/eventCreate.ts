@@ -1,4 +1,4 @@
-import type { AdminEventStatus } from "./adminEvent";
+import type { AdminEventStatus } from "./eventList";
 
 export interface CreateEventPayload {
   title: string;

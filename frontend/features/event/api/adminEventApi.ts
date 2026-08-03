@@ -1,7 +1,7 @@
 import { baseApi } from "@/features/store/api/baseApi";
 import { queryResult } from "@/features/store/api/queryError";
 import { adminEventService } from "../services/adminEventService";
-import type { EventListItem, AdminEventStatus } from "../types/adminEvent";
+import type { EventListItem, AdminEventStatus } from "../types/eventList";
 import type { EventSummary } from "../types/eventCreate";
 
 const adminEventApi = baseApi.injectEndpoints({

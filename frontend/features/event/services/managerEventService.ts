@@ -1,5 +1,5 @@
 import { getCsrfToken } from "@/features/shared/api/csrf";
-import type { EventListItem, AdminEventStatus } from "../types/adminEvent";
+import type { EventListItem, AdminEventStatus } from "../types/eventList";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 const BASE = `${API_BASE_URL}/api/v1/manager/events`;

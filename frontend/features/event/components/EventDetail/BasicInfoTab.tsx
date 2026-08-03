@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useGetEventCategoriesQuery } from "../../api/eventApi";
 import { BasicInfoEditor } from "./BasicInfoEditor";
-import type { AdminEventDetail } from "../../types/adminEventDetail";
-import styles from "./AdminEventDetail.module.css";
+import type { EventManagementDetail } from "../../types/eventManagementDetail";
+import styles from "./EventDetail.module.css";
 
 interface BasicInfoTabProps {
   eventId: string;
-  detail: AdminEventDetail;
+  detail: EventManagementDetail;
   onSaved: (message: string) => void;
 }
 

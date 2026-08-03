@@ -1,9 +1,9 @@
-import type { AdminEventTicket } from "../../types/adminEventDetail";
+import type { EventTicket } from "../../types/eventManagementDetail";
 import { formatSalePeriod, ticketStatus } from "./ticketUtils";
 import styles from "./TicketCard.module.css";
 
 interface TicketCardProps {
-  ticket: AdminEventTicket;
+  ticket: EventTicket;
   disabled: boolean;
   onEdit: () => void;
   onDelete: () => void;

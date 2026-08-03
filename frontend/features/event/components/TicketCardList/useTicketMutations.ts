@@ -1,16 +1,16 @@
 import { useState } from "react";
 import {
-  useCreateAdminEventTicketMutation,
-  useUpdateAdminEventTicketMutation,
-  useDeleteAdminEventTicketMutation,
-} from "../../api/adminEventDetailApi";
+  useCreateManagerEventTicketMutation,
+  useUpdateManagerEventTicketMutation,
+  useDeleteManagerEventTicketMutation,
+} from "../../api/managerEventDetailApi";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import { draftToCreatePayload, draftToUpdatePayload, type TicketDraft } from "./ticketUtils";
 
 export function useTicketMutations(eventId: string) {
-  const [createTicket, { isLoading: isCreating }] = useCreateAdminEventTicketMutation();
-  const [updateTicket, { isLoading: isUpdating }] = useUpdateAdminEventTicketMutation();
-  const [deleteTicket] = useDeleteAdminEventTicketMutation();
+  const [createTicket, { isLoading: isCreating }] = useCreateManagerEventTicketMutation();
+  const [updateTicket, { isLoading: isUpdating }] = useUpdateManagerEventTicketMutation();
+  const [deleteTicket] = useDeleteManagerEventTicketMutation();
   const [error, setError] = useState<string | null>(null);
 
   const create = async (draft: TicketDraft): Promise<boolean> => {

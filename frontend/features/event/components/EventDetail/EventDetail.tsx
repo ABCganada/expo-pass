@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { useGetAdminEventDetailQuery } from "../../api/adminEventDetailApi";
+import { useGetManagerEventDetailQuery } from "../../api/managerEventDetailApi";
 import { EventDetailHeader } from "./EventDetailHeader";
 import { BasicInfoTab } from "./BasicInfoTab";
 import { ContentTab } from "./ContentTab";
 import { ImageGridManager } from "../ImageGridManager/ImageGridManager";
 import { TicketCardList } from "../TicketCardList/TicketCardList";
 import { Toast } from "../Toast/Toast";
+import type { EventRole } from "../../types/eventRole";
 import { queryErrorMessage } from "@/features/store/api/queryError";
-import styles from "./AdminEventDetail.module.css";
+import styles from "./EventDetail.module.css";
 
 type TabKey = "basic" | "content" | "images" | "tickets";
 
@@ -20,15 +22,21 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "tickets", label: "티켓" },
 ];
 
-interface AdminEventDetailProps {
+interface EventDetailProps {
   eventId: string;
-  basePath?: string;
+  mode: EventRole;
 }
 
-export function AdminEventDetail({ eventId, basePath = "/admin/events" }: AdminEventDetailProps) {
+function useEventDetailQuery(mode: EventRole, eventId: string) {
+  const adminResult = useGetAdminEventDetailQuery(eventId, { skip: mode !== "admin" });
+  const managerResult = useGetManagerEventDetailQuery(eventId, { skip: mode !== "manager" });
+  return mode === "admin" ? adminResult : managerResult;
+}
+
+export function EventDetail({ eventId, mode }: EventDetailProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("basic");
   const [toast, setToast] = useState<string | null>(null);
-  const { data: detail, isLoading, isError, error } = useGetAdminEventDetailQuery(eventId);
+  const { data: detail, isLoading, isError, error } = useEventDetailQuery(mode, eventId);
 
   if (isLoading) return <div className={styles.state}>불러오는 중...</div>;
   if (isError || !detail) {
@@ -37,7 +45,7 @@ export function AdminEventDetail({ eventId, basePath = "/admin/events" }: AdminE
 
   return (
     <section className={styles.page}>
-      <EventDetailHeader eventId={eventId} detail={detail} onStatusChanged={setToast} basePath={basePath} />
+      <EventDetailHeader eventId={eventId} detail={detail} onStatusChanged={setToast} mode={mode} />
 
       <nav className={styles.tabBar}>
         {TABS.map((tab) => (

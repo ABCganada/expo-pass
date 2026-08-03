@@ -7,7 +7,7 @@ import { useGetAdminEventsQuery, useDeleteAdminEventMutation } from "../../api/a
 import { useGetManagerEventsQuery, useDeleteManagerEventMutation } from "../../api/managerEventApi";
 import { ConfirmDialog } from "../ConfirmDialog/ConfirmDialog";
 import { Toast } from "../Toast/Toast";
-import type { AdminEventStatus } from "../../types/adminEvent";
+import type { AdminEventStatus } from "../../types/eventList";
 import { getEventsBasePath, type EventRole } from "../../types/eventRole";
 import { formatPeriod } from "../../utils/eventPhase";
 import { useAuth } from "@/features/auth/hooks/useAuth";

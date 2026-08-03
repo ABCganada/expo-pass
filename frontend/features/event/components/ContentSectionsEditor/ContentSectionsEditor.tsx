@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import type { EventContentType } from "../../types/adminEventDetail";
+import type { EventContentType } from "../../types/eventManagementDetail";
 import styles from "./ContentSectionsEditor.module.css";
 
 const SECTION_LABELS: Record<EventContentType, string> = {

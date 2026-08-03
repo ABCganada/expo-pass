@@ -1,12 +1,12 @@
 "use client";
 
 import { TicketCardList } from "../TicketCardList/TicketCardList";
-import type { AdminEventTicket } from "../../types/adminEventDetail";
+import type { EventTicket } from "../../types/eventManagementDetail";
 import styles from "./EventCreateStepper.module.css";
 
 interface Step4TicketsProps {
   eventId: string;
-  tickets: AdminEventTicket[];
+  tickets: EventTicket[];
   onBack: () => void;
   onComplete: () => void;
 }

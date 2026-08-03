@@ -1,7 +1,7 @@
 "use client";
 
 import { BasicInfoForm, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
-import formStyles from "../AdminEventDetail/AdminEventDetail.module.css";
+import formStyles from "../EventDetail/EventDetail.module.css";
 import styles from "./EventCreateStepper.module.css";
 
 export type Step1Values = BasicInfoFormValues;

@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useUpdateAdminEventMutation } from "../../api/adminEventDetailApi";
+import { useUpdateManagerEventMutation } from "../../api/managerEventDetailApi";
 import { useChangeAdminEventManagerMutation } from "../../api/adminEventApi";
 import { BasicInfoForm, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
-import type { AdminEventDetail } from "../../types/adminEventDetail";
+import type { EventManagementDetail } from "../../types/eventManagementDetail";
 import { queryErrorMessage } from "@/features/store/api/queryError";
-import styles from "./AdminEventDetail.module.css";
+import styles from "./EventDetail.module.css";
 
 interface BasicInfoEditorProps {
   eventId: string;
-  detail: AdminEventDetail;
+  detail: EventManagementDetail;
   initialCategoryId: string;
   isEditing: boolean;
   onStartEdit: () => void;
@@ -18,7 +18,7 @@ interface BasicInfoEditorProps {
   onSaved: (message: string) => void;
 }
 
-function toFormValues(detail: AdminEventDetail, categoryId: string): BasicInfoFormValues {
+function toFormValues(detail: EventManagementDetail, categoryId: string): BasicInfoFormValues {
   return {
     title: detail.title,
     hostName: detail.hostName ?? "",
@@ -46,7 +46,7 @@ export function BasicInfoEditor({
   onCancel,
   onSaved,
 }: BasicInfoEditorProps) {
-  const [updateEvent, { isLoading: isUpdating }] = useUpdateAdminEventMutation();
+  const [updateEvent, { isLoading: isUpdating }] = useUpdateManagerEventMutation();
   const [changeManager, { isLoading: isChangingManager }] = useChangeAdminEventManagerMutation();
   const [values, setValues] = useState<BasicInfoFormValues>(() => toFormValues(detail, initialCategoryId));
   const [error, setError] = useState<string | null>(null);
