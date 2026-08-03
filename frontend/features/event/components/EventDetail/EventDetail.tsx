@@ -62,7 +62,7 @@ export function EventDetail({ eventId, mode }: EventDetailProps) {
       </nav>
 
       <div className={styles.tabPanel}>
-        {activeTab === "basic" && <BasicInfoTab eventId={eventId} detail={detail} onSaved={setToast} />}
+        {activeTab === "basic" && <BasicInfoTab eventId={eventId} detail={detail} mode={mode} onSaved={setToast} />}
         {activeTab === "content" && <ContentTab eventId={eventId} detail={detail} onSaved={setToast} />}
         {activeTab === "images" && <ImageGridManager eventId={eventId} images={detail.images} />}
         {activeTab === "tickets" && <TicketCardList eventId={eventId} tickets={detail.tickets} />}

@@ -5,6 +5,7 @@ import { useUpdateManagerEventMutation } from "../../api/managerEventDetailApi";
 import { useChangeAdminEventManagerMutation } from "../../api/adminEventApi";
 import { BasicInfoForm, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
 import type { EventManagementDetail } from "../../types/eventManagementDetail";
+import type { EventRole } from "../../types/eventRole";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./EventDetail.module.css";
 
@@ -13,6 +14,7 @@ interface BasicInfoEditorProps {
   detail: EventManagementDetail;
   initialCategoryId: string;
   isEditing: boolean;
+  mode: EventRole;
   onStartEdit: () => void;
   onCancel: () => void;
   onSaved: (message: string) => void;
@@ -42,10 +44,12 @@ export function BasicInfoEditor({
   detail,
   initialCategoryId,
   isEditing,
+  mode,
   onStartEdit,
   onCancel,
   onSaved,
 }: BasicInfoEditorProps) {
+  const canEdit = mode === "manager";
   const [updateEvent, { isLoading: isUpdating }] = useUpdateManagerEventMutation();
   const [changeManager, { isLoading: isChangingManager }] = useChangeAdminEventManagerMutation();
   const [values, setValues] = useState<BasicInfoFormValues>(() => toFormValues(detail, initialCategoryId));
@@ -118,13 +122,13 @@ export function BasicInfoEditor({
               </button>
             </div>
           </>
-        ) : (
+        ) : canEdit ? (
           <div className={styles.viewHeader}>
             <button type="button" className={styles.editButton} onClick={onStartEdit}>
               수정
             </button>
           </div>
-        )
+        ) : null
       }
     />
   );
