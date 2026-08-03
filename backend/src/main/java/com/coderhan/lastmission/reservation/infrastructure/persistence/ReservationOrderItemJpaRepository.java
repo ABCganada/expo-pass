@@ -13,12 +13,19 @@ interface ReservationOrderItemJpaRepository extends JpaRepository<ReservationOrd
     List<ReservationOrderItemEntity> findByOrderId(String orderId);
     Optional<ReservationOrderItemEntity> findByQrCodeHash(String qrCodeHash);
 
-    // checked_in_at이 아직 NULL일 때만 성공 — 같은 QR이 동시에 두 번 스캔돼도 하나만 처리됨
+    // checked_in_at이 아직 NULL이고, 소속 주문이 CONFIRMED(결제완료)일 때만 성공 — 같은 QR이
+    // 동시에 두 번 스캔돼도 하나만 처리되고, 환불/취소/결제대기 상태인 주문의 QR은 체크인 자체가
+    // 안 된다(그렇지 않으면 환불된 결제로도 QR을 캡처해뒀다면 계속 입장할 수 있게 된다).
     @Modifying
     @Query("""
             UPDATE ReservationOrderItemEntity i
             SET i.checkedInAt = :now, i.checkedInByAdminId = :adminUserId
             WHERE i.qrCodeHash = :qrCodeHash AND i.checkedInAt IS NULL
+            AND EXISTS (
+                SELECT 1 FROM ReservationOrderEntity o
+                WHERE o.orderId = i.orderId
+                AND o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED
+            )
             """)
     int checkin(@Param("qrCodeHash") String qrCodeHash, @Param("adminUserId") long adminUserId,
                 @Param("now") OffsetDateTime now);

@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Search } from "lucide-react";
+import { ClipboardList, Search, X } from "lucide-react";
+import { PaymentDetailContent } from "@/features/payment/components/PaymentDetailContent";
 import { ReservationListItem } from "../ReservationListItem";
 import { useGetMyOrdersQuery } from "../../api/reservationApi";
 import { useLazyGetEventForDisplayQuery } from "../../api/eventLookupApi";
@@ -30,6 +31,7 @@ export function ReservationListContent() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [titlesByEventId, setTitlesByEventId] = useState<Record<string, string>>({});
   const [triggerGetEvent] = useLazyGetEventForDisplayQuery();
+  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
   const router = useRouter();
 
   // 타이핑할 때마다 200건짜리 검색 배치를 다시 훑지 않도록 살짝 늦춰서 반영한다.
@@ -143,7 +145,12 @@ export function ReservationListContent() {
       {!isLoading && filteredOrders.length > 0 && (
         <div className={styles.list}>
           {filteredOrders.map((order) => (
-            <ReservationListItem key={order.orderId} order={order} onViewEvent={handleViewEvent} />
+            <ReservationListItem
+              key={order.orderId}
+              order={order}
+              onViewEvent={handleViewEvent}
+              onViewPayment={setPaymentOrderId}
+            />
           ))}
         </div>
       )}
@@ -171,6 +178,22 @@ export function ReservationListContent() {
           </button>
         </footer>
       ) : null}
+
+      {paymentOrderId && (
+        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && setPaymentOrderId(null)}>
+          <div className={styles.paymentModal}>
+            <button
+              type="button"
+              className={styles.paymentModalClose}
+              aria-label="닫기"
+              onClick={() => setPaymentOrderId(null)}
+            >
+              <X size={18} />
+            </button>
+            <PaymentDetailContent orderId={paymentOrderId} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
