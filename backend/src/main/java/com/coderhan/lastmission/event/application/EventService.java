@@ -29,6 +29,7 @@ public class EventService {
     private final EventBookmarkService eventBookmarkService;
     private final ReservationQueryPort reservationQueryPort;
     private final UserDirectory userDirectory;
+    private final EventOwnershipValidator ownershipValidator;
     private final Clock clock;
 
     /**
@@ -66,13 +67,13 @@ public class EventService {
     }
 
     /**
-     * 행사 필드 수정 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 행사 필드 수정 - MANAGER 전용, 본인이 담당(manager_id)하는 행사만.
      */
     @Transactional
-    public Event updateEvent(long eventId, long callerUserId, boolean admin, UpdateEventCommand command) {
+    public Event updateEventAsManager(long eventId, long callerUserId, UpdateEventCommand command) {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        validateEventAccess(event, callerUserId, admin, "수정");
+        ownershipValidator.requireOwner(event, callerUserId, "수정");
         if (command.title() == null || command.title().isBlank()) {
             throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "제목은 비어 있을 수 없습니다.");
         }

@@ -55,9 +55,8 @@ class EventManagerController {
     @PatchMapping("/api/v1/manager/events/{eventId}")
     ApiResponse<UpdateEventResponse> updateEvent(@PathVariable long eventId,
             @RequestBody UpdateEventRequest request,
-            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
-        Event event = eventService.updateEvent(
-                eventId, principal.userId(), isAdmin(authentication), request.toCommand());
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        Event event = eventService.updateEventAsManager(eventId, principal.userId(), request.toCommand());
         return ApiResponse.success(UpdateEventResponse.from(event));
     }
 

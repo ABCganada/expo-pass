@@ -13,6 +13,7 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 
 import com.coderhan.lastmission.event.ReservationQueryPort;
+import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventCategory;
 import com.coderhan.lastmission.shared.error.BusinessException;
@@ -34,11 +35,14 @@ class EventServiceTest {
     private static final long EVENT_ID = 1L;
     private static final long MANAGER_ID = 100L;
 
+    private static final long OTHER_MANAGER_ID = 200L;
+
     @Mock EventRepository eventRepository;
     @Mock EventCategoryRepository eventCategoryRepository;
     @Mock EventBookmarkService eventBookmarkService;
     @Mock ReservationQueryPort reservationQueryPort;
     @Mock UserDirectory userDirectory;
+    @Spy EventOwnershipValidator ownershipValidator = new EventOwnershipValidator();
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks EventService service;
@@ -96,6 +100,28 @@ class EventServiceTest {
     }
 
     @Test
+    void updateEventAsManager_본인_담당_행사_수정_성공() {
+        Event event = event(MANAGER_ID);
+        EventCategory category = new EventCategory("MUSIC", "음악", true);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+        when(eventCategoryRepository.findById(1L)).thenReturn(Optional.of(category));
+
+        Event updated = service.updateEventAsManager(EVENT_ID, MANAGER_ID, updateCommand());
+
+        assertThat(updated.getTitle()).isEqualTo("수정된 행사");
+    }
+
+    @Test
+    void updateEventAsManager_담당하지_않는_행사면_거부() {
+        Event event = event(OTHER_MANAGER_ID);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.updateEventAsManager(EVENT_ID, MANAGER_ID, updateCommand()))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
+    }
+
+    @Test
     void changeManager_새_담당자가_MANAGER_권한이면_담당자_변경() {
         long newManagerId = 200L;
         Event event = event(MANAGER_ID);
@@ -136,5 +162,10 @@ class EventServiceTest {
         Event event = new Event("테스트 행사", category, managerId);
         ReflectionTestUtils.setField(event, "id", EVENT_ID);
         return event;
+    }
+
+    private UpdateEventCommand updateCommand() {
+        return new UpdateEventCommand("수정된 행사", 1L, "주최자", "장소", "주소", null, null, null,
+                null, null, null, null);
     }
 }
