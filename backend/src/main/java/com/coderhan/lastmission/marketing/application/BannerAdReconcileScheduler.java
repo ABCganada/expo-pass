@@ -4,7 +4,7 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
-import com.coderhan.lastmission.payment.PaymentOrderDirectory;
+import com.coderhan.lastmission.shared.order.PaymentOrderDirectory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
