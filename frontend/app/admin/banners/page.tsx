@@ -28,8 +28,8 @@ export default function AdminBannersPage() {
     return ad.title.toLowerCase().includes(q) || ad.createdBy.toLowerCase().includes(q);
   };
 
-  const pendingAds = ads.filter((ad) => ad.status === "PENDING" && matchesSearch(ad));
-  const otherAds = ads.filter((ad) => ad.status !== "PENDING" && matchesSearch(ad));
+  const pendingAds = ads.filter((ad) => (ad.status === "PENDING" || ad.status === "PAID") && matchesSearch(ad));
+  const otherAds = ads.filter((ad) => ad.status !== "PENDING" && ad.status !== "PAID" && matchesSearch(ad));
 
   const slotAds = selectedSlotId
     ? [...ads.filter((ad) => ad.slotIds.includes(selectedSlotId) && matchesSearch(ad))].sort((a, b) => {
