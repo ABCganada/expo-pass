@@ -188,6 +188,23 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
+     * 결제 실패(PaymentFailedEvent) 시 호출 — PENDING 주문을 CANCELLED로 전환하고, 주문 시점에
+     * 차감했던 티켓 재고를 되돌린다. 결제 시도 자체가 실패한 게 확정된 상황이라 보정 스케쥴러의
+     * 유휴시간(10~15분)을 기다릴 이유가 없어 즉시 처리한다. refundOrder와 동일하게, 이미 다른
+     * 상태로 바뀌었거나 존재하지 않는 주문이면 조용히 무시한다(이벤트 재전달 안전성 + 재고 이중 복원 방지).
+     */
+    @Transactional
+    public void cancelOrder(String orderId) {
+        boolean cancelled = repository.cancelOrderIfPending(orderId, OffsetDateTime.now(clock));
+        if (!cancelled) {
+            return;
+        }
+        Map<Long, Long> quantityByTicketId = repository.findItems(orderId).stream()
+                .collect(Collectors.groupingBy(ReservationOrderItem::ticketId, Collectors.counting()));
+        quantityByTicketId.forEach((ticketId, quantity) -> eventQueryPort.increaseTicketStock(ticketId, quantity.intValue()));
+    }
+
+    /**
      * 관리자용 — 이 행사의 모든 주문(예약자 명단)을 최신순으로 조회한다.
      */
     @Transactional(readOnly = true)

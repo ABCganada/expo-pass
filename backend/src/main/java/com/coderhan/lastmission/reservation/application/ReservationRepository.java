@@ -35,6 +35,13 @@ public interface ReservationRepository {
      * 이미 REFUNDED/PENDING/CANCELLED거나 존재하지 않는 주문이면 아무 것도 바꾸지 않고 false.
      */
     boolean refundOrderIfConfirmed(String orderId, OffsetDateTime now);
+    /**
+     * PENDING 상태인 주문을 CANCELLED로 전환한다(조건부 UPDATE, 결제 실패 시 호출).
+     * 이미 CONFIRMED/CANCELLED/REFUNDED거나 존재하지 않는 주문이면 아무 것도 바꾸지 않고 false.
+     */
+    boolean cancelOrderIfPending(String orderId, OffsetDateTime now);
+    /** PENDING 상태로 threshold 이전에 접수된 주문의 orderId를 전부 조회한다(보정 스케줄러용). */
+    List<String> findPendingOrderIdsOlderThan(OffsetDateTime threshold);
     /** 이 유저의 주문을 최신순으로 페이지 단위로 찾는다(마이페이지 예약 내역용). status가 null이면 전체. */
     OrderPage findOrdersByUserId(long userId, OrderStatus status, int page, int size);
     /** 이 행사의 모든 주문을 최신순으로 찾는다(관리자 예약자 명단용). */
