@@ -6,6 +6,7 @@ import { useGetMyAdsQuery } from "@/features/marketing/api/marketerBannerApi";
 import { MarketerAdCard } from "@/features/marketing/components/MarketerAdCard/MarketerAdCard";
 import { RegisterAdModal } from "@/features/marketing/components/RegisterAdModal/RegisterAdModal";
 import { AdStatsModal } from "@/features/marketing/components/AdStatsModal/AdStatsModal";
+import { AdPaymentModal } from "@/features/marketing/components/AdPaymentModal/AdPaymentModal";
 import type { MarketerBannerAd } from "@/features/marketing/types/marketerBanner";
 import styles from "./page.module.css";
 
@@ -14,13 +15,16 @@ export default function BannerAdsPage() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<MarketerBannerAd | undefined>(undefined);
   const [statsTarget, setStatsTarget] = useState<MarketerBannerAd | undefined>(undefined);
+  const [paymentTarget, setPaymentTarget] = useState<MarketerBannerAd | undefined>(undefined);
 
   const handleEdit = (ad: MarketerBannerAd) => setEditTarget(ad);
   const handleStats = (ad: MarketerBannerAd) => setStatsTarget(ad);
+  const handlePaymentDetail = (ad: MarketerBannerAd) => setPaymentTarget(ad);
 
   const handleCloseRegister = () => setRegisterOpen(false);
   const handleCloseEdit = () => setEditTarget(undefined);
   const handleCloseStats = () => setStatsTarget(undefined);
+  const handleClosePayment = () => setPaymentTarget(undefined);
 
   return (
     <div className={styles.page}>
@@ -53,6 +57,7 @@ export default function BannerAdsPage() {
               ad={ad}
               onEdit={handleEdit}
               onStats={handleStats}
+              onPaymentDetail={handlePaymentDetail}
             />
           ))}
         </div>
@@ -66,6 +71,13 @@ export default function BannerAdsPage() {
       )}
       {statsTarget && (
         <AdStatsModal ad={statsTarget} onClose={handleCloseStats} />
+      )}
+      {paymentTarget && (
+        <AdPaymentModal
+          orderId={paymentTarget.orderId}
+          adTitle={paymentTarget.title}
+          onClose={handleClosePayment}
+        />
       )}
     </div>
   );

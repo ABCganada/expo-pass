@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart2, CalendarRange, Edit2, Link } from "lucide-react";
+import { BarChart2, CalendarRange, CreditCard, Edit2, Link } from "lucide-react";
 import type { MarketerBannerAd } from "../../types/marketerBanner";
 import { BANNER_AD_STATUS_LABEL } from "../../types/marketerBanner";
 import styles from "./MarketerAdCard.module.css";
@@ -10,6 +10,7 @@ interface MarketerAdCardProps {
   slotName?: string;
   onEdit: (ad: MarketerBannerAd) => void;
   onStats: (ad: MarketerBannerAd) => void;
+  onPaymentDetail: (ad: MarketerBannerAd) => void;
 }
 
 function formatDate(iso: string) {
@@ -20,7 +21,7 @@ function formatDate(iso: string) {
   });
 }
 
-export function MarketerAdCard({ ad, slotName, onEdit, onStats }: MarketerAdCardProps) {
+export function MarketerAdCard({ ad, slotName, onEdit, onStats, onPaymentDetail }: MarketerAdCardProps) {
   return (
     <div className={styles.card}>
       <div className={styles.header}>
@@ -52,6 +53,10 @@ export function MarketerAdCard({ ad, slotName, onEdit, onStats }: MarketerAdCard
             수정
           </button>
         )}
+        <button type="button" className={styles.btnOutline} onClick={() => onPaymentDetail(ad)}>
+          <CreditCard size={14} />
+          결제 정보
+        </button>
         <button type="button" className={styles.btnPrimary} onClick={() => onStats(ad)}>
           <BarChart2 size={14} />
           성과 보기

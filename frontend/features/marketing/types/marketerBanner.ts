@@ -1,11 +1,13 @@
-export type BannerAdStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
+export type BannerAdStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED" | "CANCELLED" | "REFUNDED";
 export type BannerSlotType = "BANNER" | "TAB";
 
 export const BANNER_AD_STATUS_LABEL: Record<BannerAdStatus, string> = {
-  PENDING: "검토 중",
+  PENDING: "결제 대기",
   APPROVED: "진행 중",
   REJECTED: "거절됨",
   EXPIRED: "종료됨",
+  CANCELLED: "취소됨",
+  REFUNDED: "환불됨",
 };
 
 export const BANNER_SLOT_TYPE_LABEL: Record<BannerSlotType, string> = {
@@ -15,6 +17,7 @@ export const BANNER_SLOT_TYPE_LABEL: Record<BannerSlotType, string> = {
 
 export interface MarketerBannerAd {
   id: string;
+  orderId: string;
   slotIds: string[];
   title: string;
   bannerImageUrl?: string;
@@ -25,7 +28,7 @@ export interface MarketerBannerAd {
   endsAt: string;
   createdBy: string;
   createdAt: string;
-  totalAmount?: number;
+  totalAmount: number;
 }
 
 export interface BannerSlot {
