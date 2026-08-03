@@ -108,16 +108,20 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
-     * 이 유저의 모든 주문을 최신순으로 조회한다(목록용). 아이템 자체는 안 채우고,
-     * 티켓 종류별 수량만 일괄 집계해서 같이 내려준다(주문마다 상세를 또 조회하는 N+1 방지).
+     * 이 유저의 주문을 최신순으로 페이지 단위로 조회한다(목록용). 아이템 자체는 안 채우고,
+     * 이 페이지에 나온 주문에 대해서만 티켓 종류별 수량을 일괄 집계해서 같이 내려준다
+     * (주문마다 상세를 또 조회하는 N+1 방지 — 전체가 아니라 이 페이지 분량만 조회한다).
+     * status가 null이면 전체 상태를 대상으로 한다(마이페이지 필터 탭).
      */
     @Transactional(readOnly = true)
-    public List<OrderWithTickets> getMyOrders(long userId) {
-        List<ReservationOrder> orders = repository.findOrdersByUserId(userId);
-        Map<String, List<TicketQuantity>> quantitiesByOrderId = repository.findTicketQuantitiesByUserId(userId);
-        return orders.stream()
+    public MyOrdersPage getMyOrders(long userId, OrderStatus status, int page, int size) {
+        OrderPage orderPage = repository.findOrdersByUserId(userId, status, page, size);
+        List<String> orderIds = orderPage.orders().stream().map(ReservationOrder::orderId).toList();
+        Map<String, List<TicketQuantity>> quantitiesByOrderId = repository.findTicketQuantitiesByOrderIds(orderIds);
+        List<OrderWithTickets> orders = orderPage.orders().stream()
                 .map(order -> new OrderWithTickets(order, quantitiesByOrderId.getOrDefault(order.orderId(), List.of())))
                 .toList();
+        return new MyOrdersPage(orders, orderPage.page(), orderPage.size(), orderPage.totalElements());
     }
 
     /**
@@ -199,6 +203,8 @@ public class ReservationService implements ReservationQueryPort {
     public record OrderDetail(ReservationOrder order, List<ReservationOrderItem> items) {}
 
     public record OrderWithTickets(ReservationOrder order, List<TicketQuantity> ticketQuantities) {}
+
+    public record MyOrdersPage(List<OrderWithTickets> orders, int page, int size, long totalElements) {}
 
     public record EventReservationSummary(
             long eventId, long totalOrders, Map<OrderStatus, Long> countsByStatus) {}

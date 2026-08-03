@@ -28,12 +28,12 @@ interface ReservationOrderItemJpaRepository extends JpaRepository<ReservationOrd
             + "WHERE i.orderId = o.orderId AND o.userId = :userId AND i.ticketId = :ticketId")
     long countByUserIdAndTicketId(@Param("userId") Long userId, @Param("ticketId") Long ticketId);
 
-    // 이 유저의 모든 주문에 대해 주문ID·티켓ID별 수량을 한 번의 쿼리로 집계 (목록 화면 N+1 방지용)
+    // 주어진 주문들에 대해 주문ID·티켓ID별 수량을 한 번의 쿼리로 집계 (목록 화면 N+1 방지용 — 페이지 단위로만 조회)
     @Query("SELECT i.orderId as orderId, i.ticketId as ticketId, COUNT(i) as quantity "
-            + "FROM ReservationOrderItemEntity i, ReservationOrderEntity o "
-            + "WHERE i.orderId = o.orderId AND o.userId = :userId "
+            + "FROM ReservationOrderItemEntity i "
+            + "WHERE i.orderId IN :orderIds "
             + "GROUP BY i.orderId, i.ticketId")
-    List<OrderTicketQuantityRow> findTicketQuantitiesByUserId(@Param("userId") Long userId);
+    List<OrderTicketQuantityRow> findTicketQuantitiesByOrderIds(@Param("orderIds") List<String> orderIds);
 
     interface OrderTicketQuantityRow {
         String getOrderId();
