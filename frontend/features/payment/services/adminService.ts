@@ -123,7 +123,7 @@ export const adminService = {
     // TODO(mock): remove before push
     const logs = Array.from({ length: size }, (_, i) => {
       const template = MOCK_LOGS[(page * size + i) % MOCK_LOGS.length];
-      return { ...template, id: `${page}-${i}` };
+      return { ...template, id: `${template.id}-${page}-${i}` };
     });
     return {
       logs,
@@ -151,7 +151,7 @@ export const adminService = {
     id: string,
     signal?: AbortSignal,
   ): Promise<PaymentLogDetail> {
-    return MOCK_LOGS.find((log) => log.id === id) ?? MOCK_LOGS[0]; // TODO(mock): remove before push
+    return MOCK_LOGS.find((log) => id.startsWith(log.id)) ?? MOCK_LOGS[0]; // TODO(mock): remove before push
 
     const res = await fetch(buildApiUrl(`/api/v1/admin/payments/logs/${id}`), {
       credentials: "include",

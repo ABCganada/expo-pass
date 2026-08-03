@@ -2,22 +2,12 @@
 
 import { useState } from "react";
 import { useGetPaymentLogsQuery } from "../../api/adminApi";
+import { actionTone } from "../../utils/actionTone";
+import { AdminPaymentLogDetailContent } from "../AdminPaymentLogDetailContent";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./AdminPaymentLogListContent.module.css";
 
 const PAGE_SIZE = 20;
-
-type ActionTone = "neutral" | "success" | "danger";
-
-const ACTION_TONE: Record<string, ActionTone> = {
-  APPROVE: "success",
-  CANCEL: "danger",
-  CANCEL_STATUS_CHANGED: "danger",
-};
-
-function actionTone(action: string): ActionTone {
-  return ACTION_TONE[action] ?? "neutral";
-}
 
 function formatDate(value: string): string {
   return new Date(value).toLocaleString("ko-KR", {
@@ -31,6 +21,9 @@ function formatDate(value: string): string {
 
 export function AdminPaymentLogListContent() {
   const [page, setPage] = useState(0);
+  const [selectedLogId, setSelectedLogId] = useState<string | undefined>(
+    undefined,
+  );
   const { data, isLoading, isFetching, isError, error } =
     useGetPaymentLogsQuery({ page, size: PAGE_SIZE });
 
@@ -61,7 +54,20 @@ export function AdminPaymentLogListContent() {
             </thead>
             <tbody>
               {logs.map((log) => (
-                <tr key={log.id}>
+                <tr
+                  key={log.id}
+                  className={styles.row}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`결제 로그 ${log.id} 상세 보기`}
+                  onClick={() => setSelectedLogId(log.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedLogId(log.id);
+                    }
+                  }}
+                >
                   <td className={styles.mono}>{log.paymentKey ?? "-"}</td>
                   <td>
                     <span
@@ -105,6 +111,13 @@ export function AdminPaymentLogListContent() {
           </button>
         </footer>
       ) : null}
+
+      {selectedLogId && (
+        <AdminPaymentLogDetailContent
+          id={selectedLogId}
+          onClose={() => setSelectedLogId(undefined)}
+        />
+      )}
     </div>
   );
 }
