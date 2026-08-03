@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import com.coderhan.lastmission.marketing.AdExpiredEvent;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
@@ -14,6 +15,7 @@ import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ public class BannerAdService {
     private final BannerAdRepository adRepository;
     private final BannerSlotRepository slotRepository;
     private final BannerStatRepository statRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     @Transactional
@@ -107,7 +110,12 @@ public class BannerAdService {
     @Transactional
     public void expireAds() {
         adRepository.findExpiredApproved(OffsetDateTime.now(clock))
-                .forEach(ad -> adRepository.updateStatus(ad.id(), BannerAdStatus.EXPIRED));
+                .forEach(ad -> {
+                    adRepository.updateStatus(ad.id(), BannerAdStatus.EXPIRED);
+                    if (ad.totalAmount() != null) {
+                        eventPublisher.publishEvent(new AdExpiredEvent(ad.id(), ad.totalAmount()));
+                    }
+                });
     }
 
     @Transactional
