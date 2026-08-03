@@ -65,7 +65,7 @@ class BannerAdServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
 
-        verify(adRepository, never()).save(any(), any(), any(), any(), any(), any(), any(), any(), any(), anyLong());
+        verify(adRepository, never()).save(any(), any(), any(), any(), any(), any(), any(), any(), anyLong(), anyLong());
     }
 
     @Test
