@@ -5,11 +5,14 @@ import { useGetEventsQuery } from "../../api/eventApi";
 import { EventCard } from "../EventCard/EventCard";
 import styles from "./HomeEventSection.module.css";
 
-const DISPLAY_LIMIT = 8;
+const DISPLAY_LIMIT = 4;
 
 export function HomeEventSection() {
   const { data: events = [], isLoading } = useGetEventsQuery(undefined);
-  const displayedEvents = events.slice(0, DISPLAY_LIMIT);
+  const displayedEvents = events
+    .filter((event) => event.phase !== "ENDED")
+    .toSorted((a, b) => b.viewCount - a.viewCount)
+    .slice(0, DISPLAY_LIMIT);
 
   return (
     <section className={styles.section}>
