@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, ClipboardList, Home, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, Receipt } from "lucide-react";
+import { Bookmark, CalendarDays, ClipboardList, Home, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, Receipt } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "../constants/navigation";
 import styles from "./UserSidebar.module.css";
@@ -19,6 +19,7 @@ export function UserSidebar({ isCollapsed, onToggleCollapse, onLogout }: UserSid
     exhibitions: CalendarDays,
     reservations: ClipboardList,
     "qr-ticket": QrCode,
+    bookmarks: Bookmark,
     payments: Receipt,
     "vip-ads": Megaphone,
   };

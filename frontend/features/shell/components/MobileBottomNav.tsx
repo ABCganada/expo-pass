@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, ClipboardList, Home, Megaphone, QrCode, Receipt } from "lucide-react";
+import { Bookmark, CalendarDays, ClipboardList, Home, Megaphone, QrCode, Receipt } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "../constants/navigation";
 import styles from "./MobileBottomNav.module.css";
@@ -13,6 +13,7 @@ export function MobileBottomNav() {
     exhibitions: CalendarDays,
     reservations: ClipboardList,
     "qr-ticket": QrCode,
+    bookmarks: Bookmark,
     payments: Receipt,
     "vip-ads": Megaphone,
   };

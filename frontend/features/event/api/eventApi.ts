@@ -46,9 +46,11 @@ const eventApi = baseApi.injectEndpoints({
                 id: detail.id,
                 title: detail.title,
                 categoryName: detail.categoryName,
+                venueName: detail.venueName ?? "",
                 startDate: detail.startDate,
                 endDate: detail.endDate,
                 phase: detail.phase,
+                thumbnailUrl: detail.images.find((image) => image.imageType === "THUMBNAIL")?.imageUrl ?? null,
               });
             }
           }),

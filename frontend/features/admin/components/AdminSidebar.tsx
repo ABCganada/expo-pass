@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, CalendarDays, ClipboardList, Home, LineChart, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, TicketCheck, Users } from "lucide-react";
+import { BarChart3, Bookmark, CalendarDays, ClipboardList, Home, LineChart, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, TicketCheck, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "@/features/shell/constants/navigation";
 import styles from "./AdminSidebar.module.css";
@@ -33,6 +33,7 @@ export function AdminSidebar({
     exhibitions: CalendarDays,
     reservations: ClipboardList,
     "qr-ticket": QrCode,
+    bookmarks: Bookmark,
     payments: LineChart,
     "vip-ads": Megaphone,
   };

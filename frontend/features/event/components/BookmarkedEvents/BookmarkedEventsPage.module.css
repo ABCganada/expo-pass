@@ -24,24 +24,14 @@
 
 .filterRow {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.categoryTabsWrap {
-  flex: 1;
-  min-width: 0;
+  justify-content: flex-end;
+  margin-bottom: 20px;
 }
 
 .grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
-  transition: opacity 0.2s ease;
-}
-
-.grid[data-fetching="true"] {
-  opacity: 0.5;
 }
 
 @media (min-width: 768px) {

@@ -3,9 +3,13 @@ package com.coderhan.lastmission.event.application;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventBookmark;
+import com.coderhan.lastmission.event.domain.EventImage;
+import com.coderhan.lastmission.event.domain.EventImageType;
 import com.coderhan.lastmission.event.domain.EventPhase;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
@@ -18,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventBookmarkService {
     private final EventBookmarkRepository eventBookmarkRepository;
     private final EventRepository eventRepository;
+    private final EventImageRepository eventImageRepository;
     private final Clock clock;
 
     /**
@@ -53,16 +58,48 @@ public class EventBookmarkService {
     @Transactional(readOnly = true)
     public List<BookmarkedEvent> getMyBookmarkedEvents(long userId) {
         LocalDate today = LocalDate.now(clock);
-        return eventBookmarkRepository.findAllByUserIdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(bookmark -> BookmarkedEvent.from(bookmark, today))
+
+        List<EventBookmark> bookmarks = eventBookmarkRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+
+        List<Event> bookmarkedEvents = bookmarks.stream()
+                .map(EventBookmark::getEvent)
+                .toList();
+
+        Map<Long, String> thumbnailByEventId = thumbnailUrlsByEventIds(bookmarkedEvents);
+
+        return bookmarks.stream()
+                .map(bookmark -> {
+                    Event event = bookmark.getEvent();
+                    return new BookmarkedEvent(
+                            event.getId(),
+                            event.getTitle(),
+                            event.getCategory().getName(),
+                            event.getVenueName(),
+                            event.getStartDate(),
+                            event.getEndDate(),
+                            event.phase(today),
+                            thumbnailByEventId.get(event.getId())
+                    );
+                })
                 .toList();
     }
 
-    public record BookmarkedEvent(Event event, EventPhase phase) {
-        static BookmarkedEvent from(EventBookmark bookmark, LocalDate today) {
-            Event event = bookmark.getEvent();
-            return new BookmarkedEvent(event, event.phase(today));
+    /** 목록 조회용 썸네일을 이벤트당 1건씩 배치로 조회 (N+1 방지). */
+    private Map<Long, String> thumbnailUrlsByEventIds(List<Event> events) {
+        if (events.isEmpty()) {
+            return Map.of();
         }
+        List<Long> eventIds = events.stream().map(Event::getId).toList();
+        return eventImageRepository.findAllByEventIdInAndImageType(eventIds, EventImageType.THUMBNAIL)
+                .stream()
+                .collect(Collectors.toMap(
+                        image -> image.getEvent().getId(),
+                        EventImage::getImageUrl,
+                        (first, second) -> first)); // 중복 처리
     }
+
+    public record BookmarkedEvent(
+            long id, String title, String categoryName, String venueName,
+            LocalDate startDate, LocalDate endDate, EventPhase phase, String thumbnailUrl
+    ) {}
 }
