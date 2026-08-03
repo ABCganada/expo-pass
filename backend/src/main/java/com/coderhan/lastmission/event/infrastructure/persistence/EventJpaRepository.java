@@ -86,6 +86,14 @@ interface EventJpaRepository extends JpaRepository<Event, Long>, EventRepository
     Optional<LocalDate> findStartDateByEventId(@Param("eventId") long eventId);
 
     @Override
+    @Query("""
+        SELECT e.managerId FROM Event e
+        WHERE e.id = :eventId
+        AND e.deletedAt IS NULL
+    """)
+    Optional<Long> findManagerIdById(@Param("eventId") long eventId);
+
+    @Override
     @Modifying
     @Query("""
         UPDATE Event e
