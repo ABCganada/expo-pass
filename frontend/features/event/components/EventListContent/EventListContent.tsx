@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CalendarDays } from "lucide-react";
-import { useGetEventCategoriesQuery, useGetEventsQuery } from "../../api/eventApi";
+import {
+  useGetEventCategoriesQuery,
+  useGetEventsQuery,
+  useGetMyBookmarksQuery,
+  useToggleBookmarkMutation,
+} from "../../api/eventApi";
 import { CategoryTabs } from "../CategoryTabs/CategoryTabs";
 import { EventCard } from "../EventCard/EventCard";
 import { StatusFilterDropdown } from "../StatusFilterDropdown/StatusFilterDropdown";
@@ -24,8 +29,11 @@ export function EventListContent() {
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>("ALL");
   const { data: categories = [] } = useGetEventCategoriesQuery();
   const { data: events = [], isLoading, isFetching } = useGetEventsQuery(activeCategoryId ?? undefined);
+  const { data: bookmarks = [] } = useGetMyBookmarksQuery();
+  const [toggleBookmark] = useToggleBookmarkMutation();
 
   const filteredEvents = phaseFilter === "ALL" ? events : events.filter((event) => event.phase === phaseFilter);
+  const bookmarkedIds = new Set(bookmarks.map((bookmark) => bookmark.id));
 
   return (
     <div className={styles.page}>
@@ -68,7 +76,12 @@ export function EventListContent() {
       {!isLoading && filteredEvents.length > 0 && (
         <div className={styles.grid} data-fetching={isFetching} aria-busy={isFetching}>
           {filteredEvents.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard
+              key={event.id}
+              event={event}
+              isBookmarked={bookmarkedIds.has(event.id)}
+              onToggleBookmark={(eventId) => void toggleBookmark(eventId)}
+            />
           ))}
         </div>
       )}
