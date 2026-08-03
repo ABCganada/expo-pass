@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 import { useGetEventCategoriesQuery, useGetEventsQuery } from "../../api/eventApi";
 import { CategoryTabs } from "../CategoryTabs/CategoryTabs";
@@ -8,7 +9,8 @@ import { EventCard } from "../EventCard/EventCard";
 import styles from "./EventListContent.module.css";
 
 export function EventListContent() {
-  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(() => searchParams.get("category"));
   const { data: categories = [] } = useGetEventCategoriesQuery();
   const { data: events = [], isLoading, isFetching } = useGetEventsQuery(activeCategoryId ?? undefined);
 

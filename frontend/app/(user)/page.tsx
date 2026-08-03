@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { HomeContent } from "@/features/event/components/HomeContent/HomeContent";
 
 export default function Home() {
-  redirect("/exhibitions");
+  return <HomeContent />;
 }
