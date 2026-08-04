@@ -35,6 +35,11 @@ const marketerBannerApi = baseApi.injectEndpoints({
       queryFn: ({ id, from, to }, api) =>
         queryResult(marketerBannerService.getStatsByDateRange(id, from, to, api.signal)),
     }),
+
+    deleteMyAd: build.mutation<void, string>({
+      queryFn: (id) => queryResult(marketerBannerService.deleteAd(id)),
+      invalidatesTags: ["MarketerAd"],
+    }),
   }),
 });
 
@@ -44,4 +49,5 @@ export const {
   useRegisterAdMutation,
   useUpdateAdMutation,
   useGetAdStatsQuery,
+  useDeleteMyAdMutation,
 } = marketerBannerApi;

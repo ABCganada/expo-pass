@@ -2,6 +2,7 @@ package com.coderhan.lastmission.event.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,6 +48,7 @@ public class TicketService {
     private Ticket createTicket(Event event, CreateTicketCommand command) {
         validateTicketMutable(event);
         validateTicketCreation(command);
+        validateSaleEndWithinEvent(event, command.saleEndAt());
 
         Ticket ticket = new Ticket(event, command.name(), command.price(), command.quantityTotal(),
                 command.maxPurchasePerUser(), command.saleStartAt(), command.saleEndAt());
@@ -78,6 +80,7 @@ public class TicketService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.TICKET_NOT_FOUND, "티켓을 찾을 수 없습니다."));
         validateTicketFields(command.name(), command.price(), command.quantityTotal(),
                 command.maxPurchasePerUser(), command.saleStartAt(), command.saleEndAt());
+        validateSaleEndWithinEvent(event, command.saleEndAt());
 
         boolean saleAlreadyStarted = !ticket.getSaleStartAt().isAfter(Instant.now(clock));
         if (saleAlreadyStarted && !Objects.equals(command.quantityTotal(), ticket.getQuantityTotal())) {
@@ -164,6 +167,20 @@ public class TicketService {
     private void validateTicketCreation(CreateTicketCommand command) {
         validateTicketFields(command.name(), command.price(), command.quantityTotal(),
                 command.maxPurchasePerUser(), command.saleStartAt(), command.saleEndAt());
+    }
+
+    /** 행사 종료일이 정해져 있으면(DRAFT라 아직 미정이면 검사 생략), 판매 종료 일시가 그 종료일을 넘을 수 X */
+    private void validateSaleEndWithinEvent(Event event, Instant saleEndAt) {
+        if (event.getEndDate() == null) {
+            return;
+        }
+        Instant eventEndBoundary = event.getEndDate()
+                .plusDays(1)
+                .atStartOfDay(ZoneOffset.UTC)
+                .toInstant();
+        if (!saleEndAt.isBefore(eventEndBoundary)) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "판매 종료 일시는 행사 종료일을 넘을 수 없습니다.");
+        }
     }
 
     private void validateTicketFields(String name, Integer price, Integer quantityTotal,

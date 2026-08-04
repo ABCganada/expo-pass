@@ -1,10 +1,8 @@
 .page {
-  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-page-background);
-  padding: 32px;
+  padding: 48px 32px;
 }
 
 .panel {
@@ -18,7 +16,7 @@
   align-items: center;
   gap: 16px;
   width: 100%;
-  max-width: 400px;
+  max-width: 480px;
   text-align: center;
 }
 
@@ -65,14 +63,20 @@
 .row {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
   font-size: 14px;
 }
 
 .row span {
+  flex-shrink: 0;
+  white-space: nowrap;
   color: var(--color-text-secondary);
 }
 
 .row strong {
+  text-align: right;
+  word-break: break-all;
   color: var(--color-text-primary);
 }
 
