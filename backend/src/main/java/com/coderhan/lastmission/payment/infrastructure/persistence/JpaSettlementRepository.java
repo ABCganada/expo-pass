@@ -24,8 +24,11 @@ class JpaSettlementRepository implements SettlementRepository {
     @Override
     public Settlement save(long eventId, BigDecimal totalSales, BigDecimal commissionRate,
                            BigDecimal commissionAmount, BigDecimal netAmount, OffsetDateTime settledAt) {
-        SettlementEntity saved = jpaRepository.save(
+        jpaRepository.save(
                 SettlementEntity.completed(eventId, totalSales, commissionRate, commissionAmount, netAmount, settledAt));
+                
+        SettlementEntity saved = jpaRepository.findByEventId(eventId)
+                .orElseThrow(() -> new IllegalStateException("정산 저장 직후 조회에 실패했습니다. eventId=" + eventId));
 
         return toDomain(saved);
     }
