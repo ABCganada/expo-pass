@@ -119,6 +119,20 @@ public class BannerAdService {
     }
 
     @Transactional
+    public void deleteAdByMarketer(UUID id, long requesterId) {
+        BannerAd ad = adRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
+        if (ad.createdBy() != requesterId) {
+            throw new BusinessException(ErrorCode.BANNER_AD_ACCESS_DENIED, "본인의 광고만 삭제할 수 있습니다.");
+        }
+        if (ad.status() != BannerAdStatus.PENDING) {
+            throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "결제 대기 상태의 광고만 삭제할 수 있습니다.");
+        }
+        statRepository.deleteStatsByAdId(id);
+        adRepository.deleteById(id);
+    }
+
+    @Transactional
     public void deleteAd(UUID id) {
         adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));

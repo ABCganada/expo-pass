@@ -51,6 +51,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
 
     // 채팅 실시간 수신 (STOMP over WebSocket, SockJS 미사용)
     implementation("org.springframework.boot:spring-boot-starter-websocket")
