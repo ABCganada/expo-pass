@@ -80,6 +80,7 @@ management:
     resource-attributes:
       service.name: ${SPRING_APPLICATION_NAME}
       service.namespace: coderhan
+      service.instance.id: ${OTEL_SERVICE_INSTANCE_ID}
       deployment.environment.name: ${OTEL_DEPLOYMENT_ENVIRONMENT:production}
     tracing:
       export:
