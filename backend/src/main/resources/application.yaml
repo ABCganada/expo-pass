@@ -75,6 +75,25 @@ spring:
       repositories:
         enabled: false
 
+management:
+  opentelemetry:
+    resource-attributes:
+      service.name: ${SPRING_APPLICATION_NAME}
+      service.namespace: coderhan
+      deployment.environment.name: ${OTEL_DEPLOYMENT_ENVIRONMENT:production}
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_TRACING_ENDPOINT}
+          transport: http
+  tracing:
+    sampling:
+      probability: ${OTEL_TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    metrics:
+      export:
+        url: ${OTEL_METRICS_ENDPOINT}
+
 lastmission:
   # 브라우저 CORS 허용 오리진. 로컬은 기본값(localhost 포함), 프로덕션은 env로 앱 오리진만 남긴다.
   cors:
