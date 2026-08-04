@@ -19,6 +19,10 @@ const eventLookupApi = baseApi.injectEndpoints({
       queryFn: (_arg, api) => queryResult(eventLookupService.getAdminEvents(api.signal)),
       providesTags: ["Event"],
     }),
+    getAllEventsForDisplay: build.query<AdminEventListItem[], void>({
+      queryFn: (_arg, api) => queryResult(eventLookupService.getAllEvents(api.signal)),
+      providesTags: ["Event"],
+    }),
   }),
 });
 
@@ -27,4 +31,5 @@ export const {
   useLazyGetEventForDisplayQuery,
   useGetEventTicketsForDisplayQuery,
   useGetAdminEventsForDisplayQuery,
+  useGetAllEventsForDisplayQuery,
 } = eventLookupApi;

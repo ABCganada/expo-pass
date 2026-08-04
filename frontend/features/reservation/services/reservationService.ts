@@ -30,6 +30,11 @@ export const reservationService = {
       parseData<QrTicket[]>(res),
     ),
 
+  getOrder: (orderId: string, signal?: AbortSignal): Promise<OrderDetail> =>
+    fetch(`${BASE}/reservations/${orderId}`, { credentials: "include", signal }).then((res) =>
+      parseData<OrderDetail>(res),
+    ),
+
   createOrder: async (
     eventId: string,
     items: CreateOrderItemInput[],
