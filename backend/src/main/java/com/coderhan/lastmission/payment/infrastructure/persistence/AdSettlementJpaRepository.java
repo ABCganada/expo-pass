@@ -17,12 +17,6 @@ interface AdSettlementJpaRepository extends JpaRepository<AdSettlementEntity, Lo
     BigDecimal sumTotalAmount();
 
     @Query(
-        "SELECT COALESCE(SUM(s.commissionAmount), 0) " +
-        "FROM AdSettlementEntity s"
-    )
-    BigDecimal sumCommissionAmount();
-
-    @Query(
         "SELECT COALESCE(SUM(s.netAmount), 0) " +
         "FROM AdSettlementEntity s"
     )

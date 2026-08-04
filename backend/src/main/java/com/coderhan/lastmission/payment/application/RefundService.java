@@ -27,7 +27,6 @@ public class RefundService {
     private static final BigDecimal FULL_REFUND_RATE = new BigDecimal("1.00");
     private static final BigDecimal HALF_REFUND_RATE = new BigDecimal("0.50");
     private static final BigDecimal PARTIAL_REFUND_RATE = new BigDecimal("0.30");
-    private static final BigDecimal NO_REFUND_RATE = BigDecimal.ZERO;
 
     private final RefundRepository refundRepository;
     private final PaymentRepository paymentRepository;
@@ -39,8 +38,10 @@ public class RefundService {
     /**
      * 환불 신청 접수. 모든 환불은 자동승인
      *
-     * 행사 시작일까지 남은 일수에 따라 환불율이 정해진다(D-7 이상 100%, D-3~D-6 50%, D-1~D-2 30%, 당일(D-0) 0%)
-     * 환불액이 0원인 경우에도 예약 취소 이력을 남기기 위해 Refund는 그대로 생성하되, 토스 결제취소는호출하지 않는다.
+     * 행사 시작일까지 남은 일수에 따라 환불율이 정해진다(D-7 이상 100%, D-3~D-6 50%, D-1~D-2 30%).
+     * 행사 시작일 당일(D-0) 이후는 환불율이 0%가 되는 게 아니라 환불 신청 자체를 거부한다 —
+     * 0원짜리 환불을 그대로 접수하면 결제가 REFUNDED로 바뀌면서 정산 집계(COMPLETED 결제만 합산)에서
+     * 통째로 빠져, 실제로는 한 푼도 안 돌려줬는데 주최자 매출이 사라지는 문제가 있었다.
      */
     public Refund request(long userId, long paymentId, String reason) {
         Payment payment = paymentRepository.findById(paymentId)
@@ -59,6 +60,11 @@ public class RefundService {
         LocalDate eventStartDate = eventScheduleReader.findEventStartDate(payment.orderId());
         long daysUntilStart = ChronoUnit.DAYS.between(LocalDate.now(clock), eventStartDate);
 
+        if (daysUntilStart < PARTIAL_REFUND_MIN_DAYS_BEFORE_EVENT) {
+            throw new BusinessException(ErrorCode.PAYMENT_REFUND_NOT_ALLOWED,
+                    "행사 시작일 이후에는 환불 신청을 할 수 없습니다.");
+        }
+
         return payment.amount()
                 .multiply(refundRate(daysUntilStart))
                 .setScale(0, RoundingMode.HALF_UP);
@@ -71,10 +77,7 @@ public class RefundService {
         if (daysUntilStart >= HALF_REFUND_MIN_DAYS_BEFORE_EVENT) {
             return HALF_REFUND_RATE;
         }
-        if (daysUntilStart >= PARTIAL_REFUND_MIN_DAYS_BEFORE_EVENT) {
-            return PARTIAL_REFUND_RATE;
-        }
-        return NO_REFUND_RATE;
+        return PARTIAL_REFUND_RATE;
     }
 
     private Refund refund(Payment payment, BigDecimal amount, String reason) {

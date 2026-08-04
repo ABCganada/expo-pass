@@ -48,7 +48,6 @@ class JpaSettlementRepository implements SettlementRepository {
         return new SettlementSummary(
                 jpaRepository.sumTotalSales(),
                 jpaRepository.sumCommissionAmount(),
-                jpaRepository.sumNetAmount(),
                 jpaRepository.count());
     }
 

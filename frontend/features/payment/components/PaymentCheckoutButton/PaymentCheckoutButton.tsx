@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ANONYMOUS, loadTossPayments } from "@tosspayments/tosspayments-sdk";
 import type { TossPaymentsSDK } from "@tosspayments/tosspayments-sdk";
 import styles from "./PaymentCheckoutButton.module.css";
@@ -26,12 +27,11 @@ export function PaymentCheckoutButton({
   failUrl,
   disabled,
 }: PaymentCheckoutButtonProps) {
+  const router = useRouter();
   const [isRequesting, setIsRequesting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const tossPaymentsRef = useRef<TossPaymentsSDK | null>(null);
 
   const handleClick = async () => {
-    setError(null);
     setIsRequesting(true);
 
     try {
@@ -51,13 +51,18 @@ export function PaymentCheckoutButton({
         failUrl: `${window.location.origin}${failUrl}`,
       });
     } catch (thrown) {
-      // 사용자가 결제창을 닫은 경우(UserCancelError)는 에러로 취급하지 않는다.
-      if (thrown instanceof Error && thrown.name === "UserCancelError") {
-        return;
-      }
+      // 결제창을 닫거나(UserCancelError) 위젯 렌더링 자체가 실패하는 등, 토스 서버까지
+      // 도달하기 전에 클라이언트에서 끝나버리는 실패는 토스가 failUrl로 리다이렉트해주지
+      // 않는다 — 실제 리다이렉트와 동일한 쿼리파라미터로 직접 이동시켜, PENDING 주문을
+      // usePaymentResult의 실패 처리 경로로 그대로 태운다.
+      const isUserCancel =
+        thrown instanceof Error && thrown.name === "UserCancelError";
       const message =
         thrown instanceof Error ? thrown.message : "결제 요청에 실패했습니다.";
-      setError(message);
+      const reason = isUserCancel ? "사용자가 결제를 취소했습니다." : message;
+      router.push(
+        `${failUrl}?orderId=${encodeURIComponent(orderId)}&message=${encodeURIComponent(reason)}`,
+      );
     } finally {
       setIsRequesting(false);
     }
@@ -73,7 +78,6 @@ export function PaymentCheckoutButton({
       >
         {isRequesting ? "결제 진행 중..." : "결제하기"}
       </button>
-      {error && <p className={styles.error}>{error}</p>}
     </div>
   );
 }

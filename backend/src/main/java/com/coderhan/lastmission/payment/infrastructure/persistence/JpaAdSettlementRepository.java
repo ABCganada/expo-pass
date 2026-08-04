@@ -26,13 +26,11 @@ class JpaAdSettlementRepository implements AdSettlementRepository {
     public AdSettlement save(
             UUID adId,
             BigDecimal totalAmount,
-            BigDecimal commissionRate,
-            BigDecimal commissionAmount,
             BigDecimal netAmount,
             OffsetDateTime settledAt
     ) {
         AdSettlementEntity saved = jpaRepository.save(
-                AdSettlementEntity.completed(adId, totalAmount, commissionRate, commissionAmount, netAmount, settledAt));
+                AdSettlementEntity.completed(adId, totalAmount, netAmount, settledAt));
 
         return toDomain(saved);
     }
@@ -54,7 +52,6 @@ class JpaAdSettlementRepository implements AdSettlementRepository {
     public AdSettlementSummary getDashboardSummary() {
         return new AdSettlementSummary(
                 jpaRepository.sumTotalAmount(),
-                jpaRepository.sumCommissionAmount(),
                 jpaRepository.sumNetAmount(),
                 jpaRepository.count());
     }
@@ -64,8 +61,6 @@ class JpaAdSettlementRepository implements AdSettlementRepository {
                 .id(entity.getId())
                 .adId(entity.getAdId())
                 .totalAmount(entity.getTotalAmount())
-                .commissionRate(entity.getCommissionRate())
-                .commissionAmount(entity.getCommissionAmount())
                 .netAmount(entity.getNetAmount())
                 .status(entity.getStatus())
                 .settledAt(entity.getSettledAt())
