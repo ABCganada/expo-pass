@@ -22,9 +22,15 @@ export const eventLookupService = {
       parseData<EventTicketOption[]>(res),
     ),
 
-  // ADMIN이면 전체 행사, MANAGER면 자신이 관리하는 행사만 반환한다 (Event 도메인이 역할별로 필터링).
+  // MANAGER 컨텍스트용 — 호출자 본인이 담당하는 행사만 반환한다.
   getAdminEvents: (signal?: AbortSignal): Promise<AdminEventListItem[]> =>
     fetch(`${BASE}/manager/events`, { credentials: "include", signal }).then((res) =>
+      parseData<AdminEventListItem[]>(res),
+    ),
+
+  // ADMIN 전용 — 전체 행사를 반환한다.
+  getAllEvents: (signal?: AbortSignal): Promise<AdminEventListItem[]> =>
+    fetch(`${BASE}/admin/events`, { credentials: "include", signal }).then((res) =>
       parseData<AdminEventListItem[]>(res),
     ),
 };

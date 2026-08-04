@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronRight, ImageIcon, Search } from "lucide-react";
-import { useGetAdminEventsForDisplayQuery } from "../../api/eventLookupApi";
+import { useGetAdminEventsForDisplayQuery, useGetAllEventsForDisplayQuery } from "../../api/eventLookupApi";
 import styles from "./EventSelectContent.module.css";
 
 interface EventSelectContentProps {
@@ -38,7 +38,11 @@ function formatDate(value: string): string {
 }
 
 export function EventSelectContent({ basePath, phaseFilter, showPhaseTabs, showSearch }: EventSelectContentProps) {
-  const { data: allEvents = [], isLoading } = useGetAdminEventsForDisplayQuery();
+  // /admin/** 은 전체 관리자용 — 전체 행사를, 그 외(/manager/**)는 담당자 본인 행사만 본다.
+  const isAdminScope = basePath.startsWith("/admin");
+  const managerEvents = useGetAdminEventsForDisplayQuery(undefined, { skip: isAdminScope });
+  const allAdminEvents = useGetAllEventsForDisplayQuery(undefined, { skip: !isAdminScope });
+  const { data: allEvents = [], isLoading } = isAdminScope ? allAdminEvents : managerEvents;
   const [selectedTab, setSelectedTab] = useState<PhaseTabKey>("ALL");
   const [query, setQuery] = useState("");
 

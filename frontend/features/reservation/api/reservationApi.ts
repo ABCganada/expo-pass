@@ -19,6 +19,10 @@ const reservationApi = baseApi.injectEndpoints({
       queryFn: (_arg, api) => queryResult(reservationService.getMyQrTickets(api.signal)),
       providesTags: ["Reservation"],
     }),
+    getOrder: build.query<OrderDetail, string>({
+      queryFn: (orderId, api) => queryResult(reservationService.getOrder(orderId, api.signal)),
+      providesTags: ["Reservation"],
+    }),
     createReservationOrder: build.mutation<OrderDetail, { eventId: string; items: CreateOrderItemInput[] }>({
       queryFn: ({ eventId, items }) => queryResult(reservationService.createOrder(eventId, items)),
     }),
@@ -28,5 +32,6 @@ const reservationApi = baseApi.injectEndpoints({
 export const {
   useGetMyOrdersQuery,
   useGetMyQrTicketsQuery,
+  useGetOrderQuery,
   useCreateReservationOrderMutation,
 } = reservationApi;
