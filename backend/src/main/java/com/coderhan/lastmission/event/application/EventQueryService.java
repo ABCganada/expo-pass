@@ -2,6 +2,7 @@ package com.coderhan.lastmission.event.application;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,6 +29,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class EventQueryService {
+    /** 일반 사용자 목록 정렬 우선순위: 진행중 → 예정 → 종료 */
+    private static final Map<EventPhase, Integer> PUBLIC_LIST_PHASE_ORDER 
+            = Map.of(
+                EventPhase.ONGOING, 0,
+                EventPhase.UPCOMING, 1,
+                EventPhase.ENDED, 2
+            );
+
     private final EventRepository eventRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final TicketRepository ticketRepository;
@@ -48,6 +57,10 @@ public class EventQueryService {
 
         return events.stream()
                 .map(event -> new EventListItem(event, event.phase(today), thumbnailByEventId.get(event.getId())))
+                .sorted(Comparator
+                        .comparing((EventListItem item)
+                                -> PUBLIC_LIST_PHASE_ORDER.getOrDefault(item.phase(), Integer.MAX_VALUE))
+                        .thenComparing(item -> item.event().getStartDate()))
                 .toList();
     }
 
