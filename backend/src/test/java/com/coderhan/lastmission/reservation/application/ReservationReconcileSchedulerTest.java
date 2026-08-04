@@ -22,7 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ReservationReconcileSchedulerTest {
     private static final OffsetDateTime NOW = OffsetDateTime.parse("2026-07-23T10:00:00Z");
-    private static final OffsetDateTime THRESHOLD = NOW.minusMinutes(15);
+    private static final OffsetDateTime THRESHOLD = NOW.minusMinutes(10);
 
     @Mock ReservationRepository repository;
     @Mock ReservationService reservationService;
