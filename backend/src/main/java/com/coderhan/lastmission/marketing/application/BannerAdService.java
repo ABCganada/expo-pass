@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.AdExpiredEvent;
+import com.coderhan.lastmission.marketing.AdRejectedEvent;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
@@ -79,6 +80,10 @@ public class BannerAdService {
         return adRepository.updateStatus(id, BannerAdStatus.APPROVED);
     }
 
+    /**
+     * 광고 반려. 결제완료(PAID) 상태만 반려 가능하며, 반려되면 {@link AdRejectedEvent}를 발행해
+     * payment 모듈이 결제를 자동 환불하도록 한다(광고 환불 정책 — 항상 100%).
+     */
     @Transactional
     public BannerAd reject(UUID id) {
         BannerAd ad = adRepository.findById(id)
@@ -89,7 +94,9 @@ public class BannerAdService {
         if (ad.status() != BannerAdStatus.PAID) {
             throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "이미 처리된 광고입니다.");
         }
-        return adRepository.updateStatus(id, BannerAdStatus.REJECTED);
+        BannerAd rejected = adRepository.updateStatus(id, BannerAdStatus.REJECTED);
+        eventPublisher.publishEvent(new AdRejectedEvent(rejected.id(), rejected.orderId()));
+        return rejected;
     }
 
     @Transactional(readOnly = true)
@@ -157,21 +164,6 @@ public class BannerAdService {
     public void cancelByOrderId(String orderId) {
         adRepository.findByOrderId(orderId).ifPresent(ad -> {
             if (ad.status() != BannerAdStatus.PENDING) {
-                return;
-            }
-            adRepository.updateStatus(ad.id(), BannerAdStatus.CANCELLED);
-        });
-    }
-
-    /**
-     * 결제 환불(PaymentRefundedEvent) 리스너용 — 결제완료/승인 상태인 광고를 취소 처리한다.
-     * 슬롯은 별도 재고 카운터 없이 상태 기반으로 판매 가능 여부를 판단하므로(existsActiveOrPendingBySlotId),
-     * CANCELLED로 바꾸는 것만으로 슬롯 재판매·노출 중단·정산 대상 제외가 전부 자연히 따라온다.
-     */
-    @Transactional
-    public void cancelForRefund(String orderId) {
-        adRepository.findByOrderId(orderId).ifPresent(ad -> {
-            if (ad.status() != BannerAdStatus.PAID && ad.status() != BannerAdStatus.APPROVED) {
                 return;
             }
             adRepository.updateStatus(ad.id(), BannerAdStatus.CANCELLED);
