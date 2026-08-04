@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useUpdateManagerEventMutation } from "../../api/managerEventDetailApi";
-import { BasicInfoForm, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
+import { BasicInfoForm, isDateFieldError, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
 import { ManagerFieldControl } from "./ManagerFieldControl";
 import type { EventManagementDetail } from "../../types/eventManagementDetail";
 import type { EventRole } from "../../types/eventRole";
@@ -97,19 +97,22 @@ export function BasicInfoEditor({
     }
   };
 
+  const isDateError = error !== null && isDateFieldError(error);
+
   return (
     <BasicInfoForm
       values={values}
       onChange={handleChange}
       onValidSubmit={() => void handleSubmit()}
       readOnly={!isEditing}
+      dateError={isDateError ? error : null}
       managerField={
         canEdit ? undefined : <ManagerFieldControl eventId={eventId} detail={detail} onSaved={onSaved} />
       }
       footer={
         isEditing ? (
           <>
-            {error && <p className={styles.error}>{error}</p>}
+            {error && !isDateError && <p className={styles.error}>{error}</p>}
             <div className={styles.formActions}>
               <button type="button" className={styles.cancelButton} onClick={handleCancel} disabled={isUpdating}>
                 취소
