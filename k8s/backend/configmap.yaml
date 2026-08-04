@@ -7,6 +7,10 @@ data:
   SERVER_PORT: "8080"
   SPRING_APPLICATION_NAME: last-mission-backend
   SPRING_PROFILES_ACTIVE: prod
+  OTEL_TRACING_ENDPOINT: http://otel-collector-gateway.monitoring.svc.cluster.local:4318/v1/traces
+  OTEL_METRICS_ENDPOINT: http://otel-collector-gateway.monitoring.svc.cluster.local:4318/v1/metrics
+  OTEL_TRACING_SAMPLING_PROBABILITY: "1.0"
+  OTEL_DEPLOYMENT_ENVIRONMENT: production
   DB_URL: jdbc:postgresql://cockroach25-public.cockroach25.svc.cluster.local:26257/lastmission?sslmode=verify-full
   DB_USERNAME: lastmission_svc_main
   DB_PASSWORD: ""
