@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, Bookmark, CalendarDays, ClipboardList, Home, LineChart, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, Users } from "lucide-react";
+import { BarChart3, Bookmark, CalendarDays, ClipboardList, HelpCircle, Home, LineChart, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "@/features/shell/constants/navigation";
 import { useAppSelector } from "@/features/store/hooks";
@@ -18,7 +18,8 @@ interface AdminSidebarProps {
 
 type NavLink = { type?: "link"; href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 type NavSection = { type: "section"; label: string };
-type NavItem = NavLink | NavSection;
+type NavDivider = { type: "divider" };
+type NavItem = NavLink | NavSection | NavDivider;
 
 export function AdminSidebar({
   isOpen,
@@ -40,9 +41,14 @@ export function AdminSidebar({
     bookmarks: Bookmark,
     payments: LineChart,
     "vip-ads": Megaphone,
+    support: HelpCircle,
   };
   const items: NavItem[] = mode === "user"
-    ? USER_MENU_ITEMS.map((item) => ({ href: item.path, label: item.label, icon: userIcons[item.id] }))
+    ? USER_MENU_ITEMS.flatMap((item) => {
+        const link: NavItem = { href: item.path, label: item.label, icon: userIcons[item.id] };
+        // "사용 가이드"는 다른 메뉴들과 성격이 달라 구분선으로 한 번 끊어준다.
+        return item.id === "support" ? [{ type: "divider" as const }, link] : [link];
+      })
     : mode === "manager" ? [
         { href: "/manager/events", label: "박람회 관리", icon: CalendarDays },
         { href: "/manager/reservations", label: "예약자 명단 관리", icon: ClipboardList },
@@ -62,7 +68,7 @@ export function AdminSidebar({
   // 상세 페이지(/manager/reservations/21 등)도 목록 메뉴가 계속 강조되도록 prefix로 판단한다.
   // /manager/check-in과 /manager/check-in/status처럼 겹치는 경로가 있어 가장 길게 일치하는 것만 켠다.
   const activeHref = items
-    .filter((item): item is NavLink => item.type !== "section")
+    .filter((item): item is NavLink => item.type !== "section" && item.type !== "divider")
     .map((item) => item.href)
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
     .sort((a, b) => b.length - a.length)[0];
@@ -100,7 +106,10 @@ export function AdminSidebar({
             </button>
           </div>
           <nav className={styles.nav}>
-            {items.map((item) => {
+            {items.map((item, index) => {
+              if (item.type === "divider") {
+                return <hr key={`divider-${index}`} className={styles.navDivider} />;
+              }
               if (item.type === "section") {
                 return (
                   <span key={item.label} className={`${styles.navSection} ${styles.collapsible}`}>
@@ -119,6 +128,22 @@ export function AdminSidebar({
           </nav>
         </div>
         <div className={styles.bottom}>
+          {mode === "user" && (
+            <div className={styles.promoCard}>
+              <p className={styles.promoTitle}>QR티켓 하나로 간편 입장!</p>
+              <p className={styles.promoDescription}>
+                모바일 QR로 빠르고
+                <br />
+                간편하게 입장하세요.
+              </p>
+              <div className={styles.promoPhone}>
+                <div className={styles.promoQr}>
+                  <QrCode className={styles.promoIcon} />
+                </div>
+                <span className={styles.promoPhoneLabel}>EXPO PASS</span>
+              </div>
+            </div>
+          )}
           <button onClick={onLogout} className={styles.logoutButton}>
             <LogOut className={styles.icon} />
             <span className={styles.collapsible}>로그아웃</span>
