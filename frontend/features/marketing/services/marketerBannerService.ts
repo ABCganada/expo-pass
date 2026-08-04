@@ -71,6 +71,19 @@ export const marketerBannerService = {
       signal,
     }).then((res) => parseData<BannerAdStats>(res)),
 
+  deleteAd: async (id: string): Promise<void> => {
+    const csrf = await getCsrfToken();
+    const res = await fetch(`${BASE}/manager/banner-ads/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { [csrf.headerName]: csrf.token },
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message ?? "삭제에 실패했습니다.");
+    }
+  },
+
   downloadStatsXlsx: async (id: string, from: string, to: string): Promise<void> => {
     const res = await fetch(
       `${BASE}/manager/banner-ads/${id}/stats/export?from=${from}&to=${to}`,

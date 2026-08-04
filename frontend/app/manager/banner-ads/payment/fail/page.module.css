@@ -1,10 +1,8 @@
 .page {
-  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-page-background);
-  padding: 32px;
+  padding: 48px 32px;
 }
 
 .panel {

@@ -28,13 +28,13 @@ export default function AdminBannersPage() {
     return ad.title.toLowerCase().includes(q) || ad.createdBy.toLowerCase().includes(q);
   };
 
-  const pendingAds = ads.filter((ad) => (ad.status === "PENDING" || ad.status === "PAID") && matchesSearch(ad));
-  const otherAds = ads.filter((ad) => ad.status !== "PENDING" && ad.status !== "PAID" && matchesSearch(ad));
+  const pendingAds = ads.filter((ad) => ad.status === "PAID" && matchesSearch(ad));
+  const otherAds = ads.filter((ad) => ad.status !== "PAID" && matchesSearch(ad));
 
   const slotAds = selectedSlotId
     ? [...ads.filter((ad) => ad.slotIds.includes(selectedSlotId) && ad.status === "APPROVED" && matchesSearch(ad))].sort((a, b) => {
         if (sortOrder === "deadline") return new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime();
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       })
     : [];
 

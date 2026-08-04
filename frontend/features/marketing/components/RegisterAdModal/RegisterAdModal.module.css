@@ -163,9 +163,17 @@
   font-weight: 600;
 }
 
-.preview {
+.previewBanner {
   width: 100%;
-  max-height: 140px;
+  aspect-ratio: 1200 / 220;
+  object-fit: cover;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--color-border);
+}
+
+.previewAd {
+  width: 100%;
+  aspect-ratio: 1280 / 720;
   object-fit: cover;
   border-radius: var(--radius-input);
   border: 1px solid var(--color-border);
@@ -258,6 +266,29 @@
   background: var(--color-border);
   color: var(--color-text-secondary);
   cursor: not-allowed;
+}
+
+.btnPayLater {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 24px;
+  margin-top: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.btnPayLater:hover {
+  border-color: var(--color-text-secondary);
+  color: var(--color-text-primary);
 }
 
 /* ── 결제 단계 ── */

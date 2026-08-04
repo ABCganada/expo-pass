@@ -11,7 +11,7 @@
 .banner {
   display: block;
   width: 100%;
-  height: 220px;
+  aspect-ratio: 1200 / 220;
   border: none;
   padding: 0;
   cursor: pointer;
@@ -103,7 +103,7 @@
 /* skeleton */
 .skeleton {
   width: 100%;
-  height: 220px;
+  aspect-ratio: 1200 / 220;
   background: linear-gradient(
     90deg,
     var(--color-border) 25%,
@@ -119,13 +119,3 @@
   100% { background-position: -200% 0; }
 }
 
-/* 반응형 */
-@media (max-width: 767px) {
-  .banner {
-    height: 180px;
-  }
-
-  .skeleton {
-    height: 180px;
-  }
-}
