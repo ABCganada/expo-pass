@@ -91,9 +91,7 @@ CREATE TABLE payment_ad_settlements (
     id INT8 NOT NULL DEFAULT unique_rowid() PRIMARY KEY,
     ad_id UUID NOT NULL,                    -- Marketing 도메인 marketing_banner_ads.id 참조, 논리적 참조 (FK 미설정)
     total_amount DECIMAL(14, 2) NOT NULL DEFAULT 0,
-    commission_rate DECIMAL(5, 2) NOT NULL DEFAULT 5.00,  -- 확정: 수수료율 5% 고정 (관리자 설정 API 없음)
-    commission_amount DECIMAL(14, 2) NOT NULL DEFAULT 0,
-    net_amount DECIMAL(14, 2) NOT NULL DEFAULT 0,
+    net_amount DECIMAL(14, 2) NOT NULL DEFAULT 0,          -- 확정: 광고는 관리자가 플랫폼에 직접 결제하므로 수수료 없음 — total_amount와 항상 같다
     status STRING NOT NULL DEFAULT 'COMPLETED'
         CHECK (status IN ('COMPLETED')),
     settled_at TIMESTAMPTZ NOT NULL DEFAULT now(),

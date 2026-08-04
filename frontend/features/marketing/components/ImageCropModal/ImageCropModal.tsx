@@ -45,10 +45,10 @@ export function ImageCropModal({
     const scaleY = img.naturalHeight / img.height;
 
     const pixelCrop = {
-      x: (crop.unit === "%" ? (crop.x / 100) * img.width : crop.x) * scaleX,
-      y: (crop.unit === "%" ? (crop.y / 100) * img.height : crop.y) * scaleY,
-      width: (crop.unit === "%" ? (crop.width / 100) * img.width : crop.width) * scaleX,
-      height: (crop.unit === "%" ? (crop.height / 100) * img.height : crop.height) * scaleY,
+      x: Math.round((crop.unit === "%" ? (crop.x / 100) * img.width : crop.x) * scaleX),
+      y: Math.round((crop.unit === "%" ? (crop.y / 100) * img.height : crop.y) * scaleY),
+      width: Math.round((crop.unit === "%" ? (crop.width / 100) * img.width : crop.width) * scaleX),
+      height: Math.round((crop.unit === "%" ? (crop.height / 100) * img.height : crop.height) * scaleY),
     };
 
     const canvas = document.createElement("canvas");
@@ -57,17 +57,14 @@ export function ImageCropModal({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.drawImage(
-      img,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
-      0,
-      0,
-      targetWidth,
-      targetHeight,
-    );
+    // cover 방식: 크롭 영역이 캔버스를 항상 꽉 채우도록 스케일 보정
+    const coverScale = Math.max(targetWidth / pixelCrop.width, targetHeight / pixelCrop.height);
+    const drawW = Math.round(pixelCrop.width * coverScale);
+    const drawH = Math.round(pixelCrop.height * coverScale);
+    const drawX = Math.round((targetWidth - drawW) / 2);
+    const drawY = Math.round((targetHeight - drawH) / 2);
+
+    ctx.drawImage(img, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, drawX, drawY, drawW, drawH);
 
     canvas.toBlob((blob) => {
       if (blob) onConfirm(blob);

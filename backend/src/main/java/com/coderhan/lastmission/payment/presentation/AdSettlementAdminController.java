@@ -58,27 +58,24 @@ class AdSettlementAdminController {
     }
 
     record AdSettlementResponse(
-        String id, String adId, BigDecimal totalAmount,
-        BigDecimal commissionRate, BigDecimal commissionAmount, BigDecimal netAmount,
+        String id, String adId, BigDecimal totalAmount, BigDecimal netAmount,
         SettlementStatus status, OffsetDateTime settledAt, OffsetDateTime createdAt
     ) {
         static AdSettlementResponse from(AdSettlement settlement) {
             return new AdSettlementResponse(Long.toString(settlement.id()), settlement.adId().toString(),
-                    settlement.totalAmount(), settlement.commissionRate(), settlement.commissionAmount(),
-                    settlement.netAmount(), settlement.status(), settlement.settledAt(), settlement.createdAt());
+                    settlement.totalAmount(), settlement.netAmount(), settlement.status(), settlement.settledAt(),
+                    settlement.createdAt());
         }
     }
 
     record DashboardResponse(
         BigDecimal totalAmount,
-        BigDecimal totalCommissionAmount,
         BigDecimal totalNetAmount,
         long settlementCount
     ) {
         static DashboardResponse from(AdSettlementSummary summary) {
             return new DashboardResponse(
                 summary.totalAmount(),
-                summary.totalCommissionAmount(),
                 summary.totalNetAmount(),
                 summary.settlementCount());
         }

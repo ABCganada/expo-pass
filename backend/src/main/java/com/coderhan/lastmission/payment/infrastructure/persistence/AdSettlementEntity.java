@@ -32,12 +32,6 @@ class AdSettlementEntity {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
-    @Column(name = "commission_rate", nullable = false)
-    private BigDecimal commissionRate;  // 퍼센트 값 그대로 저장 (예: 5.00 = 5%)
-
-    @Column(name = "commission_amount", nullable = false)
-    private BigDecimal commissionAmount;
-
     @Column(name = "net_amount", nullable = false)
     private BigDecimal netAmount;
 
@@ -58,16 +52,12 @@ class AdSettlementEntity {
     static AdSettlementEntity completed(
             UUID adId,
             BigDecimal totalAmount,
-            BigDecimal commissionRate,
-            BigDecimal commissionAmount,
             BigDecimal netAmount,
             OffsetDateTime settledAt
     ) {
         AdSettlementEntity entity = new AdSettlementEntity();
         entity.adId = adId;
         entity.totalAmount = totalAmount;
-        entity.commissionRate = commissionRate;
-        entity.commissionAmount = commissionAmount;
         entity.netAmount = netAmount;
         entity.status = SettlementStatus.COMPLETED;
         entity.settledAt = settledAt;

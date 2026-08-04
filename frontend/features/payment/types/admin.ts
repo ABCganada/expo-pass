@@ -1,13 +1,11 @@
 export interface DashboardSummary {
   totalSales: number;
   totalCommissionAmount: number;
-  totalNetAmount: number;
   settlementCount: number;
 }
 
 export interface AdSettlementDashboardSummary {
   totalAmount: number;
-  totalCommissionAmount: number;
   totalNetAmount: number;
   settlementCount: number;
 }

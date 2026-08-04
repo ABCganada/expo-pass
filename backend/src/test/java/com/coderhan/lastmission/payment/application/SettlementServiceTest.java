@@ -51,17 +51,21 @@ class SettlementServiceTest {
 
     @InjectMocks SettlementService service;
 
-    /** 정산 로직의 핵심: 여러 주문의 결제액 - 환불액을 순매출로 합산해 수수료 5%를 적용하는지. */
+    /**
+     * 정산 로직의 핵심: 부분 환불(REFUNDED)이 걸린 결제도 정산 대상에서 빠지지 않고
+     * (결제액 - 환불액)만큼만 매출로 잡혀야 한다. payment2는 실제로 환불이 걸리면
+     * status가 COMPLETED가 아니라 REFUNDED로 바뀌는 걸 그대로 재현한다.
+     */
     @Test
-    @DisplayName("행사에 속한 여러 주문의 결제액에서 환불액을 뺀 총매출로 수수료와 정산액을 계산해 저장한다")
+    @DisplayName("환불이 걸려 REFUNDED로 바뀐 결제도 (결제액 - 환불액)만큼 총매출에 포함해 수수료와 정산액을 계산한다")
     void calculatesNetSalesAcrossOrdersAndAppliesCommission() {
-        Payment payment1 = paymentWithAmount(1L, "ORD-1", BigDecimal.valueOf(10000));
-        Payment payment2 = paymentWithAmount(2L, "ORD-2", BigDecimal.valueOf(20000));
+        Payment payment1 = paymentWithAmount(1L, "ORD-1", BigDecimal.valueOf(10000), PaymentStatus.COMPLETED);
+        Payment payment2 = paymentWithAmount(2L, "ORD-2", BigDecimal.valueOf(20000), PaymentStatus.REFUNDED);
 
         when(settlementRepository.existsByEventId(EVENT_ID)).thenReturn(false);
         when(reservationOrderDirectory.findOrderIdsByEventId(EVENT_ID)).thenReturn(List.of("ORD-1", "ORD-2"));
-        when(paymentRepository.findByOrderIdAndStatus("ORD-1", PaymentStatus.COMPLETED)).thenReturn(Optional.of(payment1));
-        when(paymentRepository.findByOrderIdAndStatus("ORD-2", PaymentStatus.COMPLETED)).thenReturn(Optional.of(payment2));
+        when(paymentRepository.findByOrderId("ORD-1")).thenReturn(Optional.of(payment1));
+        when(paymentRepository.findByOrderId("ORD-2")).thenReturn(Optional.of(payment2));
         when(refundRepository.findActiveByPaymentId(1L)).thenReturn(Optional.empty());
         when(refundRepository.findActiveByPaymentId(2L)).thenReturn(Optional.of(refundOf(BigDecimal.valueOf(6000))));
 
@@ -70,6 +74,24 @@ class SettlementServiceTest {
         // 총매출 = 10000 + (20000 - 6000) = 24000, 수수료 = 24000 * 5% = 1200, 정산액 = 22800
         verify(settlementRepository).save(EVENT_ID, BigDecimal.valueOf(24000), new BigDecimal("5.00"),
                 BigDecimal.valueOf(1200), BigDecimal.valueOf(22800), OffsetDateTime.now(clock));
+    }
+
+    @Test
+    @DisplayName("결제가 실패/취소된 주문은 총매출 계산에서 제외한다")
+    void excludesFailedOrCancelledPaymentsFromTotalSales() {
+        Payment failed = paymentWithAmount(1L, "ORD-1", BigDecimal.valueOf(10000), PaymentStatus.FAILED);
+        Payment cancelled = paymentWithAmount(2L, "ORD-2", BigDecimal.valueOf(20000), PaymentStatus.CANCELLED);
+
+        when(settlementRepository.existsByEventId(EVENT_ID)).thenReturn(false);
+        when(reservationOrderDirectory.findOrderIdsByEventId(EVENT_ID)).thenReturn(List.of("ORD-1", "ORD-2"));
+        when(paymentRepository.findByOrderId("ORD-1")).thenReturn(Optional.of(failed));
+        when(paymentRepository.findByOrderId("ORD-2")).thenReturn(Optional.of(cancelled));
+
+        service.create(EVENT_ID);
+
+        verify(settlementRepository).save(EVENT_ID, BigDecimal.ZERO, new BigDecimal("5.00"),
+                BigDecimal.ZERO, BigDecimal.ZERO, OffsetDateTime.now(clock));
+        verify(refundRepository, never()).findActiveByPaymentId(anyLong());
     }
 
     @Test
@@ -168,7 +190,7 @@ class SettlementServiceTest {
     @DisplayName("전체 매출 대시보드는 담당자 구분 없이 리포지토리의 전체 합계를 그대로 반환한다")
     void returnsRepositoryDashboardSummaryAsIs() {
         SettlementSummary summary = new SettlementSummary(
-                BigDecimal.valueOf(100000), BigDecimal.valueOf(5000), BigDecimal.valueOf(95000), 3L);
+                BigDecimal.valueOf(100000), BigDecimal.valueOf(5000), 3L);
         when(settlementRepository.getDashboardSummary()).thenReturn(summary);
 
         SettlementSummary result = service.getDashboardSummary();
@@ -191,12 +213,12 @@ class SettlementServiceTest {
                 .build();
     }
 
-    private static Payment paymentWithAmount(long id, String orderId, BigDecimal amount) {
+    private static Payment paymentWithAmount(long id, String orderId, BigDecimal amount, PaymentStatus status) {
         return Payment.builder()
                 .id(id)
                 .orderId(orderId)
                 .amount(amount)
-                .status(PaymentStatus.COMPLETED)
+                .status(status)
                 .build();
     }
 

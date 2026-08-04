@@ -23,12 +23,11 @@ class SettlementAdminController {
     }
 
     record DashboardResponse(
-        BigDecimal totalSales, BigDecimal totalCommissionAmount,
-        BigDecimal totalNetAmount, long settlementCount
+        BigDecimal totalSales, BigDecimal totalCommissionAmount, long settlementCount
     ) {
         static DashboardResponse from(SettlementSummary summary) {
             return new DashboardResponse(summary.totalSales(), summary.totalCommissionAmount(),
-                    summary.totalNetAmount(), summary.settlementCount());
+                    summary.settlementCount());
         }
     }
 }

@@ -10,8 +10,6 @@ public record AdSettlement(
         long id,
         UUID adId,
         BigDecimal totalAmount,
-        BigDecimal commissionRate,
-        BigDecimal commissionAmount,
         BigDecimal netAmount,
         SettlementStatus status,
         OffsetDateTime settledAt,
