@@ -15,14 +15,14 @@ import org.springframework.stereotype.Component;
  *
  * <p>결제가 완료됐는데 이벤트가 유실된 경우 → CONFIRMED로 보정.
  * 결제 시도 없이(또는 실패했는데 이벤트가 유실돼) 타임아웃된 경우 → CANCELLED 처리하고 재고 복원.
- * 타임아웃 기준: 접수 후 15분 경과, 5분마다 실행.
+ * 타임아웃 기준: 접수 후 10분 경과, 5분마다 실행.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 class ReservationReconcileScheduler {
 
-    private static final long TIMEOUT_MINUTES = 15L;
+    private static final long TIMEOUT_MINUTES = 10L;
 
     private final ReservationRepository repository;
     private final ReservationService reservationService;

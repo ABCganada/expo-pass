@@ -49,11 +49,6 @@
     cursor: pointer;
   }
 
-  .logoText {
-    display: flex;
-    flex-direction: column;
-  }
-
   /* 접었을 때 숨겨지는 글자 */
   .collapsible {
     overflow: hidden;
@@ -104,14 +99,13 @@
     justify-content: center;
     width: 32px;
     height: 32px;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-    color: var(--color-primary);
+    flex-shrink: 0;
+  }
 
-    svg {
-      width: 20px;
-      height: 20px;
-    }
+  .logoImage {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
 
   .logoBrand {
@@ -123,11 +117,8 @@
     color: var(--color-sidebar-text-strong);
   }
 
-  .logoSub {
-    margin-top: 4px;
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--color-sidebar-text);
+  .logoBrandAccent {
+    color: var(--color-primary);
   }
 
   .nav {

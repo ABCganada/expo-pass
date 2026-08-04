@@ -3,7 +3,9 @@ package com.coderhan.lastmission.reservation.application;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -146,16 +148,16 @@ public class ReservationService implements ReservationQueryPort {
      * DB 쪽 조건부 UPDATE 자체가 주문 상태까지 함께 확인한다(체크인 성공은 CONFIRMED일 때만).
      */
     @Transactional
-    public ReservationOrderItem checkin(long adminUserId, boolean isAdmin, String qrCodeHash) {
+    public ReservationOrderItem checkin(long callerUserId, String qrCodeHash) {
         ReservationOrderItem existing = repository.findItemByQrCodeHash(qrCodeHash)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_QR_NOT_FOUND,
                         "존재하지 않는 QR입니다."));
         ReservationOrder order = repository.findOrder(existing.orderId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND, "주문을 찾을 수 없습니다."));
-        validateManagerAccess(order.eventId(), adminUserId, isAdmin);
+        validateManagerAccess(order.eventId(), callerUserId);
 
         OffsetDateTime now = OffsetDateTime.now(clock);
-        boolean checkedIn = repository.checkin(qrCodeHash, adminUserId, now);
+        boolean checkedIn = repository.checkin(qrCodeHash, callerUserId, now);
         if (!checkedIn) {
             if (existing.checkedInAt() != null) {
                 throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CHECKED_IN,
@@ -221,12 +223,12 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
-     * 관리자용 — 이 행사의 예약자 명단을 유저 이름/이메일까지 채워서 조회한다.
-     * 본인이 담당하는 행사가 아니면 거부(PII가 섞여 있어 소유권 검증이 특히 중요하다).
+     * 매니저용 — 이 행사의 예약자 명단을 유저 이름/이메일까지 채워서 조회한다.
+     * 본인이 담당하는 행사가 아니면 ADMIN이어도 거부(PII가 섞여 있어 소유권 검증이 특히 중요하다).
      */
     @Transactional(readOnly = true)
-    public List<AttendeeInfo> getEventAttendees(long eventId, long callerUserId, boolean isAdmin) {
-        validateManagerAccess(eventId, callerUserId, isAdmin);
+    public List<AttendeeInfo> getEventAttendees(long eventId, long callerUserId) {
+        validateManagerAccess(eventId, callerUserId);
         List<ReservationOrder> orders = repository.findOrdersByEventId(eventId);
 
         List<Long> userIds = orders.stream().map(ReservationOrder::userId).distinct().toList();
@@ -239,26 +241,64 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
-     * 관리자용 — 이 행사의 예약 현황(상태별 건수)을 조회한다.
+     * 매니저용 — 이 행사의 예약 현황(상태별 건수)을 조회한다. 본인이 담당하는 행사가 아니면 거부.
      */
     @Transactional(readOnly = true)
-    public EventReservationSummary getEventSummary(long eventId, long callerUserId, boolean isAdmin) {
-        validateManagerAccess(eventId, callerUserId, isAdmin);
+    public EventReservationSummary getEventSummary(long eventId, long callerUserId) {
+        validateManagerAccess(eventId, callerUserId);
+        return buildEventSummary(eventId);
+    }
+
+    /**
+     * 관리자용 — 소유권과 무관하게 전체 행사를 대상으로 예약 현황을 조회한다.
+     */
+    @Transactional(readOnly = true)
+    public EventReservationSummary getEventSummaryForAdmin(long eventId) {
+        return buildEventSummary(eventId);
+    }
+
+    private EventReservationSummary buildEventSummary(long eventId) {
         Map<OrderStatus, Long> countsByStatus = repository.countOrdersByEventIdGroupedByStatus(eventId);
         long totalOrders = countsByStatus.values().stream().mapToLong(Long::longValue).sum();
         return new EventReservationSummary(eventId, totalOrders, countsByStatus);
     }
 
-    public CheckinProgress getCheckinProgress(long eventId, long callerUserId, boolean isAdmin) {
-        validateManagerAccess(eventId, callerUserId, isAdmin);
+    public CheckinProgress getCheckinProgress(long eventId, long callerUserId) {
+        validateManagerAccess(eventId, callerUserId);
         return repository.countCheckinProgressByEventId(eventId);
     }
 
-    /** ADMIN은 전체 허용, 아니면 본인이 담당하는 행사인지 확인한다(event 도메인의 validateEventAccess와 동일한 규칙). */
-    private void validateManagerAccess(long eventId, long callerUserId, boolean isAdmin) {
-        if (isAdmin) {
-            return;
-        }
+    /**
+     * 매니저용 — 이 행사의 예약 건수를 날짜별로 집계한다(예약 추이 그래프용). 본인이 담당하는 행사가 아니면 거부.
+     */
+    @Transactional(readOnly = true)
+    public List<DailyReservationCount> getDailyReservationCounts(long eventId, long callerUserId) {
+        validateManagerAccess(eventId, callerUserId);
+        return buildDailyReservationCounts(eventId);
+    }
+
+    /**
+     * 관리자용 — 소유권과 무관하게 전체 행사를 대상으로 날짜별 예약 건수를 조회한다.
+     */
+    @Transactional(readOnly = true)
+    public List<DailyReservationCount> getDailyReservationCountsForAdmin(long eventId) {
+        return buildDailyReservationCounts(eventId);
+    }
+
+    // 이벤트당 예약 건수가 크지 않아, 별도 집계 쿼리 없이 기존 목록 조회 결과를 날짜별로 묶는다.
+    // 예약 추이는 실제 확정된 예약만 의미가 있으므로 PENDING/CANCELLED/REFUNDED는 제외한다.
+    private List<DailyReservationCount> buildDailyReservationCounts(long eventId) {
+        Map<LocalDate, Long> countsByDate = repository.findOrdersByEventId(eventId).stream()
+                .filter(order -> order.status() == OrderStatus.CONFIRMED)
+                .collect(Collectors.groupingBy(order -> order.reservedAt().toLocalDate(), Collectors.counting()));
+        return countsByDate.entrySet().stream()
+                .map(entry -> new DailyReservationCount(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(DailyReservationCount::date))
+                .toList();
+    }
+
+    /** 본인이 담당하는 행사인지 확인한다 — ADMIN도 예외 없이 소유권을 검증한다(event 도메인의 EventOwnershipValidator와 동일한 규칙). */
+    private void validateManagerAccess(long eventId, long callerUserId) {
         Long managerId = eventManagerQueryPort.findEventManagerId(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
         if (!Objects.equals(managerId, callerUserId)) {
@@ -286,6 +326,8 @@ public class ReservationService implements ReservationQueryPort {
 
     public record EventReservationSummary(
             long eventId, long totalOrders, Map<OrderStatus, Long> countsByStatus) {}
+
+    public record DailyReservationCount(LocalDate date, long count) {}
 
     /** userRef가 null이면(탈퇴 등으로 활성 유저가 아니면) 이름/이메일을 모른다는 뜻이다. */
     public record AttendeeInfo(ReservationOrder order, UserRef userRef) {}

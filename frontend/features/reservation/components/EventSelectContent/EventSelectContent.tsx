@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronRight, ImageIcon, Search } from "lucide-react";
-import { useGetAdminEventsForDisplayQuery, useGetAllEventsForDisplayQuery } from "../../api/eventLookupApi";
+import { useGetAdminEventsForDisplayQuery, useGetPublishedEventsForDisplayQuery } from "../../api/eventLookupApi";
 import styles from "./EventSelectContent.module.css";
 
 interface EventSelectContentProps {
@@ -38,11 +38,15 @@ function formatDate(value: string): string {
 }
 
 export function EventSelectContent({ basePath, phaseFilter, showPhaseTabs, showSearch }: EventSelectContentProps) {
-  // /admin/** 은 전체 관리자용 — 전체 행사를, 그 외(/manager/**)는 담당자 본인 행사만 본다.
+  // /admin/** 은 전체 관리자용 — 예약이 존재할 수 있는 게시된 행사만(DRAFT 제외), 그 외(/manager/**)는 담당자 본인 행사만 본다.
+  // 매니저 목록은 DRAFT도 같이 내려오므로, 여기서도 예약이 있을 수 없는 DRAFT는 제외한다.
   const isAdminScope = basePath.startsWith("/admin");
-  const managerEvents = useGetAdminEventsForDisplayQuery(undefined, { skip: isAdminScope });
-  const allAdminEvents = useGetAllEventsForDisplayQuery(undefined, { skip: !isAdminScope });
-  const { data: allEvents = [], isLoading } = isAdminScope ? allAdminEvents : managerEvents;
+  const managerQuery = useGetAdminEventsForDisplayQuery(undefined, { skip: isAdminScope });
+  const publishedQuery = useGetPublishedEventsForDisplayQuery(undefined, { skip: !isAdminScope });
+  const isLoading = isAdminScope ? publishedQuery.isLoading : managerQuery.isLoading;
+  const allEvents = isAdminScope
+    ? (publishedQuery.data ?? [])
+    : (managerQuery.data ?? []).filter((event) => event.status !== "DRAFT");
   const [selectedTab, setSelectedTab] = useState<PhaseTabKey>("ALL");
   const [query, setQuery] = useState("");
 

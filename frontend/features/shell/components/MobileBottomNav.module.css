@@ -28,7 +28,7 @@
     transition: color 150ms ease;
 
     &[data-active="true"] {
-      color: #b83a38;
+      color: var(--color-primary);
     }
 
     .icon {

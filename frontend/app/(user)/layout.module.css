@@ -99,7 +99,7 @@
     width: 32px;
     height: 32px;
     border-radius: 9999px;
-    background: #b83a38;
+    background: var(--color-primary);
     color: #ffffff;
     font-size: 12px;
     font-weight: 800;
@@ -152,7 +152,7 @@
 .dDayBadge {
   padding: 8px 16px;
   border-radius: 9999px;
-  background: #b83a38;
+  background: var(--color-primary);
   color: #ffffff;
   font-size: 13px;
   font-weight: 700;
@@ -207,7 +207,7 @@
   .mobileDDay {
     padding: 6px 12px;
     border-radius: 9999px;
-    background: #b83a38;
+    background: var(--color-primary);
     color: #ffffff;
     font-size: 12px;
     font-weight: 800;

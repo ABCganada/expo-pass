@@ -16,7 +16,8 @@ const FILTER_TABS: { key: FilterKey; label: string }[] = [
   { key: "ALL", label: "전체" },
   { key: "CONFIRMED", label: "예약확정" },
   { key: "PENDING", label: "결제대기" },
-  { key: "CANCELLED", label: "취소됨" },
+  { key: "CANCELLED", label: "취소" },
+  { key: "REFUNDED", label: "환불" },
 ];
 
 const PAGE_SIZE = 10;

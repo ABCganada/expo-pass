@@ -48,3 +48,17 @@ export interface AdminEventListItem {
   viewCount: number;
   thumbnailUrl: string | null;
 }
+
+/** GET /api/v1/events (공개, 게시된 행사만) 목록 응답 — 예약은 게시된 행사에서만 발생하므로
+ *  DRAFT까지 섞여 나오는 관리자용 목록 대신 이 유저용 목록을 쓰는 화면(행사별 예약 현황 등)이 있다. */
+export interface PublishedEventListItem {
+  id: string;
+  title: string;
+  categoryName: string;
+  venueName: string;
+  startDate: string;
+  endDate: string;
+  phase: string;
+  viewCount: number;
+  thumbnailUrl: string | null;
+}

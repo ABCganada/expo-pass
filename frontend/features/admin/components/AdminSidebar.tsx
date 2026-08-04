@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, Bookmark, CalendarDays, ClipboardList, Home, LineChart, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, TicketCheck, Users } from "lucide-react";
+import { BarChart3, Bookmark, CalendarDays, ClipboardList, Home, LineChart, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "@/features/shell/constants/navigation";
+import { useAppSelector } from "@/features/store/hooks";
 import styles from "./AdminSidebar.module.css";
 
 interface AdminSidebarProps {
@@ -28,6 +29,9 @@ export function AdminSidebar({
   mode,
 }: AdminSidebarProps) {
   const pathname = usePathname();
+  // 라이트 배경엔 남색, 다크 배경엔 흰색 버전이 대비가 잘 나온다.
+  const isDarkTheme = useAppSelector((state) => state.theme.name === "dark");
+  const logoSrc = isDarkTheme ? "/logo-mark-white.png" : "/logo-mark-navy.png";
   const userIcons = {
     home: Home,
     exhibitions: CalendarDays,
@@ -55,6 +59,13 @@ export function AdminSidebar({
         { href: "/admin/banners", label: "광고 관리", icon: Megaphone },
         { href: "/admin/payments", label: "매출 현황", icon: LineChart },
       ];
+  // 상세 페이지(/manager/reservations/21 등)도 목록 메뉴가 계속 강조되도록 prefix로 판단한다.
+  // /manager/check-in과 /manager/check-in/status처럼 겹치는 경로가 있어 가장 길게 일치하는 것만 켠다.
+  const activeHref = items
+    .filter((item): item is NavLink => item.type !== "section")
+    .map((item) => item.href)
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0];
   return (
     <>
       {isOpen ? <div onClick={onClose} className={styles.backdrop} /> : null}
@@ -70,11 +81,12 @@ export function AdminSidebar({
               onClick={() => window.location.reload()}
               aria-label="페이지 새로고침"
             >
-              <div className={styles.logoBadge}><TicketCheck aria-hidden="true" /></div>
+              <div className={styles.logoBadge}>
+                <img src={logoSrc} alt="" className={styles.logoImage} />
+              </div>
               <span className={styles.collapsible}>
-                <span className={styles.logoText}>
-                  <span className={styles.logoBrand}>EXPO PASS</span>
-                  <span className={styles.logoSub}>{mode === "user" ? "User" : mode === "manager" ? "Manager" : "Admin"}</span>
+                <span className={styles.logoBrand}>
+                  <span className={styles.logoBrandAccent}>EXPO</span> PASS
                 </span>
               </span>
             </button>
@@ -98,7 +110,7 @@ export function AdminSidebar({
               }
               const Icon = item.icon;
               return (
-                <Link key={item.href} href={item.href} className={styles.navItem} data-active={pathname === item.href} onClick={onClose}>
+                <Link key={item.href} href={item.href} className={styles.navItem} data-active={item.href === activeHref} onClick={onClose}>
                   <Icon className={styles.icon} />
                   <span className={styles.collapsible}>{item.label}</span>
                 </Link>

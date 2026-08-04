@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -44,6 +45,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ReservationServiceTest {
     private static final long USER_ID = 1L;
+    // 실제로 ADMIN 권한인지는 서비스 레이어가 신경 쓰지 않는다는 걸 보여주기 위한 값 — 그냥 담당자가 아닌 임의의 caller.
+    private static final long ADMIN_USER_ID = 2L;
     private static final long EVENT_ID = 10L;
     private static final long TICKET_ID = 100L;
     private static final String ORDER_ID = "ORD-20260723-000001";
@@ -291,9 +294,10 @@ class ReservationServiceTest {
         when(repository.findItemByQrCodeHash("qr-1"))
                 .thenReturn(Optional.of(notYetCheckedIn), Optional.of(checkedIn));
         when(repository.findOrder(ORDER_ID)).thenReturn(Optional.of(confirmedOrder));
+        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(9L));
         when(repository.checkin("qr-1", 9L, NOW)).thenReturn(true);
 
-        ReservationOrderItem result = service.checkin(9L, true, "qr-1");
+        ReservationOrderItem result = service.checkin(9L, "qr-1");
 
         assertThat(result).isEqualTo(checkedIn);
     }
@@ -306,9 +310,10 @@ class ReservationServiceTest {
                 "qr-1", OffsetDateTime.parse("2026-07-23T09:00:00Z"));
         when(repository.findItemByQrCodeHash("qr-1")).thenReturn(Optional.of(existing));
         when(repository.findOrder(ORDER_ID)).thenReturn(Optional.of(confirmedOrder));
+        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(9L));
         when(repository.checkin("qr-1", 9L, NOW)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.checkin(9L, true, "qr-1"))
+        assertThatThrownBy(() -> service.checkin(9L, "qr-1"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_ALREADY_CHECKED_IN));
     }
@@ -317,7 +322,7 @@ class ReservationServiceTest {
     void checkinThrowsWhenQrNotFound() {
         when(repository.findItemByQrCodeHash("unknown-qr")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.checkin(9L, true, "unknown-qr"))
+        assertThatThrownBy(() -> service.checkin(9L, "unknown-qr"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_QR_NOT_FOUND));
     }
@@ -330,9 +335,10 @@ class ReservationServiceTest {
         ReservationOrder refundedOrder = new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID,
                 OrderStatus.REFUNDED, BigDecimal.valueOf(10000), NOW, NOW);
         when(repository.findOrder(ORDER_ID)).thenReturn(Optional.of(refundedOrder));
+        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(9L));
         when(repository.checkin("qr-1", 9L, NOW)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.checkin(9L, true, "qr-1"))
+        assertThatThrownBy(() -> service.checkin(9L, "qr-1"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_INVALID_TICKET_STATUS));
     }
@@ -347,14 +353,31 @@ class ReservationServiceTest {
         when(repository.findOrder(ORDER_ID)).thenReturn(Optional.of(order));
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(999L));
 
-        assertThatThrownBy(() -> service.checkin(9L, false, "qr-1"))
+        assertThatThrownBy(() -> service.checkin(9L, "qr-1"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_ACCESS_DENIED));
         verify(repository, never()).checkin(anyString(), anyLong(), any());
     }
 
     @Test
-    void checkinAllowsAdminRegardlessOfEventManager() {
+    void checkinThrowsAccessDeniedWhenCallerIsAdminButNotEventManager() {
+        // ADMIN도 예외 없이 소유권을 검증한다 — Reservation 도메인은 isAdmin bypass를 두지 않는다.
+        ReservationOrder order = new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID,
+                OrderStatus.CONFIRMED, BigDecimal.valueOf(10000), NOW, NOW);
+        ReservationOrderItem item =
+                new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-1", null);
+        when(repository.findItemByQrCodeHash("qr-1")).thenReturn(Optional.of(item));
+        when(repository.findOrder(ORDER_ID)).thenReturn(Optional.of(order));
+        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(999L));
+
+        assertThatThrownBy(() -> service.checkin(ADMIN_USER_ID, "qr-1"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_ACCESS_DENIED));
+        verify(repository, never()).checkin(anyString(), anyLong(), any());
+    }
+
+    @Test
+    void checkinAllowsCallerWhoIsTheAssignedEventManager() {
         ReservationOrder order = new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID,
                 OrderStatus.CONFIRMED, BigDecimal.valueOf(10000), NOW, NOW);
         ReservationOrderItem item =
@@ -363,11 +386,12 @@ class ReservationServiceTest {
                 new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-1", NOW);
         when(repository.findItemByQrCodeHash("qr-1")).thenReturn(Optional.of(item), Optional.of(checkedIn));
         when(repository.findOrder(ORDER_ID)).thenReturn(Optional.of(order));
+        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(9L));
         when(repository.checkin("qr-1", 9L, NOW)).thenReturn(true);
 
-        service.checkin(9L, true, "qr-1");
+        service.checkin(9L, "qr-1");
 
-        verify(eventManagerQueryPort, never()).findEventManagerId(anyLong());
+        verify(eventManagerQueryPort).findEventManagerId(EVENT_ID);
     }
 
     // ---------- confirmOrder ----------
@@ -451,8 +475,9 @@ class ReservationServiceTest {
                 OrderStatus.CONFIRMED, 7L,
                 OrderStatus.CANCELLED, 1L);
         when(repository.countOrdersByEventIdGroupedByStatus(EVENT_ID)).thenReturn(counts);
+        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(USER_ID));
 
-        ReservationService.EventReservationSummary summary = service.getEventSummary(EVENT_ID, USER_ID, true);
+        ReservationService.EventReservationSummary summary = service.getEventSummary(EVENT_ID, USER_ID);
 
         assertThat(summary.eventId()).isEqualTo(EVENT_ID);
         assertThat(summary.totalOrders()).isEqualTo(11L);
@@ -460,11 +485,70 @@ class ReservationServiceTest {
     }
 
     @Test
+    void getEventSummaryForAdminSkipsOwnershipCheckAndReturnsCounts() {
+        Map<OrderStatus, Long> counts = Map.of(OrderStatus.CONFIRMED, 5L);
+        when(repository.countOrdersByEventIdGroupedByStatus(EVENT_ID)).thenReturn(counts);
+
+        ReservationService.EventReservationSummary summary = service.getEventSummaryForAdmin(EVENT_ID);
+
+        assertThat(summary.totalOrders()).isEqualTo(5L);
+        verify(eventManagerQueryPort, never()).findEventManagerId(anyLong());
+    }
+
+    @Test
+    void getDailyReservationCountsGroupsOrdersByLocalDate() {
+        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(USER_ID));
+        ReservationOrder day1Order1 = new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID,
+                OrderStatus.CONFIRMED, BigDecimal.TEN, OffsetDateTime.parse("2026-07-23T09:00:00Z"), NOW);
+        ReservationOrder day1Order2 = new ReservationOrder("ORD-2", USER_ID, EVENT_ID,
+                OrderStatus.CONFIRMED, BigDecimal.TEN, OffsetDateTime.parse("2026-07-23T15:00:00Z"), NOW);
+        ReservationOrder day2Order = new ReservationOrder("ORD-3", USER_ID, EVENT_ID,
+                OrderStatus.CONFIRMED, BigDecimal.TEN, OffsetDateTime.parse("2026-07-24T09:00:00Z"), NOW);
+        when(repository.findOrdersByEventId(EVENT_ID)).thenReturn(List.of(day1Order1, day1Order2, day2Order));
+
+        List<ReservationService.DailyReservationCount> counts = service.getDailyReservationCounts(EVENT_ID, USER_ID);
+
+        assertThat(counts).containsExactly(
+                new ReservationService.DailyReservationCount(LocalDate.of(2026, 7, 23), 2L),
+                new ReservationService.DailyReservationCount(LocalDate.of(2026, 7, 24), 1L));
+    }
+
+    @Test
+    void getDailyReservationCountsExcludesNonConfirmedOrders() {
+        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(USER_ID));
+        ReservationOrder confirmed = new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID,
+                OrderStatus.CONFIRMED, BigDecimal.TEN, OffsetDateTime.parse("2026-07-23T09:00:00Z"), NOW);
+        ReservationOrder pending = new ReservationOrder("ORD-2", USER_ID, EVENT_ID,
+                OrderStatus.PENDING, BigDecimal.TEN, OffsetDateTime.parse("2026-07-23T10:00:00Z"), NOW);
+        ReservationOrder cancelled = new ReservationOrder("ORD-3", USER_ID, EVENT_ID,
+                OrderStatus.CANCELLED, BigDecimal.TEN, OffsetDateTime.parse("2026-07-23T11:00:00Z"), NOW);
+        ReservationOrder refunded = new ReservationOrder("ORD-4", USER_ID, EVENT_ID,
+                OrderStatus.REFUNDED, BigDecimal.TEN, OffsetDateTime.parse("2026-07-23T12:00:00Z"), NOW);
+        when(repository.findOrdersByEventId(EVENT_ID))
+                .thenReturn(List.of(confirmed, pending, cancelled, refunded));
+
+        List<ReservationService.DailyReservationCount> counts = service.getDailyReservationCounts(EVENT_ID, USER_ID);
+
+        assertThat(counts).containsExactly(
+                new ReservationService.DailyReservationCount(LocalDate.of(2026, 7, 23), 1L));
+    }
+
+    @Test
+    void getDailyReservationCountsForAdminSkipsOwnershipCheck() {
+        when(repository.findOrdersByEventId(EVENT_ID)).thenReturn(List.of());
+
+        service.getDailyReservationCountsForAdmin(EVENT_ID);
+
+        verify(eventManagerQueryPort, never()).findEventManagerId(anyLong());
+    }
+
+    @Test
     void getCheckinProgressDelegatesToRepository() {
         CheckinProgress progress = new CheckinProgress(100, 42);
         when(repository.countCheckinProgressByEventId(EVENT_ID)).thenReturn(progress);
+        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(USER_ID));
 
-        assertThat(service.getCheckinProgress(EVENT_ID, USER_ID, true)).isSameAs(progress);
+        assertThat(service.getCheckinProgress(EVENT_ID, USER_ID)).isSameAs(progress);
     }
 
     @Test
@@ -476,20 +560,20 @@ class ReservationServiceTest {
         UserRef userRef = new UserRef(USER_ID, "hong@example.com", "홍길동");
         when(userDirectory.findActiveByIds(List.of(USER_ID))).thenReturn(List.of(userRef));
 
-        List<ReservationService.AttendeeInfo> attendees = service.getEventAttendees(EVENT_ID, USER_ID, false);
+        List<ReservationService.AttendeeInfo> attendees = service.getEventAttendees(EVENT_ID, USER_ID);
 
         assertThat(attendees).hasSize(1);
         assertThat(attendees.get(0).order()).isEqualTo(order);
         assertThat(attendees.get(0).userRef()).isEqualTo(userRef);
     }
 
-    // ---------- 매니저 권한 검증(정보 유출/무단 체크인 방지) ----------
+    // ---------- 매니저 권한 검증(정보 유출/무단 체크인 방지, ADMIN도 예외 없음) ----------
 
     @Test
     void getEventAttendeesThrowsAccessDeniedWhenCallerIsNotEventManager() {
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(999L));
 
-        assertThatThrownBy(() -> service.getEventAttendees(EVENT_ID, USER_ID, false))
+        assertThatThrownBy(() -> service.getEventAttendees(EVENT_ID, USER_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_ACCESS_DENIED));
         verify(repository, never()).findOrdersByEventId(anyLong());
@@ -499,7 +583,17 @@ class ReservationServiceTest {
     void getEventSummaryThrowsAccessDeniedWhenCallerIsNotEventManager() {
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(999L));
 
-        assertThatThrownBy(() -> service.getEventSummary(EVENT_ID, USER_ID, false))
+        assertThatThrownBy(() -> service.getEventSummary(EVENT_ID, USER_ID))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_ACCESS_DENIED));
+        verify(repository, never()).countOrdersByEventIdGroupedByStatus(anyLong());
+    }
+
+    @Test
+    void getEventSummaryThrowsAccessDeniedWhenCallerIsAdminButNotEventManager() {
+        when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(999L));
+
+        assertThatThrownBy(() -> service.getEventSummary(EVENT_ID, ADMIN_USER_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_ACCESS_DENIED));
         verify(repository, never()).countOrdersByEventIdGroupedByStatus(anyLong());
@@ -509,7 +603,7 @@ class ReservationServiceTest {
     void getCheckinProgressThrowsAccessDeniedWhenCallerIsNotEventManager() {
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(999L));
 
-        assertThatThrownBy(() -> service.getCheckinProgress(EVENT_ID, USER_ID, false))
+        assertThatThrownBy(() -> service.getCheckinProgress(EVENT_ID, USER_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_ACCESS_DENIED));
         verify(repository, never()).countCheckinProgressByEventId(anyLong());
@@ -520,7 +614,7 @@ class ReservationServiceTest {
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(USER_ID));
         when(repository.countOrdersByEventIdGroupedByStatus(EVENT_ID)).thenReturn(Map.of());
 
-        service.getEventSummary(EVENT_ID, USER_ID, false);
+        service.getEventSummary(EVENT_ID, USER_ID);
 
         verify(repository).countOrdersByEventIdGroupedByStatus(EVENT_ID);
     }
@@ -529,7 +623,7 @@ class ReservationServiceTest {
     void getEventSummaryThrowsEventNotFoundWhenEventDoesNotExist() {
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.getEventSummary(EVENT_ID, USER_ID, false))
+        assertThatThrownBy(() -> service.getEventSummary(EVENT_ID, USER_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.EVENT_NOT_FOUND));
     }
