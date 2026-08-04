@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useGetAdminAllAdsQuery,
   useGetAdminSlotsQuery,
@@ -19,13 +19,20 @@ export default function AdminBannersPage() {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>("deadline");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  // 타이핑할 때마다 바로 필터링하면 끊기는 느낌이 나서, 입력이 잠시 멈췄을 때만 반영한다.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(searchQuery), searchQuery ? 250 : 0);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
 
   const slotMap = new Map<string, string>(slots.map((s: BannerSlot) => [s.id, s.name]));
 
   const matchesSearch = (ad: MarketerBannerAd) => {
-    const q = searchQuery.trim().toLowerCase();
+    const q = debouncedQuery.trim().toLowerCase();
     if (!q) return true;
-    return ad.title.toLowerCase().includes(q) || ad.createdBy.toLowerCase().includes(q);
+    return ad.title.toLowerCase().includes(q);
   };
 
   const pendingAds = ads.filter((ad) => ad.status === "PAID" && matchesSearch(ad));
@@ -45,7 +52,7 @@ export default function AdminBannersPage() {
         <input
           type="text"
           className={styles.searchInput}
-          placeholder="광고 제목 또는 등록자 이메일로 검색"
+          placeholder="광고 제목으로 검색"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
