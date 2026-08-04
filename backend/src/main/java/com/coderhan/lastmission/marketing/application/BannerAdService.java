@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.AdExpiredEvent;
+import com.coderhan.lastmission.marketing.AdRejectedEvent;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
@@ -79,6 +80,10 @@ public class BannerAdService {
         return adRepository.updateStatus(id, BannerAdStatus.APPROVED);
     }
 
+    /**
+     * 광고 반려. 결제완료(PAID) 상태만 반려 가능하며, 반려되면 {@link AdRejectedEvent}를 발행해
+     * payment 모듈이 결제를 자동 환불하도록 한다(광고 환불 정책 — 항상 100%).
+     */
     @Transactional
     public BannerAd reject(UUID id) {
         BannerAd ad = adRepository.findById(id)
@@ -89,7 +94,9 @@ public class BannerAdService {
         if (ad.status() != BannerAdStatus.PAID) {
             throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "이미 처리된 광고입니다.");
         }
-        return adRepository.updateStatus(id, BannerAdStatus.REJECTED);
+        BannerAd rejected = adRepository.updateStatus(id, BannerAdStatus.REJECTED);
+        eventPublisher.publishEvent(new AdRejectedEvent(rejected.id(), rejected.orderId()));
+        return rejected;
     }
 
     @Transactional(readOnly = true)

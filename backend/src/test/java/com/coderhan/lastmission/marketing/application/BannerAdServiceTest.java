@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import com.coderhan.lastmission.marketing.AdRejectedEvent;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
@@ -32,6 +33,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class BannerAdServiceTest {
@@ -48,6 +50,7 @@ class BannerAdServiceTest {
     @Mock BannerAdRepository adRepository;
     @Mock BannerSlotRepository slotRepository;
     @Mock BannerStatRepository statRepository;
+    @Mock ApplicationEventPublisher eventPublisher;
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-28T00:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks BannerAdService service;
@@ -265,7 +268,7 @@ class BannerAdServiceTest {
     }
 
     @Test
-    void reject_PAID_광고면_REJECTED로_변경() {
+    void reject_PAID_광고면_REJECTED로_변경하고_AdRejectedEvent를_발행한다() {
         // Arrange
         BannerAd rejected = ad(BannerAdStatus.REJECTED);
         when(adRepository.findById(AD_ID)).thenReturn(Optional.of(ad(BannerAdStatus.PAID)));
@@ -277,6 +280,7 @@ class BannerAdServiceTest {
         // Assert
         assertThat(result.status()).isEqualTo(BannerAdStatus.REJECTED);
         verify(adRepository).updateStatus(AD_ID, BannerAdStatus.REJECTED);
+        verify(eventPublisher).publishEvent(new AdRejectedEvent(rejected.id(), rejected.orderId()));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
