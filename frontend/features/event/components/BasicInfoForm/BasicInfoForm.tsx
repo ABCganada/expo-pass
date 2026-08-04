@@ -8,6 +8,11 @@ import { DatePicker } from "../DatePicker/DatePicker";
 import { StatusFilterDropdown } from "../StatusFilterDropdown/StatusFilterDropdown";
 import styles from "./BasicInfoForm.module.css";
 
+/** 백엔드 날짜 검증 메시지("시작일"/"종료일" 포함)인지 판별 - 시작일/종료일 필드 아래에 표시하기 위함 */
+export function isDateFieldError(message: string): boolean {
+  return message.includes("시작일") || message.includes("종료일");
+}
+
 export interface BasicInfoFormValues {
   title: string;
   hostName: string;
@@ -29,6 +34,8 @@ interface BasicInfoFormProps {
   onChange: (patch: Partial<BasicInfoFormValues>) => void;
   onValidSubmit: () => void;
   readOnly?: boolean;
+  /** 시작일/종료일 필드 바로 아래에 표시할 서버 검증 에러 메시지 */
+  dateError?: string | null;
   footer: React.ReactNode;
   /** 제공되면 담당자 필드 내용을 이 노드로 대체 렌더링 */
   managerField?: React.ReactNode;
@@ -58,6 +65,7 @@ export function BasicInfoForm({
   onChange,
   onValidSubmit,
   readOnly = false,
+  dateError,
   footer,
   managerField,
   canEditManager = false,
@@ -190,6 +198,7 @@ export function BasicInfoForm({
           )}
         </label>
       </div>
+      {dateError && <p className={styles.fieldError}>{dateError}</p>}
 
       <label className={styles.fieldFull}>
         <span>장소명</span>
