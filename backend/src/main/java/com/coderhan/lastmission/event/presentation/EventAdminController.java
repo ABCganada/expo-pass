@@ -2,6 +2,7 @@ package com.coderhan.lastmission.event.presentation;
 
 import java.util.List;
 import java.util.Locale;
+import com.coderhan.lastmission.event.application.EventEndedEventPublisher;
 import com.coderhan.lastmission.event.application.EventQueryService;
 import com.coderhan.lastmission.event.application.EventService;
 import com.coderhan.lastmission.event.domain.Event;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 class EventAdminController {
     private final EventService eventService;
     private final EventQueryService eventQueryService;
+    private final EventEndedEventPublisher eventEndedEventPublisher;
 
     @GetMapping("/api/v1/admin/events")
     ApiResponse<List<EventManagementListResponse>> getAdminEvents(@RequestParam(required = false) String status) {
@@ -65,6 +68,16 @@ class EventAdminController {
     ApiResponse<EventSummaryResponse> cancelEvent(@PathVariable long eventId) {
         Event event = eventService.cancelEventAsAdmin(eventId);
         return ApiResponse.success("행사를 취소했습니다.", EventSummaryResponse.from(event));
+    }
+
+    /**
+     * [임시] 시연/데모용 - 종료된 행사 감지 및 EventEndedEvent 발행을 즉시 실행
+     * TODO 시연 이후 제거 대상
+     */
+    @PostMapping("/api/v1/admin/events/end-check")
+    ApiResponse<Void> triggerEndCheck() {
+        eventEndedEventPublisher.publishEndedEvents();
+        return ApiResponse.success("종료 이벤트 발행을 실행했습니다.", null);
     }
 
     private static EventStatus parseStatus(String status) {
