@@ -17,7 +17,7 @@
 }
 
 .button:hover {
-  background: #c93a35;
+  background: var(--color-primary);
   transform: translateY(-1px);
 }
 

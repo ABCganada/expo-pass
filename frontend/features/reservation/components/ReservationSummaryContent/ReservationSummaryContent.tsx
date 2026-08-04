@@ -1,7 +1,8 @@
 "use client";
 
-import { useGetEventSummaryQuery } from "../../api/adminApi";
+import { useGetDailyReservationCountsForAdminQuery, useGetEventSummaryForAdminQuery } from "../../api/adminApi";
 import type { OrderStatus } from "../../types/reservation";
+import { DailyReservationChart } from "./DailyReservationChart";
 import styles from "./ReservationSummaryContent.module.css";
 
 interface ReservationSummaryContentProps {
@@ -16,7 +17,8 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; color: "success" | "wa
 };
 
 export function ReservationSummaryContent({ eventId }: ReservationSummaryContentProps) {
-  const { data: summary, isLoading } = useGetEventSummaryQuery(eventId);
+  const { data: summary, isLoading } = useGetEventSummaryForAdminQuery(eventId);
+  const { data: dailyCounts = [] } = useGetDailyReservationCountsForAdminQuery(eventId);
 
   if (isLoading || !summary) {
     return <div className={styles.state}>불러오는 중...</div>;
@@ -32,11 +34,6 @@ export function ReservationSummaryContent({ eventId }: ReservationSummaryContent
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>예약 현황</h1>
-        <p className={styles.subtitle}>총 예약 {summary.totalOrders}건</p>
-      </header>
-
       <div className={styles.grid}>
         {counts.map((item) => (
           <div key={item.status} className={styles.card} data-color={item.color}>
@@ -49,35 +46,7 @@ export function ReservationSummaryContent({ eventId }: ReservationSummaryContent
         ))}
       </div>
 
-      <div className={styles.progressSection}>
-        <h2 className={styles.sectionTitle}>진행률</h2>
-        <div className={styles.progressCard}>
-          <div className={styles.progressRow}>
-            <span className={styles.progressLabel}>예약확정</span>
-            <div className={styles.progressBar}>
-              <div
-                className={styles.progressFill}
-                style={{
-                  width: `${summary.totalOrders === 0 ? 0 : ((summary.countsByStatus.CONFIRMED ?? 0) / summary.totalOrders) * 100}%`,
-                }}
-              />
-            </div>
-            <span className={styles.progressValue}>{summary.countsByStatus.CONFIRMED ?? 0}</span>
-          </div>
-          <div className={styles.progressRow}>
-            <span className={styles.progressLabel}>결제대기</span>
-            <div className={styles.progressBar}>
-              <div
-                className={styles.progressFill}
-                style={{
-                  width: `${summary.totalOrders === 0 ? 0 : ((summary.countsByStatus.PENDING ?? 0) / summary.totalOrders) * 100}%`,
-                }}
-              />
-            </div>
-            <span className={styles.progressValue}>{summary.countsByStatus.PENDING ?? 0}</span>
-          </div>
-        </div>
-      </div>
+      <DailyReservationChart data={dailyCounts} />
     </div>
   );
 }

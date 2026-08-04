@@ -96,7 +96,7 @@ export function ReservationListItem({ order, onViewEvent, onViewPayment }: Reser
           박람회 보기
           <ExternalLink size={14} />
         </button>
-        {order.status !== "CANCELLED" && order.totalAmount > 0 && (
+        {order.status !== "CANCELLED" && order.status !== "PENDING" && order.totalAmount > 0 && (
           <button type="button" className={styles.paymentButton} onClick={() => onViewPayment?.(order.orderId)}>
             결제 정보 확인하기
             <ChevronRight size={14} />

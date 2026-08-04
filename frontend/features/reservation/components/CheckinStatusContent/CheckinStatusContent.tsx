@@ -16,7 +16,9 @@ const PHASE_TABS: { key: PhaseTabKey; label: string }[] = [
 ];
 
 export function CheckinStatusContent() {
-  const { data: events = [], isLoading } = useGetAdminEventsForDisplayQuery();
+  const { data: rawEvents = [], isLoading } = useGetAdminEventsForDisplayQuery();
+  // 예약이 있을 수 없는 DRAFT 행사는 체크인 현황에 보일 이유가 없으니 제외한다.
+  const events = rawEvents.filter((event) => event.status !== "DRAFT");
   const [selectedTab, setSelectedTab] = useState<PhaseTabKey>("ALL");
   const [query, setQuery] = useState("");
 

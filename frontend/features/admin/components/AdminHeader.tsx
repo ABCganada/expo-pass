@@ -17,10 +17,6 @@ export function AdminHeader({ onMenuToggle, user, onLogout, activeMode }: AdminH
     activeMode === "user" ? "박람회 예약"
     : activeMode === "manager" ? "박람회 운영"
     : "운영 대시보드";
-  const modeLabel =
-    activeMode === "user" ? "USER"
-    : activeMode === "manager" ? "MANAGER"
-    : "ADMIN";
 
   return (
     <header className={styles.header}>
@@ -42,9 +38,6 @@ export function AdminHeader({ onMenuToggle, user, onLogout, activeMode }: AdminH
           <h2 className={styles.title}>
             {modeTitle}
           </h2>
-          <span className={styles.prototypeBadge}>
-            {modeLabel}
-          </span>
         </div>
       </div>
 
