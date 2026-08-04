@@ -86,7 +86,28 @@ CREATE TABLE payment_settlements (
 CREATE UNIQUE INDEX idx_payment_settlements_event_id
     ON payment_settlements (event_id);
 
--- 4. payment_logs : PG 연동 요청/응답 + 토스 웹훅 수신 감사 로그 (원본 payload 그대로 JSONB 저장)
+-- 4. payment_ad_settlements : 광고 정산 (광고 단위, 광고 만료 감지 즉시 확정 — 대기 상태 없음)
+CREATE TABLE payment_ad_settlements (
+    id INT8 NOT NULL DEFAULT unique_rowid() PRIMARY KEY,
+    ad_id UUID NOT NULL,                    -- Marketing 도메인 marketing_banner_ads.id 참조, 논리적 참조 (FK 미설정)
+    total_amount DECIMAL(14, 2) NOT NULL DEFAULT 0,
+    commission_rate DECIMAL(5, 2) NOT NULL DEFAULT 5.00,  -- 확정: 수수료율 5% 고정 (관리자 설정 API 없음)
+    commission_amount DECIMAL(14, 2) NOT NULL DEFAULT 0,
+    net_amount DECIMAL(14, 2) NOT NULL DEFAULT 0,
+    status STRING NOT NULL DEFAULT 'COMPLETED'
+        CHECK (status IN ('COMPLETED')),
+    settled_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    INDEX idx_payment_ad_settlements_status (status)
+);
+
+-- ⭐ 광고 1건당 정산은 1건만 — 광고 만료 이벤트가 중복 발행/처리돼도 정산이 두 번 생기지 않도록 방지
+CREATE UNIQUE INDEX idx_payment_ad_settlements_ad_id
+    ON payment_ad_settlements (ad_id);
+
+-- 5. payment_logs : PG 연동 요청/응답 + 토스 웹훅 수신 감사 로그 (원본 payload 그대로 JSONB 저장)
 CREATE TABLE payment_logs (
     id INT8 NOT NULL DEFAULT unique_rowid() PRIMARY KEY,
     payment_key STRING,                     -- 토스 paymentKey 그대로 저장 (FK 없음, 논리적 참조 — payments.pg_transaction_id와 조회 시점에만 조인)

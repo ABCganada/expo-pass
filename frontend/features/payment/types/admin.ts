@@ -5,6 +5,13 @@ export interface DashboardSummary {
   settlementCount: number;
 }
 
+export interface AdSettlementDashboardSummary {
+  totalAmount: number;
+  totalCommissionAmount: number;
+  totalNetAmount: number;
+  settlementCount: number;
+}
+
 export interface PaymentLog {
   id: string;
   paymentKey: string | null;

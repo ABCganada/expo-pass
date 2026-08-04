@@ -1,4 +1,5 @@
 import type {
+  AdSettlementDashboardSummary,
   DashboardSummary,
   PaymentLogDetail,
   PaymentLogPage,
@@ -33,6 +34,23 @@ export const adminService = {
     return parseData<DashboardSummary>(
       res,
       "매출 대시보드를 불러오지 못했습니다.",
+    );
+  },
+
+  async getAdSettlementDashboard(
+    signal?: AbortSignal,
+  ): Promise<AdSettlementDashboardSummary> {
+    const res = await fetch(
+      buildApiUrl("/api/v1/admin/payments/ad-settlements/dashboard"),
+      {
+        credentials: "include",
+        cache: "no-store",
+        signal,
+      },
+    );
+    return parseData<AdSettlementDashboardSummary>(
+      res,
+      "광고 정산 대시보드를 불러오지 못했습니다.",
     );
   },
 
