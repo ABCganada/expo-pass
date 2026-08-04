@@ -298,6 +298,46 @@ class BannerAdServiceTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // cancelForRefund
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Test
+    void cancelForRefund_APPROVED_상태면_CANCELLED로_전환한다() {
+        when(adRepository.findByOrderId("ORD-1")).thenReturn(Optional.of(ad(BannerAdStatus.APPROVED)));
+
+        service.cancelForRefund("ORD-1");
+
+        verify(adRepository).updateStatus(AD_ID, BannerAdStatus.CANCELLED);
+    }
+
+    @Test
+    void cancelForRefund_PAID_상태면_CANCELLED로_전환한다() {
+        when(adRepository.findByOrderId("ORD-1")).thenReturn(Optional.of(ad(BannerAdStatus.PAID)));
+
+        service.cancelForRefund("ORD-1");
+
+        verify(adRepository).updateStatus(AD_ID, BannerAdStatus.CANCELLED);
+    }
+
+    @Test
+    void cancelForRefund_이미_EXPIRED된_광고는_그대로_둔다() {
+        when(adRepository.findByOrderId("ORD-1")).thenReturn(Optional.of(ad(BannerAdStatus.EXPIRED)));
+
+        service.cancelForRefund("ORD-1");
+
+        verify(adRepository, never()).updateStatus(any(), any());
+    }
+
+    @Test
+    void cancelForRefund_해당_주문의_광고가_없으면_아무_일도_하지_않는다() {
+        when(adRepository.findByOrderId("ORD-1")).thenReturn(Optional.empty());
+
+        service.cancelForRefund("ORD-1");
+
+        verify(adRepository, never()).updateStatus(any(), any());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // helpers
     // ─────────────────────────────────────────────────────────────────────────
 

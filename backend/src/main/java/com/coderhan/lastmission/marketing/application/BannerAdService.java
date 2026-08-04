@@ -163,6 +163,21 @@ public class BannerAdService {
         });
     }
 
+    /**
+     * 결제 환불(PaymentRefundedEvent) 리스너용 — 결제완료/승인 상태인 광고를 취소 처리한다.
+     * 슬롯은 별도 재고 카운터 없이 상태 기반으로 판매 가능 여부를 판단하므로(existsActiveOrPendingBySlotId),
+     * CANCELLED로 바꾸는 것만으로 슬롯 재판매·노출 중단·정산 대상 제외가 전부 자연히 따라온다.
+     */
+    @Transactional
+    public void cancelForRefund(String orderId) {
+        adRepository.findByOrderId(orderId).ifPresent(ad -> {
+            if (ad.status() != BannerAdStatus.PAID && ad.status() != BannerAdStatus.APPROVED) {
+                return;
+            }
+            adRepository.updateStatus(ad.id(), BannerAdStatus.CANCELLED);
+        });
+    }
+
     @Transactional(readOnly = true)
     public BannerAd getAd(UUID id) {
         return adRepository.findById(id)
