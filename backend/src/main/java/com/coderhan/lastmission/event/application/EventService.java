@@ -2,6 +2,7 @@ package com.coderhan.lastmission.event.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Objects;
 
 import com.coderhan.lastmission.event.ReservationQueryPort;
@@ -79,10 +80,7 @@ public class EventService {
         if (command.title() == null || command.title().isBlank()) {
             throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "제목은 비어 있을 수 없습니다.");
         }
-        if (command.startDate() != null && command.endDate() != null
-                && command.endDate().isBefore(command.startDate())) {
-            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "종료일은 시작일보다 빠를 수 없습니다.");
-        }
+        validateDateChange(event, command);
         if (command.legalDongCode() != null && command.legalDongCode().length() > 10) {
             throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "법정동코드는 10자를 초과할 수 없습니다.");
         }
@@ -96,6 +94,30 @@ public class EventService {
                 command.address(), command.detailAddress(), command.kakaoPlaceId(), command.legalDongCode(),
                 command.latitude(), command.longitude(), command.startDate(), command.endDate());
         return event;
+    }
+
+    /**
+     * 행사 시작일/종료일 변경 검증
+     */
+    private void validateDateChange(Event event, UpdateEventCommand command) {
+        boolean startDateChanged = !Objects.equals(command.startDate(), event.getStartDate());
+        boolean endDateChanged = !Objects.equals(command.endDate(), event.getEndDate());
+
+        if (startDateChanged) {
+            if (event.getStartDate() != null && command.startDate() == null) {
+                throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "시작일을 비울 수 없습니다.");
+            }
+            if (command.startDate() != null && !command.startDate().isAfter(LocalDate.now(clock))) {
+                throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "시작일은 내일 이후여야 합니다.");
+            }
+        }
+        if (endDateChanged && event.getEndDate() != null && command.endDate() == null) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "종료일을 비울 수 없습니다.");
+        }
+        if (command.startDate() != null && command.endDate() != null
+                && command.endDate().isBefore(command.startDate())) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "종료일은 시작일보다 빠를 수 없습니다.");
+        }
     }
 
     /**
