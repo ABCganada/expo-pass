@@ -32,7 +32,7 @@ export function ReservationListContent() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [titlesByEventId, setTitlesByEventId] = useState<Record<string, string>>({});
   const [triggerGetEvent] = useLazyGetEventForDisplayQuery();
-  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
+  const [paymentView, setPaymentView] = useState<{ orderId: string; eventStartDate?: string } | null>(null);
   const router = useRouter();
 
   // 타이핑할 때마다 200건짜리 검색 배치를 다시 훑지 않도록 살짝 늦춰서 반영한다.
@@ -150,7 +150,7 @@ export function ReservationListContent() {
               key={order.orderId}
               order={order}
               onViewEvent={handleViewEvent}
-              onViewPayment={setPaymentOrderId}
+              onViewPayment={(orderId, eventStartDate) => setPaymentView({ orderId, eventStartDate })}
             />
           ))}
         </div>
@@ -180,18 +180,18 @@ export function ReservationListContent() {
         </footer>
       ) : null}
 
-      {paymentOrderId && (
-        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && setPaymentOrderId(null)}>
+      {paymentView && (
+        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && setPaymentView(null)}>
           <div className={styles.paymentModal}>
             <button
               type="button"
               className={styles.paymentModalClose}
               aria-label="닫기"
-              onClick={() => setPaymentOrderId(null)}
+              onClick={() => setPaymentView(null)}
             >
               <X size={18} />
             </button>
-            <PaymentDetailContent orderId={paymentOrderId} />
+            <PaymentDetailContent orderId={paymentView.orderId} eventStartDate={paymentView.eventStartDate} />
           </div>
         </div>
       )}

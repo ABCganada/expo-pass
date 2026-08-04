@@ -8,7 +8,7 @@ import styles from "./ReservationListItem.module.css";
 interface ReservationListItemProps {
   order: OrderSummary;
   onViewEvent?: (eventId: string) => void;
-  onViewPayment?: (orderId: string) => void;
+  onViewPayment?: (orderId: string, eventStartDate?: string) => void;
 }
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -97,7 +97,11 @@ export function ReservationListItem({ order, onViewEvent, onViewPayment }: Reser
           <ExternalLink size={14} />
         </button>
         {order.status !== "CANCELLED" && order.status !== "PENDING" && order.totalAmount > 0 && (
-          <button type="button" className={styles.paymentButton} onClick={() => onViewPayment?.(order.orderId)}>
+          <button
+            type="button"
+            className={styles.paymentButton}
+            onClick={() => onViewPayment?.(order.orderId, event?.startDate)}
+          >
             결제 정보 확인하기
             <ChevronRight size={14} />
           </button>
