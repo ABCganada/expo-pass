@@ -23,7 +23,7 @@ class JpaPaymentRepository implements PaymentRepository {
                         OffsetDateTime paidAt) {
         OffsetDateTime now = OffsetDateTime.now();
 
-        PaymentEntity saved = jpaRepository.save(
+        jpaRepository.save(
                 new PaymentEntity(
                     orderId, orderType, userId,
                     idempotencyKey, amount, method,
@@ -31,6 +31,9 @@ class JpaPaymentRepository implements PaymentRepository {
                     paidAt, now
                 )
         );
+
+        PaymentEntity saved = jpaRepository.findByIdempotencyKey(idempotencyKey)
+                .orElseThrow(() -> new IllegalStateException("결제 저장 직후 조회에 실패했습니다. idempotencyKey=" + idempotencyKey));
 
         return toDomain(saved);
     }
