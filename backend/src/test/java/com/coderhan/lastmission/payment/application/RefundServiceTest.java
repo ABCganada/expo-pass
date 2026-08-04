@@ -105,6 +105,24 @@ class RefundServiceTest {
     }
 
     @Test
+    @DisplayName("광고 결제는 행사 시작일과 무관하게 항상 전액(100%) 환불한다")
+    void refundsAdvertisementPaymentInFullRegardlessOfEventSchedule() {
+        Payment payment = adPayment();
+        Refund saved = savedRefund(AMOUNT);
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+        when(refundRepository.findActiveByPaymentId(PAYMENT_ID)).thenReturn(Optional.empty());
+        when(eventRecorder.reportRefund(anyLong(), anyString(), any(), any(), anyString(), any())).thenReturn(saved);
+
+        Refund result = service.request(USER_ID, PAYMENT_ID, "광고 취소");
+
+        assertThat(result).isSameAs(saved);
+        verify(eventRecorder).reportRefund(PAYMENT_ID, payment.orderId(), payment.orderType(), AMOUNT,
+                "광고 취소", OffsetDateTime.now(clock));
+        verify(paymentGateway).cancel(payment.pgTransactionId(), "광고 취소", AMOUNT);
+        verify(eventScheduleReader, never()).findEventStartDate(any());
+    }
+
+    @Test
     @DisplayName("결제 내역이 없으면 PAYMENT_NOT_FOUND 예외를 던지고 아무것도 저장하지 않는다")
     void rejectsWhenPaymentNotFound() {
         when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.empty());
@@ -172,6 +190,21 @@ class RefundServiceTest {
                 .id(PAYMENT_ID)
                 .orderId("ORD-1")
                 .orderType(OrderType.RESERVATION)
+                .userId(USER_ID)
+                .idempotencyKey("key-1")
+                .amount(AMOUNT)
+                .method("CARD")
+                .status(PaymentStatus.COMPLETED)
+                .pgProvider("TOSS")
+                .pgTransactionId("pg-tx-1")
+                .build();
+    }
+
+    private static Payment adPayment() {
+        return Payment.builder()
+                .id(PAYMENT_ID)
+                .orderId("AD-ORD-1")
+                .orderType(OrderType.ADVERTISEMENT)
                 .userId(USER_ID)
                 .idempotencyKey("key-1")
                 .amount(AMOUNT)

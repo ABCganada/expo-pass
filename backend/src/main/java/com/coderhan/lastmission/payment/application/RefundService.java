@@ -11,6 +11,7 @@ import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import com.coderhan.lastmission.payment.domain.Refund;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
+import com.coderhan.lastmission.shared.order.OrderType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -38,10 +39,13 @@ public class RefundService {
     /**
      * 환불 신청 접수. 모든 환불은 자동승인
      *
-     * 행사 시작일까지 남은 일수에 따라 환불율이 정해진다(D-7 이상 100%, D-3~D-6 50%, D-1~D-2 30%).
-     * 행사 시작일 당일(D-0) 이후는 환불율이 0%가 되는 게 아니라 환불 신청 자체를 거부한다 —
-     * 0원짜리 환불을 그대로 접수하면 결제가 REFUNDED로 바뀌면서 정산 집계(COMPLETED 결제만 합산)에서
-     * 통째로 빠져, 실제로는 한 푼도 안 돌려줬는데 주최자 매출이 사라지는 문제가 있었다.
+     * 예약(RESERVATION) 결제는 행사 시작일까지 남은 일수에 따라 환불율이 정해진다
+     * (D-7 이상 100%, D-3~D-6 50%, D-1~D-2 30%). 행사 시작일 당일(D-0) 이후는 환불율이
+     * 0%가 되는 게 아니라 환불 신청 자체를 거부한다 — 0원짜리 환불을 그대로 접수하면 결제가
+     * REFUNDED로 바뀌면서 정산 집계(COMPLETED 결제만 합산)에서 통째로 빠져, 실제로는 한 푼도
+     * 안 돌려줬는데 주최자 매출이 사라지는 문제가 있었다.
+     *
+     * 광고(ADVERTISEMENT) 결제는 행사 시작일 개념이 없고 정책상 항상 100% 환불이다.
      */
     public Refund request(long userId, long paymentId, String reason) {
         Payment payment = paymentRepository.findById(paymentId)
@@ -57,6 +61,10 @@ public class RefundService {
     }
 
     private BigDecimal calculateRefundAmount(Payment payment) {
+        if (payment.orderType() == OrderType.ADVERTISEMENT) {
+            return payment.amount();
+        }
+
         LocalDate eventStartDate = eventScheduleReader.findEventStartDate(payment.orderId());
         long daysUntilStart = ChronoUnit.DAYS.between(LocalDate.now(clock), eventStartDate);
 
