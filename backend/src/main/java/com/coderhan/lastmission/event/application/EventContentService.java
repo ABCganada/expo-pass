@@ -3,7 +3,6 @@ package com.coderhan.lastmission.event.application;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventContent;
@@ -19,17 +18,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventContentService {
     private final EventRepository eventRepository;
     private final EventContentRepository eventContentRepository;
+    private final EventOwnershipValidator ownershipValidator;
 
     /**
-     * 행사 콘텐츠 UPSERT - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 행사 콘텐츠 UPSERT - MANAGER 전용, 본인이 담당(manager_id)하는 행사만.
      */
     @Transactional
-    public List<EventContent> upsertContents(long eventId, long callerUserId, boolean isAdmin,
+    public List<EventContent> upsertContentsAsManager(long eventId, long callerUserId,
             Map<EventContentType, String> contents) {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
 
-        validateEventAccess(event, callerUserId, isAdmin, "콘텐츠를 수정");
+        ownershipValidator.requireOwner(event, callerUserId, "콘텐츠를 수정");
         validateContents(contents);
 
         // 응답 순서를 enum 선언 순서로 고정
@@ -47,13 +47,6 @@ public class EventContentService {
                 })
                 .orElseGet(() -> 
                         eventContentRepository.save(new EventContent(event, contentType, content)));
-    }
-
-    /** ADMIN은 전체 허용, 아니면 본인이 담당(manager_id)하는 행사인지 확인 */
-    private void validateEventAccess(Event event, long callerUserId, boolean isAdmin, String action) {
-        if (!isAdmin && !Objects.equals(event.getManagerId(), callerUserId)) {
-            throw new BusinessException(ErrorCode.EVENT_ACCESS_DENIED, "본인이 담당하는 행사만 " + action + "할 수 있습니다.");
-        }
     }
 
     private void validateContents(Map<EventContentType, String> contents) {

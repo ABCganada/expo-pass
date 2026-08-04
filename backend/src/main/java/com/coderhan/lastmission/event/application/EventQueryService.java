@@ -4,7 +4,6 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.coderhan.lastmission.event.domain.Event;
@@ -35,6 +34,7 @@ public class EventQueryService {
     private final EventContentRepository eventContentRepository;
     private final EventImageRepository eventImageRepository;
     private final UserDirectory userDirectory;
+    private final EventOwnershipValidator ownershipValidator;
     private final Clock clock;
 
     @Transactional(readOnly = true)
@@ -52,21 +52,30 @@ public class EventQueryService {
     }
 
     /**
-     * 관리자용 행사 목록 조회 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 매니저용 행사 목록 조회 - 본인이 담당(manager_id)하는 행사만.
      */
     @Transactional(readOnly = true)
-    public List<EventListItem> getAdminEvents(long callerUserId, boolean isAdmin, EventStatus status) {
+    public List<EventListItem> getEventsForManager(long callerUserId, EventStatus status) {
+        return toEventListItems(eventRepository.findAllByManagerIdOrderByStartDateAsc(callerUserId), status);
+    }
+
+    /**
+     * 관리자용 행사 목록 조회 - 전체.
+     */
+    @Transactional(readOnly = true)
+    public List<EventListItem> getEventsForAdmin(EventStatus status) {
+        return toEventListItems(eventRepository.findAllOrderByStartDateAsc(), status);
+    }
+
+    private List<EventListItem> toEventListItems(List<Event> events, EventStatus status) {
         LocalDate today = LocalDate.now(clock);
 
-        List<Event> events = isAdmin
-                ? eventRepository.findAllOrderByStartDateAsc()
-                : eventRepository.findAllByManagerIdOrderByStartDateAsc(callerUserId);
-        events = events.stream()
+        List<Event> filtered = events.stream()
                 .filter(event -> status == null || event.getStatus() == status)
                 .toList();
-        Map<Long, String> thumbnailByEventId = thumbnailUrlsByEventIds(events);
+        Map<Long, String> thumbnailByEventId = thumbnailUrlsByEventIds(filtered);
 
-        return events.stream()
+        return filtered.stream()
                 .map(event -> new EventListItem(event, event.phase(today), thumbnailByEventId.get(event.getId())))
                 .toList();
     }
@@ -92,27 +101,41 @@ public class EventQueryService {
     }
 
     /**
-     * 관리자용 행사 상세 조회 - DRAFT도 조회 가능
-     * ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 매니저용 행사 상세 조회 - DRAFT도 조회 가능, 본인이 담당(manager_id)하는 행사만.
      */
     @Transactional(readOnly = true)
-    public AdminEventDetailResult getAdminEventDetail(long eventId, long callerUserId, boolean admin) {
-        LocalDate today = LocalDate.now(clock);
+    public EventManagementDetail getEventDetailForManager(long eventId, long callerUserId) {
+        Event event = loadEvent(eventId);
+        ownershipValidator.requireOwner(event, callerUserId, "조회");
+        return buildEventManagementDetail(event);
+    }
 
-        Event event = eventRepository.findNotDeletedById(eventId)
+    /**
+     * 관리자용 행사 상세 조회 - DRAFT도 조회 가능, 전체.
+     */
+    @Transactional(readOnly = true)
+    public EventManagementDetail getEventDetailForAdmin(long eventId) {
+        return buildEventManagementDetail(loadEvent(eventId));
+    }
+
+    private Event loadEvent(long eventId) {
+        return eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        validateEventAccess(event, callerUserId, admin, "조회");
+    }
+
+    private EventManagementDetail buildEventManagementDetail(Event event) {
+        LocalDate today = LocalDate.now(clock);
 
         UserRef manager = userDirectory.findActiveByIds(List.of(event.getManagerId()))
                 .stream()
                 .findFirst()
                 .orElse(null);
 
-        List<Ticket> tickets = ticketRepository.findAllByEventIdOrderByCreatedAtAsc(eventId);
-        List<EventContent> contents = eventContentRepository.findAllByEventId(eventId);
-        List<EventImage> images = eventImageRepository.findAllByEventIdOrderByDisplayOrderAsc(eventId);
+        List<Ticket> tickets = ticketRepository.findAllByEventIdOrderByCreatedAtAsc(event.getId());
+        List<EventContent> contents = eventContentRepository.findAllByEventId(event.getId());
+        List<EventImage> images = eventImageRepository.findAllByEventIdOrderByDisplayOrderAsc(event.getId());
 
-        return new AdminEventDetailResult(event, event.phase(today), manager, tickets, contents, images);
+        return new EventManagementDetail(event, event.phase(today), manager, tickets, contents, images);
     }
 
     /** 목록 조회용 썸네일을 이벤트당 1건씩 배치로 조회 (N+1 방지). */
@@ -132,19 +155,12 @@ public class EventQueryService {
                         (first, second) -> first)); // 중복 처리
     }
 
-    /** ADMIN은 전체 허용, 아니면 본인이 담당(manager_id)하는 행사인지 확인 */
-    private void validateEventAccess(Event event, long callerUserId, boolean isAdmin, String action) {
-        if (!isAdmin && !Objects.equals(event.getManagerId(), callerUserId)) {
-            throw new BusinessException(ErrorCode.EVENT_ACCESS_DENIED, "본인이 담당하는 행사만 " + action + "할 수 있습니다.");
-        }
-    }
-
     public record EventListItem(Event event, EventPhase phase, String thumbnailUrl) {}
 
     public record EventDetail(
             Event event, EventPhase phase, List<Ticket> tickets, List<EventContent> contents, List<EventImage> images) {}
 
-    public record AdminEventDetailResult(
+    public record EventManagementDetail(
             Event event, EventPhase phase, UserRef manager,
             List<Ticket> tickets, List<EventContent> contents, List<EventImage> images) {}
 }

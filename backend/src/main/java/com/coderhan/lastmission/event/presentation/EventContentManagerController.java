@@ -14,8 +14,6 @@ import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -32,17 +30,10 @@ class EventContentManagerController {
     @PutMapping
     ApiResponse<List<EventContentResponse>> upsertContents(@PathVariable long eventId,
             @RequestBody UpsertEventContentsRequest request,
-            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
-        List<EventContent> contents = eventContentService.upsertContents(
-                eventId, principal.userId(), isAdmin(authentication), request.toContentsMap());
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        List<EventContent> contents = eventContentService.upsertContentsAsManager(
+                eventId, principal.userId(), request.toContentsMap());
         return ApiResponse.success(contents.stream().map(EventContentResponse::from).toList());
-    }
-
-    private static boolean isAdmin(Authentication authentication) {
-        return authentication != null && authentication.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch("ROLE_ADMIN"::equals);
     }
 
     private static EventContentType toContentType(String value) {

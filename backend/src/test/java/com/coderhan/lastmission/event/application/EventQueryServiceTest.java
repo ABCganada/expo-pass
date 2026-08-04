@@ -47,39 +47,40 @@ class EventQueryServiceTest {
     @Mock EventContentRepository eventContentRepository;
     @Mock EventImageRepository eventImageRepository;
     @Mock UserDirectory userDirectory;
+    @Spy EventOwnershipValidator ownershipValidator = new EventOwnershipValidator();
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks EventQueryService service;
 
     @Test
-    void getAdminEvents_ADMIN은_전체_조회() {
+    void getEventsForAdmin_전체_조회() {
         Event own = event(EVENT_ID, MANAGER_ID);
         Event other = event(OTHER_EVENT_ID, OTHER_MANAGER_ID);
         when(eventRepository.findAllOrderByStartDateAsc()).thenReturn(List.of(own, other));
 
-        List<EventQueryService.EventListItem> events = service.getAdminEvents(MANAGER_ID, true, null);
+        List<EventQueryService.EventListItem> events = service.getEventsForAdmin(null);
 
         assertThat(events).extracting(EventQueryService.EventListItem::event).containsExactly(own, other);
     }
 
     @Test
-    void getAdminEvents_MANAGER는_본인_담당_행사만_조회() {
+    void getEventsForManager_본인_담당_행사만_조회() {
         Event own = event(EVENT_ID, MANAGER_ID);
         when(eventRepository.findAllByManagerIdOrderByStartDateAsc(MANAGER_ID)).thenReturn(List.of(own));
 
-        List<EventQueryService.EventListItem> events = service.getAdminEvents(MANAGER_ID, false, null);
+        List<EventQueryService.EventListItem> events = service.getEventsForManager(MANAGER_ID, null);
 
         assertThat(events).extracting(EventQueryService.EventListItem::event).containsExactly(own);
     }
 
     @Test
-    void getAdminEvents_status가_있으면_해당_상태만_조회() {
+    void getEventsForAdmin_status가_있으면_해당_상태만_조회() {
         Event draft = event(EVENT_ID, MANAGER_ID);
         Event published = event(OTHER_EVENT_ID, MANAGER_ID);
         ReflectionTestUtils.setField(published, "status", EventStatus.PUBLISHED);
         when(eventRepository.findAllOrderByStartDateAsc()).thenReturn(List.of(draft, published));
 
-        List<EventQueryService.EventListItem> events = service.getAdminEvents(MANAGER_ID, true, EventStatus.PUBLISHED);
+        List<EventQueryService.EventListItem> events = service.getEventsForAdmin(EventStatus.PUBLISHED);
 
         assertThat(events).extracting(EventQueryService.EventListItem::event).containsExactly(published);
     }
@@ -150,7 +151,7 @@ class EventQueryServiceTest {
     }
 
     @Test
-    void getAdminEventDetail_상세정보와_phase_포함() {
+    void getEventDetailForAdmin_상세정보와_phase_포함() {
         Event event = event(EVENT_ID, MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(userDirectory.findActiveByIds(List.of(MANAGER_ID))).thenReturn(List.of());
@@ -165,8 +166,7 @@ class EventQueryServiceTest {
         when(eventContentRepository.findAllByEventId(EVENT_ID)).thenReturn(List.of(content));
         when(eventImageRepository.findAllByEventIdOrderByDisplayOrderAsc(EVENT_ID)).thenReturn(List.of(image));
 
-        EventQueryService.AdminEventDetailResult detail =
-                service.getAdminEventDetail(EVENT_ID, MANAGER_ID, true);
+        EventQueryService.EventManagementDetail detail = service.getEventDetailForAdmin(EVENT_ID);
 
         assertThat(detail.phase()).isEqualTo(EventPhase.UPCOMING);
         assertThat(detail.tickets()).containsExactly(deletedTicket);
@@ -175,11 +175,11 @@ class EventQueryServiceTest {
     }
 
     @Test
-    void getAdminEventDetail_MANAGER가_담당하지_않는_행사면_거부() {
+    void getEventDetailForManager_담당하지_않는_행사면_거부() {
         Event event = event(EVENT_ID, OTHER_MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> service.getAdminEventDetail(EVENT_ID, MANAGER_ID, false))
+        assertThatThrownBy(() -> service.getEventDetailForManager(EVENT_ID, MANAGER_ID))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
     }

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -35,19 +36,20 @@ class EventContentServiceTest {
 
     @Mock EventRepository eventRepository;
     @Mock EventContentRepository eventContentRepository;
+    @Spy EventOwnershipValidator ownershipValidator = new EventOwnershipValidator();
 
     @InjectMocks EventContentService service;
 
     @Test
-    void upsertContents_기존_콘텐츠가_없으면_새로_생성() {
+    void upsertContentsAsManager_기존_콘텐츠가_없으면_새로_생성() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventContentRepository.findByEventIdAndContentType(EVENT_ID, EventContentType.DESCRIPTION))
                 .thenReturn(Optional.empty());
         when(eventContentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        List<EventContent> result = service.upsertContents(
-                EVENT_ID, MANAGER_ID, true, Map.of(EventContentType.DESCRIPTION, "새 설명"));
+        List<EventContent> result = service.upsertContentsAsManager(
+                EVENT_ID, MANAGER_ID, Map.of(EventContentType.DESCRIPTION, "새 설명"));
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getContent()).isEqualTo("새 설명");
@@ -55,15 +57,15 @@ class EventContentServiceTest {
     }
 
     @Test
-    void upsertContents_기존_콘텐츠가_있으면_업데이트() {
+    void upsertContentsAsManager_기존_콘텐츠가_있으면_업데이트() {
         Event event = event(MANAGER_ID);
         EventContent existing = new EventContent(event, EventContentType.NOTICE, "예전 공지");
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventContentRepository.findByEventIdAndContentType(EVENT_ID, EventContentType.NOTICE))
                 .thenReturn(Optional.of(existing));
 
-        List<EventContent> result = service.upsertContents(
-                EVENT_ID, MANAGER_ID, true, Map.of(EventContentType.NOTICE, "새 공지"));
+        List<EventContent> result = service.upsertContentsAsManager(
+                EVENT_ID, MANAGER_ID, Map.of(EventContentType.NOTICE, "새 공지"));
 
         assertThat(result).containsExactly(existing);
         assertThat(existing.getContent()).isEqualTo("새 공지");
@@ -72,7 +74,7 @@ class EventContentServiceTest {
     }
 
     @Test
-    void upsertContents_여러_contentType을_한번에_처리() {
+    void upsertContentsAsManager_여러_contentType을_한번에_처리() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventContentRepository.findByEventIdAndContentType(eq(EVENT_ID), any())).thenReturn(Optional.empty());
@@ -83,93 +85,79 @@ class EventContentServiceTest {
                 EventContentType.NOTICE, "공지",
                 EventContentType.LOCATION_GUIDE, "오시는 길");
 
-        List<EventContent> result = service.upsertContents(EVENT_ID, MANAGER_ID, true, contents);
+        List<EventContent> result = service.upsertContentsAsManager(EVENT_ID, MANAGER_ID, contents);
 
         assertThat(result).extracting(EventContent::getContentType)
                 .containsExactlyInAnyOrder(EventContentType.DESCRIPTION, EventContentType.NOTICE, EventContentType.LOCATION_GUIDE);
     }
 
     @Test
-    void upsertContents_행사가_없으면_예외() {
+    void upsertContentsAsManager_행사가_없으면_예외() {
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.upsertContents(
-                EVENT_ID, MANAGER_ID, true, Map.of(EventContentType.DESCRIPTION, "설명")))
+        assertThatThrownBy(() -> service.upsertContentsAsManager(
+                EVENT_ID, MANAGER_ID, Map.of(EventContentType.DESCRIPTION, "설명")))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_NOT_FOUND));
     }
 
     @Test
-    void upsertContents_MANAGER가_담당하지_않는_행사면_거부() {
+    void upsertContentsAsManager_담당하지_않는_행사면_거부() {
         Event event = event(OTHER_MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> service.upsertContents(
-                EVENT_ID, MANAGER_ID, false, Map.of(EventContentType.DESCRIPTION, "설명")))
+        assertThatThrownBy(() -> service.upsertContentsAsManager(
+                EVENT_ID, MANAGER_ID, Map.of(EventContentType.DESCRIPTION, "설명")))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
         verify(eventContentRepository, never()).save(any());
     }
 
     @Test
-    void upsertContents_콘텐츠_목록이_비어있으면_거부() {
+    void upsertContentsAsManager_콘텐츠_목록이_비어있으면_거부() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> service.upsertContents(EVENT_ID, MANAGER_ID, true, Map.of()))
+        assertThatThrownBy(() -> service.upsertContentsAsManager(EVENT_ID, MANAGER_ID, Map.of()))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
     }
 
     @Test
-    void upsertContents_content가_공백이면_거부() {
+    void upsertContentsAsManager_content가_공백이면_거부() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> service.upsertContents(
-                EVENT_ID, MANAGER_ID, true, Map.of(EventContentType.DESCRIPTION, "  ")))
-                .isInstanceOfSatisfying(BusinessException.class,
-                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
-        verify(eventContentRepository, never()).save(any());
-    }
-
-    @Test
-    void upsertContents_contents가_null이면_거부() {
-        Event event = event(MANAGER_ID);
-        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
-
-        assertThatThrownBy(() -> service.upsertContents(EVENT_ID, MANAGER_ID, true, null))
+        assertThatThrownBy(() -> service.upsertContentsAsManager(
+                EVENT_ID, MANAGER_ID, Map.of(EventContentType.DESCRIPTION, "  ")))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
         verify(eventContentRepository, never()).save(any());
     }
 
     @Test
-    void upsertContents_contentType이_null이면_거부() {
+    void upsertContentsAsManager_contents가_null이면_거부() {
+        Event event = event(MANAGER_ID);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.upsertContentsAsManager(EVENT_ID, MANAGER_ID, null))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+        verify(eventContentRepository, never()).save(any());
+    }
+
+    @Test
+    void upsertContentsAsManager_contentType이_null이면_거부() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
         Map<EventContentType, String> contents = new HashMap<>();
         contents.put(null, "설명");
 
-        assertThatThrownBy(() -> service.upsertContents(EVENT_ID, MANAGER_ID, true, contents))
+        assertThatThrownBy(() -> service.upsertContentsAsManager(EVENT_ID, MANAGER_ID, contents))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
         verify(eventContentRepository, never()).save(any());
-    }
-
-    @Test
-    void upsertContents_ADMIN이면_담당자가_아니어도_수정_가능() {
-        Event event = event(OTHER_MANAGER_ID);
-        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
-        when(eventContentRepository.findByEventIdAndContentType(EVENT_ID, EventContentType.DESCRIPTION))
-                .thenReturn(Optional.empty());
-        when(eventContentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        List<EventContent> result = service.upsertContents(
-                EVENT_ID, MANAGER_ID, true, Map.of(EventContentType.DESCRIPTION, "설명"));
-
-        assertThat(result).hasSize(1);
     }
 
     private Event event(long managerId) {

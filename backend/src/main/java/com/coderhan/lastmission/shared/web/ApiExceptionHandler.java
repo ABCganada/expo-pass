@@ -39,7 +39,9 @@ class ApiExceptionHandler {
                     RESERVATION_ALREADY_CHECKED_IN,
                     RESERVATION_INVALID_TICKET_STATUS,
                     TICKET_SOLD_OUT,
-                    BANNER_SLOT_HAS_ACTIVE_ADS ->
+                    BANNER_SLOT_HAS_ACTIVE_ADS,
+                    EVENT_DELETE_NOT_ALLOWED,
+                    TICKET_NOT_MUTABLE ->
                     HttpStatus.CONFLICT;
         };
         return ResponseEntity.status(status).body(

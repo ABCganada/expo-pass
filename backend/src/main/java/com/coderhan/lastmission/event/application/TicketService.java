@@ -23,17 +23,29 @@ public class TicketService {
     private final EventRepository eventRepository;
     private final TicketRepository ticketRepository;
     private final ReservationQueryPort reservationQueryPort;
+    private final EventOwnershipValidator ownershipValidator;
     private final Clock clock;
 
     /**
-     * 티켓 생성 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 티켓 생성 - MANAGER 전용, 본인이 담당(manager_id)하는 행사만.
      */
     @Transactional
-    public Ticket createTicket(long eventId, long callerUserId, boolean isAdmin, CreateTicketCommand command) {
-        Event event = eventRepository.findNotDeletedById(eventId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+    public Ticket createTicketAsManager(long eventId, long callerUserId, CreateTicketCommand command) {
+        Event event = loadEvent(eventId);
+        ownershipValidator.requireOwner(event, callerUserId, "티켓을 등록");
+        return createTicket(event, command);
+    }
 
-        validateEventAccess(event, callerUserId, isAdmin, "티켓을 생성");
+    /**
+     * 티켓 생성 - ADMIN 전용, 전체.
+     */
+    @Transactional
+    public Ticket createTicketAsAdmin(long eventId, CreateTicketCommand command) {
+        return createTicket(loadEvent(eventId), command);
+    }
+
+    private Ticket createTicket(Event event, CreateTicketCommand command) {
+        validateTicketMutable(event);
         validateTicketCreation(command);
 
         Ticket ticket = new Ticket(event, command.name(), command.price(), command.quantityTotal(),
@@ -42,14 +54,25 @@ public class TicketService {
     }
 
     /**
-     * 티켓 수정 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 티켓 수정 - MANAGER 전용, 본인이 담당(manager_id)하는 행사만.
      */
     @Transactional
-    public Ticket updateTicket(long eventId, long ticketId, long callerUserId, boolean isAdmin,
-            UpdateTicketCommand command) {
-        Event event = eventRepository.findNotDeletedById(eventId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        validateEventAccess(event, callerUserId, isAdmin, "티켓을 수정");
+    public Ticket updateTicketAsManager(long eventId, long ticketId, long callerUserId, UpdateTicketCommand command) {
+        Event event = loadEvent(eventId);
+        ownershipValidator.requireOwner(event, callerUserId, "티켓을 수정");
+        return updateTicket(event, ticketId, command);
+    }
+
+    /**
+     * 티켓 수정 - ADMIN 전용, 전체.
+     */
+    @Transactional
+    public Ticket updateTicketAsAdmin(long eventId, long ticketId, UpdateTicketCommand command) {
+        return updateTicket(loadEvent(eventId), ticketId, command);
+    }
+
+    private Ticket updateTicket(Event event, long ticketId, UpdateTicketCommand command) {
+        validateTicketMutable(event);
 
         Ticket ticket = ticketRepository.findNotDeletedByIdAndEventId(ticketId, event.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.TICKET_NOT_FOUND, "티켓을 찾을 수 없습니다."));
@@ -67,13 +90,25 @@ public class TicketService {
     }
 
     /**
-     * 티켓 삭제 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 티켓 삭제 - MANAGER 전용, 본인이 담당(manager_id)하는 행사만.
      */
     @Transactional
-    public void deleteTicket(long eventId, long ticketId, long callerUserId, boolean isAdmin) {
-        Event event = eventRepository.findNotDeletedById(eventId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        validateEventAccess(event, callerUserId, isAdmin, "티켓을 삭제");
+    public void deleteTicketAsManager(long eventId, long ticketId, long callerUserId) {
+        Event event = loadEvent(eventId);
+        ownershipValidator.requireOwner(event, callerUserId, "티켓을 삭제");
+        deleteTicket(event, ticketId);
+    }
+
+    /**
+     * 티켓 삭제 - ADMIN 전용, 전체.
+     */
+    @Transactional
+    public void deleteTicketAsAdmin(long eventId, long ticketId) {
+        deleteTicket(loadEvent(eventId), ticketId);
+    }
+
+    private void deleteTicket(Event event, long ticketId) {
+        validateTicketMutable(event);
 
         Ticket ticket = ticketRepository.findNotDeletedByIdAndEventId(ticketId, event.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.TICKET_NOT_FOUND, "티켓을 찾을 수 없습니다."));
@@ -96,20 +131,33 @@ public class TicketService {
     }
 
     /**
-     * 행사 티켓 목록 조회 (관리자) - 삭제된 티켓 포함. ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 행사 티켓 목록 조회 - MANAGER 전용, 본인이 담당(manager_id)하는 행사만. 삭제된 티켓 포함.
      */
     @Transactional(readOnly = true)
-    public List<Ticket> getAdminTickets(long eventId, long callerUserId, boolean isAdmin) {
-        Event event = eventRepository.findNotDeletedById(eventId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        validateEventAccess(event, callerUserId, isAdmin, "티켓 목록을 조회");
+    public List<Ticket> getManagerTickets(long eventId, long callerUserId) {
+        Event event = loadEvent(eventId);
+        ownershipValidator.requireOwner(event, callerUserId, "티켓 목록을 조회");
         return ticketRepository.findAllByEventIdOrderByCreatedAtAsc(event.getId());
     }
 
-    /** ADMIN은 전체 허용, 아니면 본인이 담당(manager_id)하는 행사인지 확인 */
-    private void validateEventAccess(Event event, long callerUserId, boolean isAdmin, String action) {
-        if (!isAdmin && !Objects.equals(event.getManagerId(), callerUserId)) {
-            throw new BusinessException(ErrorCode.EVENT_ACCESS_DENIED, "본인이 담당하는 행사만 " + action + "할 수 있습니다.");
+    /**
+     * 행사 티켓 목록 조회 - ADMIN 전용, 전체. 삭제된 티켓 포함.
+     */
+    @Transactional(readOnly = true)
+    public List<Ticket> getAdminTickets(long eventId) {
+        Event event = loadEvent(eventId);
+        return ticketRepository.findAllByEventIdOrderByCreatedAtAsc(event.getId());
+    }
+
+    private Event loadEvent(long eventId) {
+        return eventRepository.findNotDeletedById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
+    }
+
+    /** 취소되었거나 종료된 행사의 티켓은 CRUD 불가 - MANAGER/ADMIN 공통 규칙 */
+    private void validateTicketMutable(Event event) {
+        if (event.isCancelled() || event.isEnded(clock)) {
+            throw new BusinessException(ErrorCode.TICKET_NOT_MUTABLE, "취소되었거나 종료된 행사의 티켓은 관리할 수 없습니다.");
         }
     }
 
