@@ -20,7 +20,10 @@ class JpaRefundRepository implements RefundRepository {
 
     @Override
     public Refund save(long paymentId, BigDecimal amount, String reason, OffsetDateTime completedAt) {
-        RefundEntity saved = jpaRepository.save(RefundEntity.completed(paymentId, amount, reason, completedAt));
+        jpaRepository.save(RefundEntity.completed(paymentId, amount, reason, completedAt));
+
+        RefundEntity saved = jpaRepository.findFirstByPaymentIdAndStatusIn(paymentId, ACTIVE_STATUSES)
+                .orElseThrow(() -> new IllegalStateException("환불 저장 직후 조회에 실패했습니다. paymentId=" + paymentId));
 
         return toDomain(saved);
     }

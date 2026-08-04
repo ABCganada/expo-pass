@@ -21,8 +21,9 @@ class JpaPaymentLogRepository implements PaymentLogRepository {
     public PaymentLog save(String paymentKey, String action, String requestPayload, String responsePayload,
                            String webhookTransmissionId, OffsetDateTime createdAt) {
         try {
+            long id = jpaRepository.nextId();
             PaymentLogEntity saved = jpaRepository.save(
-                    PaymentLogEntity.create(paymentKey, action, requestPayload, responsePayload,
+                    PaymentLogEntity.create(id, paymentKey, action, requestPayload, responsePayload,
                             webhookTransmissionId, createdAt));
 
             return toDomain(saved);
