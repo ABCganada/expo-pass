@@ -1,5 +1,5 @@
-import { AdminEventList } from "@/features/event/components/AdminEventList/AdminEventList";
+import { EventList } from "@/features/event/components/EventList/EventList";
 
 export default function ManagerEventsPage() {
-  return <AdminEventList basePath="/manager/events" />;
+  return <EventList mode="manager" />;
 }

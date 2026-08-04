@@ -1,7 +1,7 @@
 "use client";
 
 import { BasicInfoForm, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
-import formStyles from "../AdminEventDetail/AdminEventDetail.module.css";
+import formStyles from "../EventDetail/EventDetail.module.css";
 import styles from "./EventCreateStepper.module.css";
 
 export type Step1Values = BasicInfoFormValues;
@@ -14,6 +14,7 @@ interface Step1BasicInfoProps {
   submitError: string | null;
 }
 
+/** 담당자는 항상 작성자 본인으로 self-assign되므로 읽기 전용으로만 표시한다. */
 export function Step1BasicInfo({ values, onChange, onNext, isSubmitting, submitError }: Step1BasicInfoProps) {
   return (
     <div className={styles.pageCenter}>

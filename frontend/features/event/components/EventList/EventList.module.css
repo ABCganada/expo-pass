@@ -1,8 +1,8 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 32px 32px 40px;
+  padding: 8px 0 32px;
+  width: 100%;
 }
 
 .topRow {
@@ -11,11 +11,13 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
+  margin-bottom: 16px;
 }
 
 .countRow {
   display: flex;
   justify-content: flex-end;
+  margin-bottom: 6px;
 }
 
 .countText {

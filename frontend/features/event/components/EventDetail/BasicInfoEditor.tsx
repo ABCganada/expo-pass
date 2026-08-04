@@ -1,24 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { useUpdateAdminEventMutation } from "../../api/adminEventDetailApi";
-import { useChangeEventManagerMutation } from "../../api/eventCreateApi";
+import { useUpdateManagerEventMutation } from "../../api/managerEventDetailApi";
 import { BasicInfoForm, type BasicInfoFormValues } from "../BasicInfoForm/BasicInfoForm";
-import type { AdminEventDetail } from "../../types/adminEventDetail";
+import { ManagerFieldControl } from "./ManagerFieldControl";
+import type { EventManagementDetail } from "../../types/eventManagementDetail";
+import type { EventRole } from "../../types/eventRole";
 import { queryErrorMessage } from "@/features/store/api/queryError";
-import styles from "./AdminEventDetail.module.css";
+import styles from "./EventDetail.module.css";
 
 interface BasicInfoEditorProps {
   eventId: string;
-  detail: AdminEventDetail;
+  detail: EventManagementDetail;
   initialCategoryId: string;
   isEditing: boolean;
+  mode: EventRole;
   onStartEdit: () => void;
   onCancel: () => void;
   onSaved: (message: string) => void;
 }
 
-function toFormValues(detail: AdminEventDetail, categoryId: string): BasicInfoFormValues {
+function toFormValues(detail: EventManagementDetail, categoryId: string): BasicInfoFormValues {
   return {
     title: detail.title,
     hostName: detail.hostName ?? "",
@@ -36,18 +38,19 @@ function toFormValues(detail: AdminEventDetail, categoryId: string): BasicInfoFo
   };
 }
 
-/** 저장 mutation과 폼 상태를 담당한다. 필드 렌더링은 BasicInfoForm에 위임한다. */
+/** updateManagerEvent만 담당. 담당자 재배정(changeManager)은 ManagerFieldControl */
 export function BasicInfoEditor({
   eventId,
   detail,
   initialCategoryId,
   isEditing,
+  mode,
   onStartEdit,
   onCancel,
   onSaved,
 }: BasicInfoEditorProps) {
-  const [updateEvent, { isLoading: isUpdating }] = useUpdateAdminEventMutation();
-  const [changeManager, { isLoading: isChangingManager }] = useChangeEventManagerMutation();
+  const canEdit = mode === "manager";
+  const [updateEvent, { isLoading: isUpdating }] = useUpdateManagerEventMutation();
   const [values, setValues] = useState<BasicInfoFormValues>(() => toFormValues(detail, initialCategoryId));
   const [error, setError] = useState<string | null>(null);
 
@@ -88,16 +91,11 @@ export function BasicInfoEditor({
           endDate: values.endDate || null,
         },
       }).unwrap();
-      if (values.manager && values.manager.id !== detail.managerId) {
-        await changeManager({ eventId, managerId: values.manager.id }).unwrap();
-      }
       onSaved("변경사항이 저장되었습니다.");
     } catch (reason) {
       setError(queryErrorMessage(reason, "저장에 실패했습니다."));
     }
   };
-
-  const isSubmitting = isUpdating || isChangingManager;
 
   return (
     <BasicInfoForm
@@ -105,26 +103,29 @@ export function BasicInfoEditor({
       onChange={handleChange}
       onValidSubmit={() => void handleSubmit()}
       readOnly={!isEditing}
+      managerField={
+        canEdit ? undefined : <ManagerFieldControl eventId={eventId} detail={detail} onSaved={onSaved} />
+      }
       footer={
         isEditing ? (
           <>
             {error && <p className={styles.error}>{error}</p>}
             <div className={styles.formActions}>
-              <button type="button" className={styles.cancelButton} onClick={handleCancel} disabled={isSubmitting}>
+              <button type="button" className={styles.cancelButton} onClick={handleCancel} disabled={isUpdating}>
                 취소
               </button>
-              <button type="submit" className={styles.saveButton} disabled={isSubmitting}>
-                {isSubmitting ? "저장 중..." : "저장"}
+              <button type="submit" className={styles.saveButton} disabled={isUpdating}>
+                {isUpdating ? "저장 중..." : "저장"}
               </button>
             </div>
           </>
-        ) : (
+        ) : canEdit ? (
           <div className={styles.viewHeader}>
             <button type="button" className={styles.editButton} onClick={onStartEdit}>
               수정
             </button>
           </div>
-        )
+        ) : null
       }
     />
   );

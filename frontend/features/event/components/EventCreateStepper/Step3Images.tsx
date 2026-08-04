@@ -1,12 +1,12 @@
 "use client";
 
 import { ImageGridManager } from "../ImageGridManager/ImageGridManager";
-import type { AdminEventImageItem } from "../../types/adminEventDetail";
+import type { EventImageItem } from "../../types/eventManagementDetail";
 import styles from "./EventCreateStepper.module.css";
 
 interface Step3ImagesProps {
   eventId: string;
-  images: AdminEventImageItem[];
+  images: EventImageItem[];
   onBack: () => void;
   onNext: () => void;
 }
@@ -15,7 +15,7 @@ export function Step3Images({ eventId, images, onBack, onNext }: Step3ImagesProp
   return (
     <div className={styles.pageCenter}>
       <div className={styles.stepBody}>
-        <ImageGridManager eventId={eventId} images={images} />
+        <ImageGridManager eventId={eventId} images={images} mode="manager" />
         <div className={styles.stepActions}>
           <button type="button" className={styles.backButton} onClick={onBack}>
             이전

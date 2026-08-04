@@ -3,15 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { useCreateDraftEventMutation, useChangeEventManagerMutation } from "@/features/event/api/eventCreateApi";
-import { useUpdateAdminEventMutation, useGetAdminEventDetailQuery } from "@/features/event/api/adminEventDetailApi";
-import { StepIndicator } from "@/features/event/components/EventCreateStepper/StepIndicator";
-import { Step1BasicInfo, type Step1Values } from "@/features/event/components/EventCreateStepper/Step1BasicInfo";
-import { Step2Content } from "@/features/event/components/EventCreateStepper/Step2Content";
-import { Step3Images } from "@/features/event/components/EventCreateStepper/Step3Images";
-import { Step4Tickets } from "@/features/event/components/EventCreateStepper/Step4Tickets";
+import { useCreateManagerEventMutation } from "@/features/event/api/managerEventApi";
+import { useGetManagerEventDetailQuery, useUpdateManagerEventMutation } from "@/features/event/api/managerEventDetailApi";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import { queryErrorMessage } from "@/features/store/api/queryError";
-import styles from "./page.module.css";
+import { StepIndicator } from "./StepIndicator";
+import { Step1BasicInfo, type Step1Values } from "./Step1BasicInfo";
+import { Step2Content } from "./Step2Content";
+import { Step3Images } from "./Step3Images";
+import { Step4Tickets } from "./Step4Tickets";
+import styles from "./EventCreateWizard.module.css";
 
 const INITIAL_VALUES: Step1Values = {
   title: "",
@@ -29,18 +30,26 @@ const INITIAL_VALUES: Step1Values = {
   legalDongCode: null,
 };
 
-export default function NewEventPage() {
+/** 행사 등록 4단계 위저드. 항상 manager 본인 소유 행사로 self-assign 생성한다. */
+export function EventCreateWizard() {
   const router = useRouter();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [maxReachedStep, setMaxReachedStep] = useState(1);
   const [eventId, setEventId] = useState<string | null>(null);
   const [values, setValues] = useState<Step1Values>(INITIAL_VALUES);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [createDraftEvent, { isLoading: isCreating }] = useCreateDraftEventMutation();
-  const [updateEvent, { isLoading: isUpdating }] = useUpdateAdminEventMutation();
-  const [changeManager, { isLoading: isChangingManager }] = useChangeEventManagerMutation();
-  const { data: detail } = useGetAdminEventDetailQuery(eventId ?? "", { skip: !eventId });
+  // 담당자는 항상 작성자 본인으로 self-assign. 로그인 정보가 늦게 로드되는 경우를 대비해 값이 채워지면 동기화한다.
+  const [syncedUserId, setSyncedUserId] = useState<string | null>(null);
+  if (user && user.id !== syncedUserId) {
+    setSyncedUserId(user.id);
+    setValues((prev) => ({ ...prev, manager: { id: user.id, name: user.name, email: user.email } }));
+  }
+
+  const [createDraftEvent, { isLoading: isCreating }] = useCreateManagerEventMutation();
+  const [updateEvent, { isLoading: isUpdating }] = useUpdateManagerEventMutation();
+  const { data: detail } = useGetManagerEventDetailQuery(eventId ?? "", { skip: !eventId });
 
   const updateValues = (patch: Partial<Step1Values>) => setValues((prev) => ({ ...prev, ...patch }));
 
@@ -77,17 +86,10 @@ export default function NewEventPage() {
       if (eventId) {
         // 이미 생성된 행사로 되돌아온 경우 - 값 수정을 반영한다.
         await updateEvent({ eventId, payload: buildUpdatePayload() }).unwrap();
-        if (values.manager && detail && values.manager.id !== detail.managerId) {
-          await changeManager({ eventId, managerId: values.manager.id }).unwrap();
-        }
         goNextFrom(1);
         return;
       }
-      const created = await createDraftEvent({
-        title: values.title,
-        categoryId: values.categoryId,
-        managerId: values.manager!.id,
-      }).unwrap();
+      const created = await createDraftEvent({ title: values.title, categoryId: values.categoryId }).unwrap();
       await updateEvent({ eventId: created.id, payload: buildUpdatePayload() }).unwrap();
       setEventId(created.id);
       goNextFrom(1);
@@ -102,7 +104,7 @@ export default function NewEventPage() {
 
   return (
     <section className={styles.page}>
-      <button type="button" className={styles.backButton} onClick={() => router.push("/admin/events")}>
+      <button type="button" className={styles.backButton} onClick={() => router.push("/manager/events")}>
         <ArrowLeft size={16} />
         목록으로
       </button>
@@ -114,7 +116,7 @@ export default function NewEventPage() {
           values={values}
           onChange={updateValues}
           onNext={() => void handleStep1Next()}
-          isSubmitting={isCreating || isUpdating || isChangingManager}
+          isSubmitting={isCreating || isUpdating}
           submitError={submitError}
         />
       )}

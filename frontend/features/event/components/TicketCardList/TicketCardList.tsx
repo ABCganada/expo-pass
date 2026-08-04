@@ -2,21 +2,23 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import type { AdminEventTicket } from "../../types/adminEventDetail";
+import type { EventTicket } from "../../types/eventManagementDetail";
 import { ConfirmDialog } from "../ConfirmDialog/ConfirmDialog";
 import { TicketCard } from "./TicketCard";
 import { TicketCardEditForm } from "./TicketCardEditForm";
 import { useTicketMutations } from "./useTicketMutations";
 import { EMPTY_DRAFT, draftFromTicket, type TicketDraft } from "./ticketUtils";
+import type { EventRole } from "../../types/eventRole";
 import styles from "./TicketCardList.module.css";
 
 interface TicketCardListProps {
   eventId: string;
-  tickets: AdminEventTicket[];
+  tickets: EventTicket[];
+  mode: EventRole;
 }
 
-export function TicketCardList({ eventId, tickets }: TicketCardListProps) {
-  const { create, update, remove, isCreating, isUpdating, error, setError } = useTicketMutations(eventId);
+export function TicketCardList({ eventId, tickets, mode }: TicketCardListProps) {
+  const { create, update, remove, isCreating, isUpdating, error, setError } = useTicketMutations(eventId, mode);
 
   const [editingTicketId, setEditingTicketId] = useState<string | "new" | null>(null);
   const [draft, setDraft] = useState<TicketDraft>(EMPTY_DRAFT);
@@ -28,7 +30,7 @@ export function TicketCardList({ eventId, tickets }: TicketCardListProps) {
     setError(null);
   };
 
-  const startEdit = (ticket: AdminEventTicket) => {
+  const startEdit = (ticket: EventTicket) => {
     setEditingTicketId(ticket.id);
     setDraft(draftFromTicket(ticket));
     setError(null);

@@ -1,9 +1,9 @@
-import type { AdminEventStatus } from "./adminEvent";
+import type { AdminEventStatus } from "./eventList";
 
 export type EventContentType = "DESCRIPTION" | "NOTICE" | "LOCATION_GUIDE";
 export type EventImageType = "THUMBNAIL" | "GENERAL";
 
-export interface AdminEventTicket {
+export interface EventTicket {
   id: string;
   eventId: string;
   name: string;
@@ -17,14 +17,14 @@ export interface AdminEventTicket {
   deletedAt: string | null;
 }
 
-export interface AdminEventContentItem {
+export interface EventContentItem {
   id: string;
   contentType: EventContentType;
   content: string;
   updatedAt: string;
 }
 
-export interface AdminEventImageItem {
+export interface EventImageItem {
   id: string;
   eventId: string;
   imageUrl: string;
@@ -33,7 +33,7 @@ export interface AdminEventImageItem {
   createdAt: string;
 }
 
-export interface AdminEventDetail {
+export interface EventManagementDetail {
   id: string;
   title: string;
   categoryName: string;
@@ -54,9 +54,9 @@ export interface AdminEventDetail {
   viewCount: number;
   createdAt: string;
   updatedAt: string;
-  tickets: AdminEventTicket[];
-  contents: AdminEventContentItem[];
-  images: AdminEventImageItem[];
+  tickets: EventTicket[];
+  contents: EventContentItem[];
+  images: EventImageItem[];
 }
 
 export interface UpdateEventPayload {

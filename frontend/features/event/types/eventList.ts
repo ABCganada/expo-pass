@@ -1,6 +1,6 @@
 export type AdminEventStatus = "DRAFT" | "PUBLISHED" | "CANCELLED";
 
-export interface AdminEventListItem {
+export interface EventListItem {
   id: string;
   title: string;
   categoryName: string;

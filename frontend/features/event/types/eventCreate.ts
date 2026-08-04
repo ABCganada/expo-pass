@@ -1,12 +1,11 @@
-import type { AdminEventStatus } from "./adminEvent";
+import type { AdminEventStatus } from "./eventList";
 
 export interface CreateEventPayload {
   title: string;
   categoryId: string;
-  managerId: string;
 }
 
-export interface CreatedEvent {
+export interface EventSummary {
   id: string;
   title: string;
   categoryName: string;

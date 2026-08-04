@@ -1,4 +1,4 @@
-import type { AdminEventTicket, CreateTicketPayload, UpdateTicketPayload } from "../../types/adminEventDetail";
+import type { EventTicket, CreateTicketPayload, UpdateTicketPayload } from "../../types/eventManagementDetail";
 
 export interface TicketDraft {
   name: string;
@@ -37,7 +37,7 @@ export function formatSalePeriod(startAt: string | null, endAt: string | null): 
 
 export type TicketStatusTone = "upcoming" | "ongoing" | "ended" | "soldout";
 
-export function ticketStatus(ticket: AdminEventTicket): { label: string; tone: TicketStatusTone } {
+export function ticketStatus(ticket: EventTicket): { label: string; tone: TicketStatusTone } {
   const now = new Date();
   if (ticket.quantityRemaining <= 0) return { label: "매진", tone: "soldout" };
   if (ticket.saleStartAt && now < new Date(ticket.saleStartAt)) return { label: "판매예정", tone: "upcoming" };
@@ -45,7 +45,7 @@ export function ticketStatus(ticket: AdminEventTicket): { label: string; tone: T
   return { label: "판매중", tone: "ongoing" };
 }
 
-export function draftFromTicket(ticket: AdminEventTicket): TicketDraft {
+export function draftFromTicket(ticket: EventTicket): TicketDraft {
   return {
     name: ticket.name,
     price: String(ticket.price),

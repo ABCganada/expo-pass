@@ -6,7 +6,6 @@ import { ManagerPicker, type ManagerOption } from "../ManagerPicker/ManagerPicke
 import { VenueSearchInput, type VenueSelection } from "../VenueSearchInput/VenueSearchInput";
 import { DatePicker } from "../DatePicker/DatePicker";
 import { StatusFilterDropdown } from "../StatusFilterDropdown/StatusFilterDropdown";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 import styles from "./BasicInfoForm.module.css";
 
 export interface BasicInfoFormValues {
@@ -31,6 +30,10 @@ interface BasicInfoFormProps {
   onValidSubmit: () => void;
   readOnly?: boolean;
   footer: React.ReactNode;
+  /** 제공되면 담당자 필드 내용을 이 노드로 대체 렌더링 */
+  managerField?: React.ReactNode;
+  /** managerField가 없을 때 담당자 필드를 이 폼 안에서 직접 편집 가능하게 할지 여부 */
+  canEditManager?: boolean;
 }
 
 function displayText(value: string): string {
@@ -50,11 +53,17 @@ function displayManager(manager: ManagerOption | null): string {
  * 행사명/주최자·카테고리/담당자/기간/장소/주소 필드를 조회·수정 모드 공용 레이아웃으로 렌더링
  * readOnly일 때는 동일한 자리에 값만 표시하고, 아닐 때는 실제 입력 컴포넌트로 전환
  */
-export function BasicInfoForm({ values, onChange, onValidSubmit, readOnly = false, footer }: BasicInfoFormProps) {
+export function BasicInfoForm({
+  values,
+  onChange,
+  onValidSubmit,
+  readOnly = false,
+  footer,
+  managerField,
+  canEditManager = false,
+}: BasicInfoFormProps) {
   const { data: categories = [] } = useGetEventCategoriesQuery();
-  const { user } = useAuth();
-  const isAdmin = user?.roles.includes("ADMIN") ?? false;
-  const managerReadOnly = readOnly || !isAdmin;
+  const managerReadOnly = readOnly || !canEditManager;
   const [invalid, setInvalid] = useState<{ title?: boolean; categoryId?: boolean; manager?: boolean }>({});
 
   const categoryOptions = categories.map((category) => ({ value: category.id, label: category.name }));
@@ -88,7 +97,7 @@ export function BasicInfoForm({ values, onChange, onValidSubmit, readOnly = fals
     const nextInvalid = {
       title: values.title.trim() === "",
       categoryId: values.categoryId === "",
-      manager: values.manager === null,
+      manager: !managerField && values.manager === null,
     };
     setInvalid(nextInvalid);
     if (nextInvalid.title || nextInvalid.categoryId || nextInvalid.manager) return;
@@ -147,19 +156,20 @@ export function BasicInfoForm({ values, onChange, onValidSubmit, readOnly = fals
         <span>
           담당자 <em className={styles.required}>*</em>
         </span>
-        {managerReadOnly ? (
-          <div className={styles.readonlyBox}>{displayManager(values.manager)}</div>
-        ) : (
-          <>
-            <ManagerPicker
-              selectedManager={values.manager}
-              onSelect={(manager) => onChange({ manager })}
-              onClear={() => onChange({ manager: null })}
-              invalid={invalid.manager}
-            />
-            {invalid.manager && <p className={styles.fieldError}>필수 정보입니다.</p>}
-          </>
-        )}
+        {managerField ??
+          (managerReadOnly ? (
+            <div className={styles.readonlyBox}>{displayManager(values.manager)}</div>
+          ) : (
+            <>
+              <ManagerPicker
+                selectedManager={values.manager}
+                onSelect={(manager) => onChange({ manager })}
+                onClear={() => onChange({ manager: null })}
+                invalid={invalid.manager}
+              />
+              {invalid.manager && <p className={styles.fieldError}>필수 정보입니다.</p>}
+            </>
+          ))}
       </label>
 
       <div className={styles.fieldRow}>
