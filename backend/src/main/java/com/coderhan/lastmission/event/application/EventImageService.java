@@ -149,7 +149,7 @@ public class EventImageService {
         }
 
         if (files.size() > MAX_BATCH_SIZE) {
-            throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "이미지는 최대 10개까지 등록할 수 있습니다.");
+            throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "이미지는 최대 5개까지 등록할 수 있습니다.");
         }
 
         if (imageTypes == null || imageTypes.size() != files.size()) { // 파일마다 대응되는 타입 정보 반드시 하나씩
