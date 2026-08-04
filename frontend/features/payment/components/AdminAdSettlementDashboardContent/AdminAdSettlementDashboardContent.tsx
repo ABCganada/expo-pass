@@ -1,6 +1,6 @@
 "use client";
 
-import { Banknote, Hash, Percent, Wallet } from "lucide-react";
+import { Banknote, Hash, Wallet } from "lucide-react";
 import { useGetAdSettlementDashboardQuery } from "../../api/adminApi";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./AdminAdSettlementDashboardContent.module.css";
@@ -30,11 +30,6 @@ export function AdminAdSettlementDashboardContent() {
       label: "총 광고 매출",
       value: formatAmount(data.totalAmount),
       icon: Banknote,
-    },
-    {
-      label: "총 수수료",
-      value: formatAmount(data.totalCommissionAmount),
-      icon: Percent,
     },
     {
       label: "순매출",

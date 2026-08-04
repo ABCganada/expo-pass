@@ -1,7 +1,6 @@
 package com.coderhan.lastmission.payment.application;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -17,15 +16,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AdSettlementService {
 
-    private static final BigDecimal COMMISSION_RATE_PERCENT = new BigDecimal("5.00");
-    private static final BigDecimal PERCENT_DIVISOR = new BigDecimal("100");
-
     private final AdSettlementRepository adSettlementRepository;
     private final Clock clock;
 
     /**
      * 광고 만료 시 정산 생성.
      * 이미 생성된 정산이 있으면 아무 것도 하지 않는다(멱등) - 광고 만료 이벤트가 중복 발행/재처리돼도 정산이 두 번 생기지 않게 하기 위함.
+     *
+     * 광고는 박람회 관리자가 플랫폼에 직접 결제하는 구조라 수수료 개념이 없다 — 결제 금액 전액이
+     * 그대로 순매출로 잡힌다(행사 티켓 정산과 달리 대행 수수료를 뗄 대상이 없음).
      */
     public void create(UUID adId, long totalAmount) {
         if (adSettlementRepository.existsByAdId(adId)) {
@@ -33,13 +32,8 @@ public class AdSettlementService {
         }
 
         BigDecimal totalAmountDecimal = BigDecimal.valueOf(totalAmount);
-        BigDecimal commissionAmount = totalAmountDecimal
-                .multiply(COMMISSION_RATE_PERCENT)
-                .divide(PERCENT_DIVISOR, 0, RoundingMode.HALF_UP);
-        BigDecimal netAmount = totalAmountDecimal.subtract(commissionAmount);
 
-        adSettlementRepository.save(adId, totalAmountDecimal, COMMISSION_RATE_PERCENT,
-            commissionAmount, netAmount, OffsetDateTime.now(clock));
+        adSettlementRepository.save(adId, totalAmountDecimal, totalAmountDecimal, OffsetDateTime.now(clock));
     }
 
     /** 광고 정산 목록 조회 (ADMIN 전용 — 소유자별 필터링 없음). */

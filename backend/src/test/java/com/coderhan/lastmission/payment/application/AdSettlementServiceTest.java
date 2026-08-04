@@ -29,17 +29,16 @@ class AdSettlementServiceTest {
 
     @InjectMocks AdSettlementService service;
 
-    /** 정산 로직의 핵심: 광고 만료 이벤트가 넘겨준 총금액에 수수료 5%를 적용해 저장하는지. */
+    /** 정산 로직의 핵심: 광고는 수수료 없이 결제 총액이 그대로 순매출로 저장되는지. */
     @Test
-    @DisplayName("광고 만료 시 전달받은 총금액에 수수료 5%를 적용해 정산을 저장한다")
-    void calculatesCommissionAndSavesSettlement() {
+    @DisplayName("광고 만료 시 수수료 없이 총금액 전액을 순매출로 정산을 저장한다")
+    void savesSettlementWithFullAmountAsNetAmountWithoutCommission() {
         when(adSettlementRepository.existsByAdId(AD_ID)).thenReturn(false);
 
         service.create(AD_ID, 24000L);
 
-        // 총액 24000, 수수료 = 24000 * 5% = 1200, 정산액 = 22800
-        verify(adSettlementRepository).save(AD_ID, BigDecimal.valueOf(24000), new BigDecimal("5.00"),
-                BigDecimal.valueOf(1200), BigDecimal.valueOf(22800), OffsetDateTime.now(clock));
+        verify(adSettlementRepository).save(AD_ID, BigDecimal.valueOf(24000), BigDecimal.valueOf(24000),
+                OffsetDateTime.now(clock));
     }
 
     @Test
@@ -49,6 +48,6 @@ class AdSettlementServiceTest {
 
         service.create(AD_ID, 24000L);
 
-        verify(adSettlementRepository, never()).save(any(), any(), any(), any(), any(), any());
+        verify(adSettlementRepository, never()).save(any(), any(), any(), any());
     }
 }

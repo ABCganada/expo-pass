@@ -7,7 +7,6 @@ export interface DashboardSummary {
 
 export interface AdSettlementDashboardSummary {
   totalAmount: number;
-  totalCommissionAmount: number;
   totalNetAmount: number;
   settlementCount: number;
 }
