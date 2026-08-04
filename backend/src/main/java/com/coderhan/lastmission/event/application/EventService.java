@@ -2,6 +2,7 @@ package com.coderhan.lastmission.event.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Objects;
 
 import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
@@ -41,6 +42,9 @@ public class EventService {
         }
         EventCategory category = eventCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_CATEGORY_NOT_FOUND, "카테고리를 찾을 수 없습니다."));
+        if (!category.isActive()) {
+            throw new BusinessException(ErrorCode.EVENT_CATEGORY_INACTIVE, "비활성화된 카테고리로는 행사를 생성할 수 없습니다.");
+        }
         return eventRepository.save(new Event(title, category, managerId));
     }
 
@@ -84,6 +88,10 @@ public class EventService {
         }
         EventCategory category = eventCategoryRepository.findById(command.categoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_CATEGORY_NOT_FOUND, "카테고리를 찾을 수 없습니다."));
+        boolean categoryChanged = !Objects.equals(category.getId(), event.getCategory().getId());
+        if (categoryChanged && !category.isActive()) {
+            throw new BusinessException(ErrorCode.EVENT_CATEGORY_INACTIVE, "비활성화된 카테고리로는 변경할 수 없습니다.");
+        }
         event.updateDetails(command.title(), category, command.hostName(), command.venueName(),
                 command.address(), command.detailAddress(), command.kakaoPlaceId(), command.legalDongCode(),
                 command.latitude(), command.longitude(), command.startDate(), command.endDate());
