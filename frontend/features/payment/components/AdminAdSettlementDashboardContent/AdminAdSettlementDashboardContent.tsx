@@ -27,7 +27,7 @@ export function AdminAdSettlementDashboardContent() {
 
   const cards = [
     {
-      label: "총 광고 매출",
+      label: "광고 총 매출",
       value: formatAmount(data.totalAmount),
       icon: Banknote,
     },

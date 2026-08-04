@@ -168,7 +168,7 @@ class SettlementServiceTest {
     @DisplayName("전체 매출 대시보드는 담당자 구분 없이 리포지토리의 전체 합계를 그대로 반환한다")
     void returnsRepositoryDashboardSummaryAsIs() {
         SettlementSummary summary = new SettlementSummary(
-                BigDecimal.valueOf(100000), BigDecimal.valueOf(5000), BigDecimal.valueOf(95000), 3L);
+                BigDecimal.valueOf(100000), BigDecimal.valueOf(5000), 3L);
         when(settlementRepository.getDashboardSummary()).thenReturn(summary);
 
         SettlementSummary result = service.getDashboardSummary();

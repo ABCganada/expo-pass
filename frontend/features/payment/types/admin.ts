@@ -1,7 +1,6 @@
 export interface DashboardSummary {
   totalSales: number;
   totalCommissionAmount: number;
-  totalNetAmount: number;
   settlementCount: number;
 }
 

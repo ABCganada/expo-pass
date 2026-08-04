@@ -1,6 +1,6 @@
 "use client";
 
-import { Banknote, Hash, Percent, Wallet } from "lucide-react";
+import { Banknote, Hash, Percent } from "lucide-react";
 import { useGetPaymentDashboardQuery } from "../../api/adminApi";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./AdminPaymentDashboardContent.module.css";
@@ -25,16 +25,17 @@ export function AdminPaymentDashboardContent() {
   }
 
   const cards = [
-    { label: "총 매출", value: formatAmount(data.totalSales), icon: Banknote },
     {
+      label: "박람회 총 매출",
+      value: formatAmount(data.totalSales),
+      icon: Banknote,
+    },
+    {
+      // 플랫폼이 실제로 버는 돈은 수수료다 — 나머지는 행사 주최자에게 지급되는
+      // 금액이라 플랫폼 매출이 아니므로 대시보드에는 올리지 않는다.
       label: "총 수수료",
       value: formatAmount(data.totalCommissionAmount),
       icon: Percent,
-    },
-    {
-      label: "순매출",
-      value: formatAmount(data.totalNetAmount),
-      icon: Wallet,
       emphasis: true,
     },
     {
