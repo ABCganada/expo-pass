@@ -98,19 +98,24 @@
 }
 
 .cancelStatusButton {
-  padding: 10px 20px;
-  border: 1px solid var(--color-danger);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-button);
   background: var(--color-card-background);
-  color: var(--color-danger);
+  color: var(--color-text-secondary);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
 
 .cancelStatusButton:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 6%, transparent);
+  color: var(--color-danger);
 }
 
 .cancelStatusButton:disabled {

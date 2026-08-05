@@ -67,7 +67,7 @@ export function TicketCardList({ eventId, tickets, mode }: TicketCardListProps) 
   return (
     <div className={styles.wrapper}>
       <button type="button" className={styles.addButton} onClick={startCreate} disabled={editingTicketId !== null}>
-        <Plus size={16} />+ 티켓 추가
+        <Plus size={16} /> 티켓 추가
       </button>
 
       {error && <p className={styles.error}>{error}</p>}
