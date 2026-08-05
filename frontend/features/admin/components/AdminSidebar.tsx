@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, Bookmark, CalendarDays, ClipboardList, HelpCircle, Home, LineChart, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, Users } from "lucide-react";
+import { BarChart3, Bookmark, CalendarDays, ChartNoAxesCombined, ClipboardList, FileText, HelpCircle, Home, LineChart, LogOut, Megaphone, PanelLeftClose, PanelLeftOpen, QrCode, ScanLine, Users, Waypoints } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { USER_MENU_ITEMS } from "@/features/shell/constants/navigation";
 import { useAppSelector } from "@/features/store/hooks";
 import styles from "./AdminSidebar.module.css";
 
 interface AdminSidebarProps {
-  mode: "user" | "manager" | "admin";
+  mode: "user" | "manager" | "admin" | "developer";
   isOpen: boolean;
   onClose: () => void;
   isCollapsed: boolean;
@@ -57,6 +57,11 @@ export function AdminSidebar({
         { href: "/manager/settlements", label: "정산 현황", icon: LineChart },
         { type: "section" as const, label: "마케팅" },
         { href: "/manager/banner-ads", label: "광고 관리", icon: Megaphone },
+      ]
+    : mode === "developer" ? [
+        { href: "/developer/metrics", label: "메트릭", icon: ChartNoAxesCombined },
+        { href: "/developer/traces", label: "트레이스", icon: Waypoints },
+        { href: "/developer/logs", label: "로그", icon: FileText },
       ]
     : [
         { href: "/admin/events", label: "박람회 관리", icon: CalendarDays },

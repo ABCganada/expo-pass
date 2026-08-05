@@ -29,8 +29,10 @@ class JpaAdSettlementRepository implements AdSettlementRepository {
             BigDecimal netAmount,
             OffsetDateTime settledAt
     ) {
-        AdSettlementEntity saved = jpaRepository.save(
-                AdSettlementEntity.completed(adId, totalAmount, netAmount, settledAt));
+        jpaRepository.save(AdSettlementEntity.completed(adId, totalAmount, netAmount, settledAt));
+
+        AdSettlementEntity saved = jpaRepository.findByAdId(adId)
+                .orElseThrow(() -> new IllegalStateException("광고 정산 저장 직후 조회에 실패했습니다. adId=" + adId));
 
         return toDomain(saved);
     }

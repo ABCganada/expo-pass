@@ -15,6 +15,15 @@
   margin: 0;
 }
 
+/*
+ * next/font가 생성하는 클래스에서 실제 Geist 값을 덮어쓴다.
+ * 정적 분석과 폰트 로딩 전에는 아래 시스템 폰트를 안전한 폴백으로 사용한다.
+ */
+:where(:root) {
+  --font-geist-sans: Arial, Helvetica, sans-serif;
+  --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 html {
   height: 100%;
   -webkit-text-size-adjust: 100%;
