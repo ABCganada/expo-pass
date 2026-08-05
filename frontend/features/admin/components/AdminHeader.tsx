@@ -16,6 +16,7 @@ export function AdminHeader({ onMenuToggle, user, onLogout, activeMode }: AdminH
   const modeTitle =
     activeMode === "user" ? "박람회 예약"
     : activeMode === "manager" ? "박람회 운영"
+    : activeMode === "developer" ? "개발자 모니터링"
     : "운영 대시보드";
 
   return (
