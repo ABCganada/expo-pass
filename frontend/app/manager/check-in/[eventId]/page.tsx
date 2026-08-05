@@ -8,6 +8,6 @@ export default function ManagerCheckInDetailPage({
 }: {
   params: Promise<{ eventId: string }>;
 }) {
-  use(params);
-  return <CheckinContent />;
+  const { eventId } = use(params);
+  return <CheckinContent eventId={eventId} />;
 }

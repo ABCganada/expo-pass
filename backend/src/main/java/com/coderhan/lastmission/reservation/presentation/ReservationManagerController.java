@@ -41,7 +41,8 @@ class ReservationManagerController {
     @PostMapping("/checkin")
     ApiResponse<CheckinResponse> checkin(@RequestBody CheckinRequest request,
                                          @AuthenticationPrincipal LastMissionPrincipal principal) {
-        ReservationOrderItem item = reservationService.checkin(principal.userId(), request.qrCodeHash());
+        ReservationOrderItem item = reservationService.checkin(
+                principal.userId(), request.qrCodeHash(), parseEventId(request.eventId()));
         return ApiResponse.success(CheckinResponse.from(item));
     }
 
@@ -92,7 +93,7 @@ class ReservationManagerController {
         }
     }
 
-    record CheckinRequest(String qrCodeHash) {}
+    record CheckinRequest(String qrCodeHash, String eventId) {}
 
     record CheckinResponse(String orderItemId, String orderId, String ticketId, OffsetDateTime checkedInAt) {
         static CheckinResponse from(ReservationOrderItem item) {

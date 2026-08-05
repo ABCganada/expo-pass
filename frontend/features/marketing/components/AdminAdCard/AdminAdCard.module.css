@@ -177,18 +177,20 @@
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  border: 1px solid var(--color-danger);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-button);
-  background: transparent;
-  color: var(--color-danger);
+  background: var(--color-card-background);
+  color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
 
 .btnReject:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 6%, transparent);
+  color: var(--color-danger);
 }
 
 .btnReject:disabled {

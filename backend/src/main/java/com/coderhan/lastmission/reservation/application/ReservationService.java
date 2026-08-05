@@ -145,20 +145,25 @@ public class ReservationService implements ReservationQueryPort {
     }
 
     /**
-     * 관리자 QR 체크인. 본인이 담당하는 행사가 아니면 거부 — 그래서 원래는 조건부 UPDATE 하나로
-     * 끝나던 걸, eventId를 먼저 알아야 권한을 검증할 수 있어 주문 조회가 선행된다.
+     * 관리자 QR 체크인. 지금 스캐너를 열어놓은 행사(eventId)의 QR인지 먼저 확인하고, 그 다음
+     * 본인이 담당하는 행사인지 검증한다 — 매니저가 A/B 두 행사를 담당한다고 해서 A 체크인
+     * 화면에서 B 행사 QR까지 통과시키면 안 되므로, "행사를 담당하는지"와 "지금 그 행사를
+     * 스캔 중인지"는 서로 다른 검증이다.
      * 존재하지 않는 QR·이미 체크인됨·주문이 CONFIRMED가 아님(결제대기/취소/환불)이면 예외 —
      * 특히 환불된 결제의 QR을 캡처해뒀다가 현장에서 스캔하는 경우를 막기 위해,
      * DB 쪽 조건부 UPDATE 자체가 주문 상태까지 함께 확인한다(체크인 성공은 CONFIRMED일 때만).
      */
     @Transactional
-    public ReservationOrderItem checkin(long callerUserId, String qrCodeHash) {
+    public ReservationOrderItem checkin(long callerUserId, String qrCodeHash, long eventId) {
         ReservationOrderItem existing = repository.findItemByQrCodeHash(qrCodeHash)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_QR_NOT_FOUND,
                         "존재하지 않는 QR입니다."));
         ReservationOrder order = repository.findOrder(existing.orderId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND, "주문을 찾을 수 없습니다."));
-        validateManagerAccess(order.eventId(), callerUserId);
+        if (order.eventId() != eventId) {
+            throw new BusinessException(ErrorCode.RESERVATION_ACCESS_DENIED, "다른 행사의 QR입니다.");
+        }
+        validateManagerAccess(eventId, callerUserId);
 
         OffsetDateTime now = OffsetDateTime.now(clock);
         boolean checkedIn = repository.checkin(qrCodeHash, callerUserId, now);
