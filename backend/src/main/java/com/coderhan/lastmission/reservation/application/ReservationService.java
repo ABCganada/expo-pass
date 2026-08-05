@@ -41,7 +41,6 @@ public class ReservationService implements ReservationQueryPort {
      */
     @Transactional
     public OrderDetail createOrder(long userId, long eventId, List<OrderItemRequest> items) {
-        waitingRoomService.consumeTicket(userId, eventId);
         ReservationOrder.validateEventId(eventId);
         if (items == null || items.isEmpty()) {
             throw new BusinessException(ErrorCode.RESERVATION_INVALID_REQUEST, "주문할 티켓 항목이 없습니다.");
@@ -101,6 +100,11 @@ public class ReservationService implements ReservationQueryPort {
                             .mapToObj(ignored -> repository.addItem(orderId, item.ticketId(), realPrice, UUID.randomUUID().toString()));
                 })
                 .toList();
+
+        // 대기열 입장권(Redis)은 SQL 트랜잭션 롤백의 영향을 안 받는 별도 저장소라, 검증 실패로
+        // 주문이 롤백돼도 여기서 소비해버리면 입장권만 사라지고 재시도가 막힌다 — 그래서 주문이
+        // 확실히 성공한 마지막 시점(리턴 직전)에만 소비한다.
+        waitingRoomService.consumeTicket(userId, eventId);
         return new OrderDetail(order, savedItems);
     }
 

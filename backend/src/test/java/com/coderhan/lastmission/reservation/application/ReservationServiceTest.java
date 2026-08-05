@@ -213,6 +213,42 @@ class ReservationServiceTest {
         verify(repository).createOrder(ORDER_ID, USER_ID, EVENT_ID, BigDecimal.ZERO, OrderStatus.CONFIRMED, NOW);
     }
 
+    @Test
+    void createOrderConsumesWaitingRoomTicketOnlyAfterOrderSucceeds() {
+        List<ReservationService.OrderItemRequest> items =
+                List.of(new ReservationService.OrderItemRequest(TICKET_ID, BigDecimal.valueOf(1), 1));
+        when(repository.nextOrderId(NOW.toLocalDate())).thenReturn(ORDER_ID);
+        when(eventQueryPort.getTicketInfo(TICKET_ID)).thenReturn(Optional.of(ticketInfo(10000, 5)));
+        when(repository.countPurchasedQuantity(USER_ID, TICKET_ID)).thenReturn(0L);
+        when(eventQueryPort.decreaseTicketStock(TICKET_ID, 1)).thenReturn(true);
+        ReservationOrder order = new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID,
+                OrderStatus.PENDING, BigDecimal.valueOf(10000), NOW, NOW);
+        when(repository.createOrder(ORDER_ID, USER_ID, EVENT_ID, BigDecimal.valueOf(10000), OrderStatus.PENDING, NOW))
+                .thenReturn(order);
+        when(repository.addItem(eq(ORDER_ID), eq(TICKET_ID), eq(BigDecimal.valueOf(10000)), anyString()))
+                .thenReturn(new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-1", null));
+
+        service.createOrder(USER_ID, EVENT_ID, items);
+
+        verify(waitingRoomService).consumeTicket(USER_ID, EVENT_ID);
+    }
+
+    // 대기열 입장권은 Redis 저장소라 SQL 롤백의 영향을 안 받는다 — 검증 실패로 주문이 롤백되는
+    // 상황에서 입장권까지 같이 소비해버리면, 재시도할 때 "입장 권한이 없습니다"로 막혀버린다.
+    @Test
+    void createOrderDoesNotConsumeWaitingRoomTicketWhenExceedingMaxPurchasePerUser() {
+        List<ReservationService.OrderItemRequest> items =
+                List.of(new ReservationService.OrderItemRequest(TICKET_ID, BigDecimal.valueOf(1), 3));
+        when(repository.nextOrderId(NOW.toLocalDate())).thenReturn(ORDER_ID);
+        when(eventQueryPort.getTicketInfo(TICKET_ID)).thenReturn(Optional.of(ticketInfo(10000, 4)));
+        when(repository.countPurchasedQuantity(USER_ID, TICKET_ID)).thenReturn(2L);
+
+        assertThatThrownBy(() -> service.createOrder(USER_ID, EVENT_ID, items))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_INVALID_REQUEST));
+        verify(waitingRoomService, never()).consumeTicket(anyLong(), anyLong());
+    }
+
     // ---------- getOrder ----------
 
     @Test
