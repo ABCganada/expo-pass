@@ -30,4 +30,6 @@ Thumbs.db
 
 # Runtime output
 logs/
+!frontend/app/developer/logs/
+!frontend/app/developer/logs/**
 *.log

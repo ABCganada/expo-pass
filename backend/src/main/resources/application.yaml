@@ -96,6 +96,9 @@ management:
         url: ${OTEL_METRICS_ENDPOINT}
 
 lastmission:
+  monitoring:
+    log-service-name-alias: ${MONITORING_LOG_SERVICE_NAME_ALIAS:lastmission-backend}
+
   # 브라우저 CORS 허용 오리진. 로컬은 기본값(localhost 포함), 프로덕션은 env로 앱 오리진만 남긴다.
   cors:
     allowed-origins: ${LASTMISSION_CORS_ALLOWED_ORIGINS:https://lastmission.example.com,https://localhost.example.com:3000,http://localhost:3000}
