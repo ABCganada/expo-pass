@@ -13,7 +13,11 @@ import { useCheckinMutation } from "../../api/adminApi";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./CheckinContent.module.css";
 
-export function CheckinContent() {
+interface CheckinContentProps {
+  eventId: string;
+}
+
+export function CheckinContent({ eventId }: CheckinContentProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -65,7 +69,7 @@ export function CheckinContent() {
 
     setCheckinResult(null);
     try {
-      const result = await checkin(qrCode).unwrap();
+      const result = await checkin({ qrCodeHash: qrCode, eventId }).unwrap();
       setCheckinResult({
         type: "success",
         message: `체크인 완료: ${result.orderId}`,
@@ -136,7 +140,7 @@ export function CheckinContent() {
 
     setCheckinResult(null);
     try {
-      const result = await checkin(qrCode).unwrap();
+      const result = await checkin({ qrCodeHash: qrCode, eventId }).unwrap();
       setCheckinResult({
         type: "success",
         message: `체크인 완료: ${result.orderId}`,

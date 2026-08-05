@@ -29,8 +29,8 @@ const adminApi = baseApi.injectEndpoints({
       queryFn: (eventId, api) => queryResult(adminService.getDailyReservationCountsForAdmin(eventId, api.signal)),
       providesTags: ["Reservation"],
     }),
-    checkin: build.mutation<CheckinResponse, string>({
-      queryFn: (qrCodeHash) => queryResult(adminService.checkin(qrCodeHash)),
+    checkin: build.mutation<CheckinResponse, { qrCodeHash: string; eventId: string }>({
+      queryFn: ({ qrCodeHash, eventId }) => queryResult(adminService.checkin(qrCodeHash, eventId)),
       invalidatesTags: ["Reservation"],
     }),
   }),

@@ -44,13 +44,13 @@ export const adminService = {
       parseData<DailyReservationCount[]>(res),
     ),
 
-  checkin: async (qrCodeHash: string, signal?: AbortSignal): Promise<CheckinResponse> => {
+  checkin: async (qrCodeHash: string, eventId: string, signal?: AbortSignal): Promise<CheckinResponse> => {
     const csrf = await getCsrfToken();
     const res = await fetch(`${BASE}/reservations/checkin`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json", [csrf.headerName]: csrf.token },
-      body: JSON.stringify({ qrCodeHash }),
+      body: JSON.stringify({ qrCodeHash, eventId }),
       signal,
     });
     return parseData<CheckinResponse>(res);

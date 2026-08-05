@@ -213,6 +213,42 @@ class ReservationServiceTest {
         verify(repository).createOrder(ORDER_ID, USER_ID, EVENT_ID, BigDecimal.ZERO, OrderStatus.CONFIRMED, NOW);
     }
 
+    @Test
+    void createOrderConsumesWaitingRoomTicketOnlyAfterOrderSucceeds() {
+        List<ReservationService.OrderItemRequest> items =
+                List.of(new ReservationService.OrderItemRequest(TICKET_ID, BigDecimal.valueOf(1), 1));
+        when(repository.nextOrderId(NOW.toLocalDate())).thenReturn(ORDER_ID);
+        when(eventQueryPort.getTicketInfo(TICKET_ID)).thenReturn(Optional.of(ticketInfo(10000, 5)));
+        when(repository.countPurchasedQuantity(USER_ID, TICKET_ID)).thenReturn(0L);
+        when(eventQueryPort.decreaseTicketStock(TICKET_ID, 1)).thenReturn(true);
+        ReservationOrder order = new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID,
+                OrderStatus.PENDING, BigDecimal.valueOf(10000), NOW, NOW);
+        when(repository.createOrder(ORDER_ID, USER_ID, EVENT_ID, BigDecimal.valueOf(10000), OrderStatus.PENDING, NOW))
+                .thenReturn(order);
+        when(repository.addItem(eq(ORDER_ID), eq(TICKET_ID), eq(BigDecimal.valueOf(10000)), anyString()))
+                .thenReturn(new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-1", null));
+
+        service.createOrder(USER_ID, EVENT_ID, items);
+
+        verify(waitingRoomService).consumeTicket(USER_ID, EVENT_ID);
+    }
+
+    // 대기열 입장권은 Redis 저장소라 SQL 롤백의 영향을 안 받는다 — 검증 실패로 주문이 롤백되는
+    // 상황에서 입장권까지 같이 소비해버리면, 재시도할 때 "입장 권한이 없습니다"로 막혀버린다.
+    @Test
+    void createOrderDoesNotConsumeWaitingRoomTicketWhenExceedingMaxPurchasePerUser() {
+        List<ReservationService.OrderItemRequest> items =
+                List.of(new ReservationService.OrderItemRequest(TICKET_ID, BigDecimal.valueOf(1), 3));
+        when(repository.nextOrderId(NOW.toLocalDate())).thenReturn(ORDER_ID);
+        when(eventQueryPort.getTicketInfo(TICKET_ID)).thenReturn(Optional.of(ticketInfo(10000, 4)));
+        when(repository.countPurchasedQuantity(USER_ID, TICKET_ID)).thenReturn(2L);
+
+        assertThatThrownBy(() -> service.createOrder(USER_ID, EVENT_ID, items))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_INVALID_REQUEST));
+        verify(waitingRoomService, never()).consumeTicket(anyLong(), anyLong());
+    }
+
     // ---------- getOrder ----------
 
     @Test
@@ -297,7 +333,7 @@ class ReservationServiceTest {
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(9L));
         when(repository.checkin("qr-1", 9L, NOW)).thenReturn(true);
 
-        ReservationOrderItem result = service.checkin(9L, "qr-1");
+        ReservationOrderItem result = service.checkin(9L, "qr-1", EVENT_ID);
 
         assertThat(result).isEqualTo(checkedIn);
     }
@@ -313,7 +349,7 @@ class ReservationServiceTest {
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(9L));
         when(repository.checkin("qr-1", 9L, NOW)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.checkin(9L, "qr-1"))
+        assertThatThrownBy(() -> service.checkin(9L, "qr-1", EVENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_ALREADY_CHECKED_IN));
     }
@@ -322,7 +358,7 @@ class ReservationServiceTest {
     void checkinThrowsWhenQrNotFound() {
         when(repository.findItemByQrCodeHash("unknown-qr")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.checkin(9L, "unknown-qr"))
+        assertThatThrownBy(() -> service.checkin(9L, "unknown-qr", EVENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_QR_NOT_FOUND));
     }
@@ -338,7 +374,7 @@ class ReservationServiceTest {
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(9L));
         when(repository.checkin("qr-1", 9L, NOW)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.checkin(9L, "qr-1"))
+        assertThatThrownBy(() -> service.checkin(9L, "qr-1", EVENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_INVALID_TICKET_STATUS));
     }
@@ -353,7 +389,7 @@ class ReservationServiceTest {
         when(repository.findOrder(ORDER_ID)).thenReturn(Optional.of(order));
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(999L));
 
-        assertThatThrownBy(() -> service.checkin(9L, "qr-1"))
+        assertThatThrownBy(() -> service.checkin(9L, "qr-1", EVENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_ACCESS_DENIED));
         verify(repository, never()).checkin(anyString(), anyLong(), any());
@@ -370,7 +406,7 @@ class ReservationServiceTest {
         when(repository.findOrder(ORDER_ID)).thenReturn(Optional.of(order));
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(999L));
 
-        assertThatThrownBy(() -> service.checkin(ADMIN_USER_ID, "qr-1"))
+        assertThatThrownBy(() -> service.checkin(ADMIN_USER_ID, "qr-1", EVENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_ACCESS_DENIED));
         verify(repository, never()).checkin(anyString(), anyLong(), any());
@@ -389,9 +425,27 @@ class ReservationServiceTest {
         when(eventManagerQueryPort.findEventManagerId(EVENT_ID)).thenReturn(Optional.of(9L));
         when(repository.checkin("qr-1", 9L, NOW)).thenReturn(true);
 
-        service.checkin(9L, "qr-1");
+        service.checkin(9L, "qr-1", EVENT_ID);
 
         verify(eventManagerQueryPort).findEventManagerId(EVENT_ID);
+    }
+
+    @Test
+    void checkinThrowsAccessDeniedWhenQrBelongsToAnotherEvent() {
+        // 매니저가 A, B 행사를 둘 다 담당하더라도, A 행사 스캐너 화면에서 B 행사 QR을 스캔하면 거부돼야 한다.
+        long otherEventId = 20L;
+        ReservationOrder order = new ReservationOrder(ORDER_ID, USER_ID, EVENT_ID,
+                OrderStatus.CONFIRMED, BigDecimal.valueOf(10000), NOW, NOW);
+        ReservationOrderItem item =
+                new ReservationOrderItem(1L, ORDER_ID, TICKET_ID, BigDecimal.valueOf(10000), "qr-1", null);
+        when(repository.findItemByQrCodeHash("qr-1")).thenReturn(Optional.of(item));
+        when(repository.findOrder(ORDER_ID)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.checkin(9L, "qr-1", otherEventId))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.RESERVATION_ACCESS_DENIED));
+        verify(eventManagerQueryPort, never()).findEventManagerId(anyLong());
+        verify(repository, never()).checkin(anyString(), anyLong(), any());
     }
 
     // ---------- confirmOrder ----------
