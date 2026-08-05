@@ -106,6 +106,11 @@ class JpaBannerAdRepository implements BannerAdRepository {
         return jpaRepository.findOrderIdsByStatusAndCreatedAtBefore(BannerAdStatus.PENDING, threshold);
     }
 
+    @Override
+    public int countOverlappingBySlot(UUID slotId, List<BannerAdStatus> statuses, OffsetDateTime startsAt, OffsetDateTime endsAt) {
+        return jpaRepository.countOverlappingBySlot(slotId, statuses, startsAt, endsAt);
+    }
+
     private static BannerAd toDomain(BannerAdEntity entity) {
         return new BannerAd(entity.getId(), entity.getSlotIds(), entity.getOrderId(), entity.getTitle(),
                 entity.getBannerImageUrl(), entity.getAdImageUrl(),

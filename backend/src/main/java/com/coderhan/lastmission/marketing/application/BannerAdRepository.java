@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 
@@ -25,4 +26,5 @@ public interface BannerAdRepository {
     boolean existsActiveOrPendingBySlotId(UUID slotId);
     Optional<BannerAd> findByOrderId(String orderId);
     List<String> findPendingOrderIdsOlderThan(OffsetDateTime threshold);
+    int countOverlappingBySlot(UUID slotId, List<BannerAdStatus> statuses, OffsetDateTime startsAt, OffsetDateTime endsAt);
 }
