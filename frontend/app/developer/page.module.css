@@ -1,0 +1,19 @@
+.page {
+  display: grid;
+  min-height: 60vh;
+  padding: 24px;
+  place-items: center;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.page h1 {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.page p {
+  margin-top: 8px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
