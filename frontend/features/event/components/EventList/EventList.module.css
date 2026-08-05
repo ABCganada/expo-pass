@@ -271,11 +271,6 @@
   cursor: not-allowed;
 }
 
-.deleteError {
-  color: var(--color-danger);
-  font-size: 13px;
-}
-
 @media (max-width: 767px) {
   .headerActions {
     width: 100%;

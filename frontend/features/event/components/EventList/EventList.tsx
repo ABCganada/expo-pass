@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CalendarDays, Plus, Settings, Trash2 } from "lucide-react";
 import { useGetAdminEventsQuery, useDeleteAdminEventMutation } from "../../api/adminEventApi";
 import { useGetManagerEventsQuery, useDeleteManagerEventMutation } from "../../api/managerEventApi";
+import { AlertDialog } from "../AlertDialog/AlertDialog";
 import { ConfirmDialog } from "../ConfirmDialog/ConfirmDialog";
 import { Toast } from "../Toast/Toast";
 import type { AdminEventStatus, EventListItem } from "../../types/eventList";
@@ -118,8 +119,6 @@ export function EventList({ mode }: EventListProps) {
       </div>
 
       <div className={styles.listSection}>
-        {deleteError && <p className={styles.deleteError}>{deleteError}</p>}
-
         {isError ? (
           <div className={styles.state}>{queryErrorMessage(error, "행사 목록을 불러오지 못했습니다.")}</div>
         ) : isLoading ? (
@@ -201,6 +200,14 @@ export function EventList({ mode }: EventListProps) {
       )}
 
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
+
+      {deleteError && (
+        <AlertDialog
+          title="행사를 삭제할 수 없습니다"
+          description={deleteError}
+          onConfirm={() => setDeleteError(null)}
+        />
+      )}
     </section>
   );
 }

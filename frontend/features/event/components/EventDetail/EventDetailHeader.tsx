@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Ban } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { usePublishAdminEventMutation, useCancelAdminEventMutation } from "../../api/adminEventDetailApi";
 import { useCancelManagerEventMutation } from "../../api/managerEventDetailApi";
@@ -122,6 +122,7 @@ export function EventDetailHeader({ eventId, detail, onStatusChanged, mode }: Ev
               onClick={() => setDialog("confirmCancel")}
               disabled={isLoading}
             >
+              <Ban size={16} />
               취소하기
             </button>
           )}
