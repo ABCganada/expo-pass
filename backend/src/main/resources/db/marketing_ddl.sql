@@ -10,7 +10,7 @@ CREATE TABLE marketing_banner_slots (
 
 -- 초기 데이터 (최초 1회 수동 실행)
 INSERT INTO marketing_banner_slots (name, max_count, type, price_per_day)
-SELECT '메인 배너', 3, 'BANNER', 50000
+SELECT '메인 배너', 50, 'BANNER', 50000
 WHERE NOT EXISTS (SELECT 1 FROM marketing_banner_slots WHERE type = 'BANNER');
 
 INSERT INTO marketing_banner_slots (name, max_count, type, price_per_day)

@@ -41,6 +41,7 @@ class ApiExceptionHandler {
                     RESERVATION_INVALID_TICKET_STATUS,
                     TICKET_SOLD_OUT,
                     BANNER_SLOT_HAS_ACTIVE_ADS,
+                    BANNER_SLOT_CAPACITY_EXCEEDED,
                     EVENT_DELETE_NOT_ALLOWED,
                     TICKET_NOT_MUTABLE ->
                     HttpStatus.CONFLICT;

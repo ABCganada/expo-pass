@@ -43,6 +43,7 @@ public class BannerAdService {
         }
         BannerAd.validate(title, startsAt, endsAt);
         validateImages(slots, bannerImageUrl, adImageUrl);
+        validateSlotCapacity(slots, startsAt, endsAt);
 
         int days = (int) Math.max(1, ChronoUnit.DAYS.between(startsAt.toLocalDate(), endsAt.toLocalDate()));
         long totalAmount = calculateTotalAmount(slots, days);
@@ -174,6 +175,17 @@ public class BannerAdService {
     public BannerAd getAd(UUID id) {
         return adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
+    }
+
+    private void validateSlotCapacity(List<BannerSlot> slots, OffsetDateTime startsAt, OffsetDateTime endsAt) {
+        List<BannerAdStatus> activeStatuses = List.of(BannerAdStatus.PAID, BannerAdStatus.APPROVED);
+        for (BannerSlot slot : slots) {
+            int current = adRepository.countOverlappingBySlot(slot.id(), activeStatuses, startsAt, endsAt);
+            if (current >= slot.maxCount()) {
+                throw new BusinessException(ErrorCode.BANNER_SLOT_CAPACITY_EXCEEDED,
+                        "슬롯의 최대 광고 수에 도달했습니다. slot=" + slot.name() + ", max=" + slot.maxCount());
+            }
+        }
     }
 
     private void validateImages(List<BannerSlot> slots, String bannerImageUrl, String adImageUrl) {

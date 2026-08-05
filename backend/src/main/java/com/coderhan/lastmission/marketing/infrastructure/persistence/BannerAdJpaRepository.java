@@ -35,4 +35,10 @@ interface BannerAdJpaRepository extends JpaRepository<BannerAdEntity, UUID> {
     List<String> findOrderIdsByStatusAndCreatedAtBefore(
             @Param("status") BannerAdStatus status,
             @Param("threshold") OffsetDateTime threshold);
+
+    @Query("SELECT COUNT(DISTINCT a) FROM BannerAdEntity a WHERE :slotId MEMBER OF a.slotIds AND a.status IN :statuses AND a.startsAt < :endsAt AND a.endsAt > :startsAt")
+    int countOverlappingBySlot(@Param("slotId") UUID slotId,
+                               @Param("statuses") List<BannerAdStatus> statuses,
+                               @Param("startsAt") OffsetDateTime startsAt,
+                               @Param("endsAt") OffsetDateTime endsAt);
 }
