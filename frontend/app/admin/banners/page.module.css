@@ -1,0 +1,332 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.searchBar {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.searchInput {
+  width: 324px;
+  max-width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.searchInput:focus {
+  border-color: var(--color-primary);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sectionTitle {
+  color: var(--color-text-primary);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.countBadge {
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.btnPrimary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  margin-left: auto;
+}
+
+.btnPrimary:hover {
+  background: var(--color-primary-hover);
+}
+
+.slotGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.slotCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-content-background);
+  transition: border-color 0.15s ease;
+}
+
+.slotCard:hover {
+  border-color: var(--color-primary);
+}
+
+.slotInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.slotName {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slotMeta {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.slotActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.btnIconPolicy,
+.btnIconEdit,
+.btnIconDelete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnIconPolicy {
+  color: var(--color-text-secondary);
+}
+
+.btnIconPolicy:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btnIconEdit {
+  color: var(--color-text-secondary);
+}
+
+.btnIconEdit:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btnIconDelete {
+  color: var(--color-text-secondary);
+}
+
+.btnIconDelete:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.errorMsg {
+  padding: 10px 14px;
+  border-radius: var(--radius-button);
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+.adGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .adGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .adGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.slotTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.slotTab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-content-background);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.slotTab:hover {
+  border-color: var(--color-primary);
+}
+
+.slotTabActive {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.slotTabName {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.slotTabMeta {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.slotAdsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-content-background);
+}
+
+.slotAdsPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.slotAdsTitle {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sortBtns {
+  display: flex;
+  gap: 6px;
+}
+
+.sortBtn {
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sortBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.sortBtnActive {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+
+.slotAdsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slotAdItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--radius-input);
+  background: var(--color-card-background);
+}
+
+.slotAdTitle {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.slotAdDates {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.slotAdCreatedAt {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.slotAdDeadline {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.state {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.empty {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  padding: 20px 0;
+}

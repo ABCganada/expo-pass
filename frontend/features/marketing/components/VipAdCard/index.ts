@@ -1,0 +1,1 @@
+export { VipAdCard } from "./VipAdCard";

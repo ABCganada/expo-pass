@@ -1,0 +1,1 @@
+export { EventDetailContent } from "./EventDetailContent";

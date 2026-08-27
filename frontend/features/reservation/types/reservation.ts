@@ -1,0 +1,62 @@
+export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED";
+
+export interface OrderItem {
+  orderItemId: string;
+  ticketId: string;
+  unitPrice: number;
+  qrCodeHash: string;
+  checkedInAt: string | null;
+}
+
+export interface TicketQuantity {
+  ticketId: string;
+  quantity: number;
+}
+
+export interface OrderSummary {
+  orderId: string;
+  eventId: string;
+  status: OrderStatus;
+  totalAmount: number;
+  reservedAt: string;
+  ticketQuantities: TicketQuantity[];
+}
+
+export interface OrdersPage {
+  orders: OrderSummary[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface MyOrdersQuery {
+  status?: OrderStatus;
+  page: number;
+  size: number;
+}
+
+export interface OrderDetail {
+  orderId: string;
+  userId: string;
+  eventId: string;
+  status: OrderStatus;
+  totalAmount: number;
+  reservedAt: string;
+  items: OrderItem[];
+}
+
+export interface CreateOrderItemInput {
+  ticketId: string;
+  unitPrice: number;
+  quantity: number;
+}
+
+export interface QrTicket {
+  orderId: string;
+  eventId: string;
+  orderItemId: string;
+  ticketId: string;
+  qrCodeHash: string;
+  checkedInAt: string | null;
+}

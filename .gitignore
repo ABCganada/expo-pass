@@ -1,0 +1,35 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+**/certificates/
+**/*.pem
+**/*.key
+**/*.p12
+
+# Vault 부트스트랩 인증서 (마스터키 성격 — 절대 커밋 금지)
+# 루트 고정: frontend/features/coderhan/ 소스는 커밋되어야 하므로 **/coderhan/ 를 쓰지 않는다.
+/coderhan/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/coverage/
+
+# Backend
+backend/.gradle/
+backend/build/
+backend/out/
+
+# IDE and operating system
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Runtime output
+logs/
+!frontend/app/developer/logs/
+!frontend/app/developer/logs/**
+*.log

@@ -1,0 +1,64 @@
+package com.coderhan.lastmission.shared.web;
+
+import com.coderhan.lastmission.shared.error.BusinessException;
+import com.coderhan.lastmission.shared.error.ErrorCode;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+@RestControllerAdvice
+class ApiExceptionHandler {
+    record ErrorResponse(boolean success, String errorCode, String message) {}
+
+    @ExceptionHandler(BusinessException.class)
+    ResponseEntity<ErrorResponse> handleBusinessException(BusinessException exception) {
+        HttpStatus status = switch (exception.errorCode()) {
+            case CHAT_ROOM_NOT_FOUND, CHAT_MESSAGE_NOT_FOUND, CHAT_USER_NOT_FOUND, RESERVATION_NOT_FOUND,
+                    RESERVATION_QR_NOT_FOUND, BANNER_SLOT_NOT_FOUND, BANNER_AD_NOT_FOUND, ADMIN_MEMBER_NOT_FOUND,
+                    EVENT_NOT_FOUND, PAYMENT_NOT_FOUND, PAYMENT_SETTLEMENT_NOT_FOUND, EVENT_CATEGORY_NOT_FOUND,
+                    EVENT_MANAGER_NOT_FOUND, TICKET_NOT_FOUND, EVENT_IMAGE_NOT_FOUND, PAYMENT_LOG_NOT_FOUND,
+                    WAITING_NOT_FOUND, PAYMENT_AD_SETTLEMENT_NOT_FOUND ->
+                    HttpStatus.NOT_FOUND;
+
+            case CHAT_ACCESS_DENIED, RESERVATION_ACCESS_DENIED,
+                    BANNER_AD_ACCESS_DENIED, EVENT_ACCESS_DENIED, PAYMENT_ACCESS_DENIED, PAYMENT_SETTLEMENT_ACCESS_DENIED ->
+                    HttpStatus.FORBIDDEN;
+
+            case INVALID_REQUEST, CHAT_MESSAGE_INVALID, CHAT_ROOM_INVALID, RESERVATION_INVALID_REQUEST,
+                    BANNER_AD_INVALID_REQUEST, BANNER_AD_ALREADY_REVIEWED, BANNER_AD_PAYMENT_REQUIRED, ADMIN_ROLE_INVALID,
+                    PAYMENT_INVALID_REQUEST, PAYMENT_CONFIRM_FAILED, PAYMENT_REFUND_NOT_ALLOWED,
+                    PAYMENT_REFUND_CANCEL_FAILED, BANNER_STAT_INVALID_DATE_RANGE, EVENT_INVALID_REQUEST,
+                    EVENT_IMAGE_INVALID_REQUEST, EVENT_IMAGE_UPLOAD_FAILED, INVALID_ADMISSION_TICKET,
+                    EVENT_CATEGORY_INACTIVE ->
+                    HttpStatus.BAD_REQUEST;
+
+            case CHAT_PARTICIPANT_EXISTS,
+                    ADMIN_SELF_DEMOTION,
+                    PAYMENT_REFUND_ALREADY_EXISTS,
+                    RESERVATION_ALREADY_CHECKED_IN,
+                    RESERVATION_INVALID_TICKET_STATUS,
+                    TICKET_SOLD_OUT,
+                    BANNER_SLOT_HAS_ACTIVE_ADS,
+                    BANNER_SLOT_CAPACITY_EXCEEDED,
+                    EVENT_DELETE_NOT_ALLOWED,
+                    TICKET_NOT_MUTABLE ->
+                    HttpStatus.CONFLICT;
+        };
+        return ResponseEntity.status(status).body(
+                new ErrorResponse(false, exception.errorCode().name(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    ResponseEntity<ErrorResponse> handleInvalidArgument(IllegalArgumentException exception) {
+        return ResponseEntity.badRequest().body(
+                new ErrorResponse(false, ErrorCode.INVALID_REQUEST.name(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(false, ErrorCode.INVALID_REQUEST.name(),
+                exception.getName() + " 값이 올바르지 않습니다."));
+    }
+}

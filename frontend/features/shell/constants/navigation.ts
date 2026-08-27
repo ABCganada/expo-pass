@@ -1,0 +1,15 @@
+export interface NavigationItem {
+  id: "home" | "exhibitions" | "reservations" | "qr-ticket" | "bookmarks" | "vip-ads" | "support";
+  label: string;
+  path: string;
+}
+
+export const USER_MENU_ITEMS: NavigationItem[] = [
+  { id: "home", label: "홈", path: "/" },
+  { id: "exhibitions", label: "박람회", path: "/exhibitions" },
+  { id: "reservations", label: "내 예약 내역", path: "/reservations" },
+  { id: "qr-ticket", label: "QR 티켓", path: "/tickets/qr" },
+  { id: "bookmarks", label: "내 북마크", path: "/my/bookmarks" },
+  { id: "vip-ads", label: "VIP 광고", path: "/vip-ads" },
+  { id: "support", label: "사용 가이드", path: "/support" },
+];

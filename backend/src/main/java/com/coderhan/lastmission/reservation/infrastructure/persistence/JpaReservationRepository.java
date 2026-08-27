@@ -1,0 +1,173 @@
+package com.coderhan.lastmission.reservation.infrastructure.persistence;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import com.coderhan.lastmission.reservation.application.OrderPage;
+import com.coderhan.lastmission.reservation.application.ReservationRepository;
+import com.coderhan.lastmission.reservation.domain.*;
+import jakarta.persistence.EntityManager;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Repository;
+
+@Repository
+@RequiredArgsConstructor
+class JpaReservationRepository implements ReservationRepository {
+    private static final DateTimeFormatter ORDER_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+    private final ReservationOrderJpaRepository orderJpaRepository;
+    private final ReservationOrderItemJpaRepository itemJpaRepository;
+    private final EntityManager entityManager;
+
+    @Override
+    public String nextOrderId(LocalDate today) {
+        Number sequenceValue = (Number) entityManager
+                .createNativeQuery("select nextval('reservation_order_seq')")
+                .getSingleResult();
+        return "ORD-" + today.format(ORDER_DATE_FORMAT) + "-" + String.format("%06d", sequenceValue.longValue());
+    }
+
+    @Override
+    public ReservationOrder createOrder(String orderId, long userId, long eventId, BigDecimal totalAmount,
+                                        OrderStatus initialStatus, OffsetDateTime now) {
+        ReservationOrderEntity saved = orderJpaRepository.save(
+                new ReservationOrderEntity(orderId, userId, eventId, initialStatus, totalAmount, now, now));
+        return toDomain(saved);
+    }
+
+    @Override
+    public ReservationOrderItem addItem(String orderId, long ticketId, BigDecimal unitPrice, String qrCodeHash) {
+        ReservationOrderItemEntity saved = itemJpaRepository.save(
+                new ReservationOrderItemEntity(orderId, ticketId, unitPrice, qrCodeHash));
+        return toDomain(saved);
+    }
+
+    @Override
+    public Optional<ReservationOrder> findOrder(String orderId) {
+        return orderJpaRepository.findById(orderId).map(JpaReservationRepository::toDomain);
+    }
+
+    @Override
+    public List<ReservationOrderItem> findItems(String orderId) {
+        return itemJpaRepository.findByOrderId(orderId).stream()
+                .map(JpaReservationRepository::toDomain)
+                .toList();
+    }
+
+    @Override
+    public Optional<ReservationOrderItem> findItemByQrCodeHash(String qrCodeHash) {
+        return itemJpaRepository.findByQrCodeHash(qrCodeHash).map(JpaReservationRepository::toDomain);
+    }
+
+    @Override
+    public boolean checkin(String qrCodeHash, long adminUserId, OffsetDateTime now) {
+        return itemJpaRepository.checkin(qrCodeHash, adminUserId, now) > 0;
+    }
+
+    @Override
+    public boolean confirmOrderIfPending(String orderId, OffsetDateTime now) {
+        return orderJpaRepository.confirmIfPending(orderId, now) > 0;
+    }
+
+    @Override
+    public boolean refundOrderIfConfirmed(String orderId, OffsetDateTime now) {
+        return orderJpaRepository.refundIfConfirmed(orderId, now) > 0;
+    }
+
+    @Override
+    public boolean cancelOrderIfPending(String orderId, OffsetDateTime now) {
+        return orderJpaRepository.cancelIfPending(orderId, now) > 0;
+    }
+
+    @Override
+    public List<String> findPendingOrderIdsOlderThan(OffsetDateTime threshold) {
+        return orderJpaRepository.findOrderIdsByPendingAndReservedAtBefore(threshold);
+    }
+
+    @Override
+    public OrderPage findOrdersByUserId(long userId, OrderStatus status, int page, int size) {
+        int safeSize = Math.clamp(size, 1, 100);
+        int safePage = Math.max(page, 0);
+
+        Page<ReservationOrderEntity> result = orderJpaRepository.findByUserIdAndOptionalStatus(
+                userId, status, PageRequest.of(safePage, safeSize));
+
+        return new OrderPage(
+                result.stream().map(JpaReservationRepository::toDomain).toList(),
+                safePage, safeSize, result.getTotalElements());
+    }
+
+    @Override
+    public List<ReservationOrder> findOrdersByEventId(long eventId) {
+        return orderJpaRepository.findByEventIdOrderByReservedAtDesc(eventId).stream()
+                .map(JpaReservationRepository::toDomain)
+                .toList();
+    }
+
+    @Override
+    public Map<OrderStatus, Long> countOrdersByEventIdGroupedByStatus(long eventId) {
+        return orderJpaRepository.countByEventIdGroupByStatus(eventId).stream()
+                .collect(Collectors.toMap(ReservationOrderJpaRepository.StatusCount::getStatus,
+                        ReservationOrderJpaRepository.StatusCount::getCount));
+    }
+
+    @Override
+    public long countPurchasedQuantity(long userId, long ticketId) {
+        return itemJpaRepository.countByUserIdAndTicketId(userId, ticketId);
+    }
+
+    @Override
+    public Map<String, List<TicketQuantity>> findTicketQuantitiesByOrderIds(List<String> orderIds) {
+        if (orderIds.isEmpty()) {
+            return Map.of();
+        }
+        return itemJpaRepository.findTicketQuantitiesByOrderIds(orderIds).stream()
+                .collect(Collectors.groupingBy(
+                        ReservationOrderItemJpaRepository.OrderTicketQuantityRow::getOrderId,
+                        Collectors.mapping(
+                                row -> new TicketQuantity(row.getTicketId(), (int) row.getQuantity()),
+                                Collectors.toList())));
+    }
+
+    @Override
+    public List<QrTicketView> findQrTicketsByUserId(long userId) {
+        return itemJpaRepository.findQrTicketsByUserId(userId).stream()
+                .map(row -> new QrTicketView(row.getOrderId(), row.getEventId(), row.getOrderItemId(),
+                        row.getTicketId(), row.getQrCodeHash(), row.getCheckedInAt()))
+                .toList();
+    }
+
+    @Override
+    public CheckinProgress countCheckinProgressByEventId(long eventId) {
+        ReservationOrderItemJpaRepository.CheckinProgressRow row =
+                itemJpaRepository.countCheckinProgressByEventId(eventId);
+        return new CheckinProgress(row.getTotalItems(), row.getCheckedInCount());
+    }
+
+    @Override
+    public boolean hasActiveOrdersForEvent(long eventId) {
+        return orderJpaRepository.existsActiveByEventId(eventId);
+    }
+
+    @Override
+    public boolean hasActiveOrderItemsForTicket(long ticketId) {
+        return itemJpaRepository.existsActiveByTicketId(ticketId);
+    }
+
+    private static ReservationOrder toDomain(ReservationOrderEntity entity) {
+        return new ReservationOrder(entity.getOrderId(), entity.getUserId(), entity.getEventId(),
+                entity.getStatus(), entity.getTotalAmount(), entity.getReservedAt(), entity.getUpdatedAt());
+    }
+
+    private static ReservationOrderItem toDomain(ReservationOrderItemEntity entity) {
+        return new ReservationOrderItem(entity.getOrderItemId(), entity.getOrderId(), entity.getTicketId(),
+                entity.getUnitPrice(), entity.getQrCodeHash(), entity.getCheckedInAt());
+    }
+}

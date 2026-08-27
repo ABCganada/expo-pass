@@ -1,0 +1,32 @@
+server:
+  ssl:
+    enabled: true
+    # IntelliJ 작업 디렉터리인 프로젝트 루트를 기준으로 로컬 개발 인증서를 읽는다.
+    certificate: ${DEV_SSL_CERTIFICATE:file:./frontend/certificates/localhost.pem}
+    certificate-private-key: ${DEV_SSL_PRIVATE_KEY:file:./frontend/certificates/localhost-key.pem}
+
+spring:
+  data:
+    redis:
+      # 운영은 DB 0을 그대로 쓰고, 로컬 개발만 다른 DB로 뺀다.
+      #
+      # 대기열 자체는 Redis(공유)에 있지만 SSE 연결은 각 프로세스 메모리에만 있다.
+      # 그래서 같은 DB를 보는 다른 인스턴스의 스케줄러가 내 대기자를 먼저 꺼내가면,
+      # 그쪽 emitter 맵엔 그 유저가 없어서 admitted 알림이 조용히 유실된다.
+      # (추후 다중 인스턴스로 간다면 Redis pub/sub 적용)
+      #
+      database: ${SPRING_DATA_REDIS_DATABASE:1}
+
+lastmission:
+  cors:
+    allowed-origins: https://localhost.example.com:3000
+
+  security:
+    csrf:
+      secure-cookie: true
+
+coderhan:
+  auth:
+    # 공통 인증 서버 주소는 .env를 사용하고, 개발용 복귀 주소만 덮어쓴다.
+    post-login-redirect-path: https://localhost.example.com:3000/
+    post-logout-redirect-path: https://localhost.example.com:3000/

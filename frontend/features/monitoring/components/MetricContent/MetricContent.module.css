@@ -1,0 +1,455 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.heading h1 {
+  color: var(--color-text-primary);
+  font-size: 30px;
+  font-weight: 850;
+  letter-spacing: -0.04em;
+}
+
+.heading p {
+  margin-top: 5px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.requestButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.requestButton:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.requestButton svg {
+  width: 17px;
+  height: 17px;
+}
+
+.requestButton svg[data-spinning="true"] {
+  animation: spin 800ms linear infinite;
+}
+
+.tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 800;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.tab svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tab[aria-selected="true"] {
+  background: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
+
+.state,
+.result {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-sm);
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  padding: 40px 20px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.state > svg {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 14px;
+  color: var(--color-primary);
+}
+
+.state[data-error="true"] > svg,
+.state[data-error="true"] h2 {
+  color: var(--color-danger);
+}
+
+.state h2 {
+  color: var(--color-text-primary);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.state p {
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.result {
+  overflow: hidden;
+}
+
+.trendResult {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.trendSummary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-card-background);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.trendSummary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trendSummary span:last-child {
+  margin-left: auto;
+}
+
+.trendSummary svg {
+  width: 15px;
+  height: 15px;
+  color: var(--color-primary);
+}
+
+.trendSummary strong {
+  color: var(--color-text-primary);
+  font-weight: 800;
+}
+
+.chartGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.chartCard {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-sm);
+}
+
+.chartHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 4px;
+}
+
+.chartHeading h2 {
+  color: var(--color-text-primary);
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.chartEyebrow {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chartLatest {
+  color: var(--color-primary);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 18px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.chartCanvas {
+  padding: 0 8px;
+  color: var(--color-primary);
+}
+
+.chartCanvas svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 220px;
+}
+
+.gridLine {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.areaPath {
+  color: var(--color-primary);
+}
+
+.linePath {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.latestPoint {
+  fill: var(--color-card-background);
+  stroke: var(--color-primary);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.axisLabel {
+  fill: var(--color-text-secondary);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+}
+
+.chartFooter {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.chartFooter span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chartFooter span:first-child {
+  margin-right: auto;
+}
+
+.chartFooter svg {
+  width: 13px;
+  height: 13px;
+  color: var(--color-primary);
+}
+
+.chartEmpty {
+  display: grid;
+  min-height: 270px;
+  place-items: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-border);
+}
+
+.summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 20px 24px;
+  background: var(--color-card-background);
+}
+
+.summary span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.summary strong {
+  color: var(--color-text-primary);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 20px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.tableWrap table {
+  width: 100%;
+  min-width: 720px;
+}
+
+.tableWrap th,
+.tableWrap td {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tableWrap th {
+  background: color-mix(in srgb, var(--color-page-background) 72%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.tableWrap tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.labels span {
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: var(--color-page-background);
+  color: var(--color-text-secondary);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+}
+
+.labels b {
+  color: var(--color-text-primary);
+  font-weight: 750;
+}
+
+.value {
+  display: inline-grid;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  place-items: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: var(--color-success);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+}
+
+.timestamp {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 640px) {
+  .heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .requestButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .summary {
+    grid-template-columns: 1fr;
+  }
+
+  .tabs {
+    display: grid;
+    align-self: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .tab {
+    justify-content: center;
+  }
+
+  .trendSummary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .trendSummary span:last-child {
+    margin-left: 0;
+  }
+
+  .chartGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .chartFooter {
+    flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .chartGrid {
+    grid-template-columns: 1fr;
+  }
+}

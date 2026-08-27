@@ -1,0 +1,150 @@
+server:
+  port: ${SERVER_PORT}
+
+spring:
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
+      - optional:file:../../.env[.properties]
+
+  application:
+    name: ${SPRING_APPLICATION_NAME}
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: ${DB_DRIVER_CLASS_NAME}
+    hikari:
+      initialization-fail-timeout: ${DB_HIKARI_INITIALIZATION_FAIL_TIMEOUT}
+
+  # 초기 스키마 기준선을 확정한 뒤 환경변수로 활성화한다.
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:false}
+
+  modulith:
+    events:
+      # 모듈 간 도메인 이벤트 발행 이력을 event_publication 테이블에 기록해 durability를 보장한다.
+      # (실제 프로퍼티 경로는 spring.modulith.events.jdbc.schema-initialization — jdbc 단계가 하나 더 있다)
+      jdbc:
+        schema-initialization:
+          enabled: true
+      republish-outstanding-events-on-restart: true
+
+  jpa:
+    database-platform: org.hibernate.dialect.CockroachDialect
+    # false로 꺼야 Hibernate가 기동 시점에 Dialect 확인용 DB 커넥션을 열지 않는다.
+    # 그 시점엔 Vault가 발급하는 DB SSL 번들이 아직 준비 안 됐을 수 있어서, 열려고 하면
+    # 30초 타임아웃을 매번 겪는다(위의 database-platform 값으로 대체되긴 하지만 느려짐).
+    properties:
+      hibernate:
+        boot:
+          allow_jdbc_metadata_access: false
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    security:
+      protocol: SSL
+    ssl:
+      bundle: kafka-bundle
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: latest
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      username: ${SPRING_DATA_REDIS_USERNAME:default}
+      password: ${SPRING_DATA_REDIS_PASSWORD}
+      ssl:
+        enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
+      repositories:
+        enabled: false
+
+management:
+  opentelemetry:
+    resource-attributes:
+      service.name: ${SPRING_APPLICATION_NAME}
+      service.namespace: coderhan
+      service.instance.id: ${OTEL_SERVICE_INSTANCE_ID}
+      deployment.environment.name: ${OTEL_DEPLOYMENT_ENVIRONMENT:production}
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_TRACING_ENDPOINT}
+          transport: http
+  tracing:
+    sampling:
+      probability: ${OTEL_TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    metrics:
+      export:
+        url: ${OTEL_METRICS_ENDPOINT}
+
+lastmission:
+  monitoring:
+    log-service-name-alias: ${MONITORING_LOG_SERVICE_NAME_ALIAS:lastmission-backend}
+
+  # 브라우저 CORS 허용 오리진. 로컬은 기본값(localhost 포함), 프로덕션은 env로 앱 오리진만 남긴다.
+  cors:
+    allowed-origins: ${LASTMISSION_CORS_ALLOWED_ORIGINS:https://lastmission.example.com,https://localhost.example.com:3000,http://localhost:3000}
+
+  security:
+    csrf:
+      secure-cookie: ${LASTMISSION_CSRF_SECURE_COOKIE:true}
+
+  kafka:
+    enabled: ${LASTMISSION_KAFKA_ENABLED}
+    topic: ${LASTMISSION_KAFKA_TOPIC}
+    consumer-group: ${LASTMISSION_KAFKA_CONSUMER_GROUP}
+
+  toss:
+    base-url: ${TOSS_API_BASE_URL:https://api.tosspayments.com}
+    # 절대 git에 실제 값을 커밋하지 않는다 — 로컬은 .env, 운영은 k8s Secret으로만 주입.
+    secret-key: ${TOSS_SECRET_KEY}
+
+aws:
+  region: ${AWS_REGION}
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+  credentials:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+
+coderhan:
+  vault:
+    cert:
+      # Vault DB 클라이언트 인증서의 CN이자 CockroachDB 사용자명
+      db-common-name: ${VAULT_DB_COMMON_NAME}
+      # Kafka 클라이언트 인증서의 CN (Strimzi KafkaUser lastmission-svc-main과 일치)
+      kafka-common-name: ${VAULT_KAFKA_COMMON_NAME}
+      bootstrap-dir: ${VAULT_BOOTSTRAP_DIR}
+      log-dir: ${VAULT_LOG_DIR}
+      auth-mount: ${VAULT_AUTH_MOUNT}
+      uri: ${VAULT_URI}
+      auth-role: ${VAULT_AUTH_ROLE}
+      db-pki-path: ${VAULT_DB_PKI_PATH}
+      kafka-pki-path: ${VAULT_KAFKA_PKI_PATH}
+
+  auth:
+    project-id: ${AUTH_PROJECT_ID}
+    app-id: ${AUTH_APP_ID}
+    check-url: ${AUTH_CHECK_URL}
+    login-url: ${AUTH_LOGIN_URL}
+    logout-url: ${AUTH_LOGOUT_URL}
+    post-login-redirect-path: ${POST_LOGIN_REDIRECT}
+    post-logout-redirect-path: ${POST_LOGOUT_REDIRECT}

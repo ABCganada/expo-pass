@@ -1,0 +1,60 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--color-card-background);
+}
+
+.nameGroup {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.name {
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.limit {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.price {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.empty {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}

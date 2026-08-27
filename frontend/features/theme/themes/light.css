@@ -1,0 +1,36 @@
+:root,
+:root[data-theme="light"] {
+  --color-primary: #0f6f52;
+  --color-primary-hover: #0c5a42;
+  --color-page-background: #f6f7fb;
+  --color-content-background: #f8f9fc;
+  --color-card-background: #ffffff;
+  --color-sidebar-background: #ffffff;
+  --color-sidebar-text: #536079;
+  --color-sidebar-text-strong: #18223a;
+  --color-sidebar-border: #e7eaf1;
+  --color-sidebar-hover: #f5f6fb;
+  --color-sidebar-active: #f0f6f4;
+  --color-sidebar-active-text: #0f6f52;
+  --color-header-background: rgb(255 255 255 / 0.94);
+  --color-border: #e5e8f0;
+  --color-text-primary: #18223a;
+  --color-text-secondary: #727d92;
+  --color-success: #21a675;
+  --color-danger: #ed4d5c;
+  --shadow-sm: 0 2px 10px rgb(32 42 68 / 0.04);
+  --shadow-lg: 0 12px 32px rgb(32 42 68 / 0.1);
+  --shadow-xl: 0 18px 48px rgb(32 42 68 / 0.14);
+  --radius-card: 18px;
+  --radius-button: 10px;
+  --radius-input: 10px;
+  --radius-dialog: 20px;
+  --radius-pill: 9999px;
+  --color-main-background: var(--color-content-background);
+  --color-primary-red: var(--color-primary);
+  --color-success-green: var(--color-success);
+  --color-warning-red: var(--color-danger);
+  --color-dark-background: #18223a;
+  --background: var(--color-page-background);
+  --foreground: var(--color-text-primary);
+}

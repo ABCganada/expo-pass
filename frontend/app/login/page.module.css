@@ -1,0 +1,33 @@
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 48px 16px;
+  background: var(--color-page-background);
+  overflow: hidden;
+
+  /* 장식용 은은한 그라데이션 블러 서클 */
+  .glow {
+    position: absolute;
+    width: 40%;
+    height: 40%;
+    border-radius: 9999px;
+    filter: blur(120px);
+    pointer-events: none;
+  }
+
+  .glowTop {
+    top: -10%;
+    left: -10%;
+    background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+  }
+
+  .glowBottom {
+    right: -10%;
+    bottom: -10%;
+    background: color-mix(in srgb, var(--color-success) 5%, transparent);
+  }
+}

@@ -1,0 +1,115 @@
+.list {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.room {
+  display: flex;
+  width: 100%;
+  gap: 11px;
+  padding: 13px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.room:hover,
+.room[data-selected="true"] {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-card-background));
+}
+
+.room[data-selected="true"] {
+  box-shadow: inset 3px 0 var(--color-primary);
+}
+
+.icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-text-secondary) 12%, transparent);
+  color: var(--color-text-secondary);
+}
+
+.icon[data-public="true"] {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: var(--color-success);
+}
+
+.icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.body {
+  min-width: 0;
+  flex: 1;
+}
+
+.titleRow,
+.previewRow {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.title {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.previewRow {
+  margin-top: 5px;
+}
+
+.preview {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+}
+
+.empty {
+  display: grid;
+  min-height: 180px;
+  flex: 1;
+  margin: 0;
+  padding: 24px;
+  place-items: center;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+}

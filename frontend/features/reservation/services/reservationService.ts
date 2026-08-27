@@ -1,0 +1,60 @@
+import { getCsrfToken } from "@/features/shared/api/csrf";
+import type {
+  CreateOrderItemInput,
+  MyOrdersQuery,
+  OrderDetail,
+  OrdersPage,
+  QrTicket,
+} from "../types/reservation";
+
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
+const BASE = `${API_BASE_URL}/api/v1`;
+
+async function parseData<T>(res: Response): Promise<T> {
+  const body = await res.json();
+  if (!res.ok || !body.success) throw new Error(body.message ?? "요청에 실패했습니다.");
+  return body.data as T;
+}
+
+export const reservationService = {
+  getMyOrders: ({ status, page, size }: MyOrdersQuery, signal?: AbortSignal): Promise<OrdersPage> => {
+    const params = new URLSearchParams({ page: String(page), size: String(size) });
+    if (status) params.set("status", status);
+    return fetch(`${BASE}/reservations/me?${params.toString()}`, { credentials: "include", signal }).then((res) =>
+      parseData<OrdersPage>(res),
+    );
+  },
+
+  getMyQrTickets: (signal?: AbortSignal): Promise<QrTicket[]> =>
+    fetch(`${BASE}/reservations/me/qr-tickets`, { credentials: "include", signal }).then((res) =>
+      parseData<QrTicket[]>(res),
+    ),
+
+  getOrder: (orderId: string, signal?: AbortSignal): Promise<OrderDetail> =>
+    fetch(`${BASE}/reservations/${orderId}`, { credentials: "include", signal }).then((res) =>
+      parseData<OrderDetail>(res),
+    ),
+
+  createOrder: async (
+    eventId: string,
+    items: CreateOrderItemInput[],
+    signal?: AbortSignal,
+  ): Promise<OrderDetail> => {
+    const csrf = await getCsrfToken();
+    const res = await fetch(`${BASE}/reservations`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", [csrf.headerName]: csrf.token },
+      body: JSON.stringify({
+        eventId: Number(eventId),
+        items: items.map((item) => ({
+          ticketId: Number(item.ticketId),
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+        })),
+      }),
+      signal,
+    });
+    return parseData<OrderDetail>(res);
+  },
+};
