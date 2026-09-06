@@ -102,11 +102,7 @@ public class PaymentService {
                 result.method(), pgOrderId, result.approvedAt());
     }
 
-    /**
-     * PG 승인이 확인된 결제를 저장(idempotency_key=paymentKey) + {@link PaymentEventRecorder}를 통한
-     * PaymentConfirmedEvent 발행까지 처리한다. confirmAndSave()와 reconcileApprovedPayment() 둘 다
-     * "이미 확보한 승인 정보를 저장하는" 마지막 단계가 동일해 이 메서드로 뺐다.
-     */
+    /** confirmAndSave()/reconcileApprovedPayment() 공통: 확보된 승인 정보를 저장 + 이벤트 발행한다. */
     private Payment saveConfirmedPayment(String orderId, OrderType orderType, Long userId,
                                          String paymentKey, BigDecimal amount, String method,
                                          String pgOrderId, OffsetDateTime approvedAt) {
@@ -130,13 +126,8 @@ public class PaymentService {
     }
 
     /**
-     * PG 승인은 이미 확인됐지만(예: payment_logs 감사 로그 재확인) payments 저장이 유실된 결제를
-     * 사후 기록한다. 토스 confirm API를 다시 호출하지 않고, 이미 확보된 승인 정보만으로 저장 +
-     * PaymentConfirmedEvent 발행까지 수행한다. 로컬 payments row가 없는 PENDING 주문을 되살릴 때
-     * 사용한다(#1). confirm()과 동일하게 클라이언트 신뢰 없이 주문 금액을 재검증한다.
-     *
-     * <p>userId는 호출 측(예: 예약 도메인)이 모를 수 있어 nullable — payments.user_id는 nullable이라
-     * 저장은 되지만, null로 저장되면 해당 결제는 사용자의 "결제 내역" 조회에선 빠진다.
+     * PG 승인은 이미 확인됐지만(payment_logs 재확인, #1) payments 저장이 유실된 결제를 토스를 다시
+     * 호출하지 않고 사후 기록한다. userId는 호출 측이 모를 수 있어 nullable(결제 내역 조회에선 빠짐).
      */
     public Payment reconcileApprovedPayment(String orderId, OrderType orderType, Long userId,
                                             String paymentKey, BigDecimal amount, String method,

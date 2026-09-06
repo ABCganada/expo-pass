@@ -13,6 +13,7 @@ public interface PaymentOrderDirectory {
     /**
      * 넘겨받은 orderId 중 실제 COMPLETED 상태 결제가 존재하는 것만 골라 반환.
      * 존재하지 않거나 COMPLETED가 아닌 orderId는 결과에서 빠진다(호출부는 "빠진 것 = 아직 결제 안 됨"으로 판단).
+     * orderType은 사후 기록 시 어느 도메인 주문 금액과 대조할지 판단하는 데 쓰인다.
      */
-    List<String> findCompletedOrderIds(Collection<String> orderIds);
+    List<String> findCompletedOrderIds(Collection<String> orderIds, OrderType orderType);
 }

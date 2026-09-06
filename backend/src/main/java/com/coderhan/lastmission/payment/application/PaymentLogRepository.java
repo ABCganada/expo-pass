@@ -1,5 +1,6 @@
 package com.coderhan.lastmission.payment.application;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.domain.PaymentLog;
@@ -20,11 +21,10 @@ public interface PaymentLogRepository {
     Optional<PaymentLog> findById(long id);
 
     /**
-     * 해당 주문(orderId)에 대해 실제로 승인이 완료된 토스 APPROVE 기록이 있는지 확인한다.
-     *
-     * TossPaymentGateway.confirm()은 승인 성공/실패 모두 action="APPROVE"로 감사 로그를 남기므로
-     * action만으로는 판단할 수 없다 — 응답이 실제 승인 완료(status=DONE)인 경우만 true를 반환한다.
-     * payments 테이블 저장이 실패해 결제 기록이 유실된 주문을 재확인하는 용도로 쓰인다.
+     * orderId로 실제 승인 완료된(status=DONE) APPROVE 기록을 찾는다. action="APPROVE"는 승인 실패
+     * 시에도 남으므로 action만으로는 판단할 수 없다. payments 저장 유실 주문 재확인용.
      */
-    boolean existsApprovedOrderId(String orderId);
+    Optional<ApprovedPaymentLog> findApprovedByOrderId(String orderId);
+
+    record ApprovedPaymentLog(String paymentKey, BigDecimal amount, String method, OffsetDateTime approvedAt) {}
 }

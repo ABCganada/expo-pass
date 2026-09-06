@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import com.coderhan.lastmission.shared.order.OrderType;
 import com.coderhan.lastmission.shared.order.PaymentOrderDirectory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +46,8 @@ class ReservationReconcileSchedulerTest {
     @Test
     void confirmsOrderWhenPaymentWasActuallyCompleted() {
         when(repository.findPendingOrderIdsOlderThan(THRESHOLD)).thenReturn(List.of("ORD-1", "ORD-2"));
-        when(paymentOrderDirectory.findCompletedOrderIds(List.of("ORD-1", "ORD-2"))).thenReturn(List.of("ORD-1"));
+        when(paymentOrderDirectory.findCompletedOrderIds(List.of("ORD-1", "ORD-2"), OrderType.RESERVATION))
+                .thenReturn(List.of("ORD-1"));
 
         scheduler.reconcile();
 
@@ -56,7 +58,8 @@ class ReservationReconcileSchedulerTest {
     @Test
     void cancelsOrderWhenPaymentWasNeverCompleted() {
         when(repository.findPendingOrderIdsOlderThan(THRESHOLD)).thenReturn(List.of("ORD-1", "ORD-2"));
-        when(paymentOrderDirectory.findCompletedOrderIds(List.of("ORD-1", "ORD-2"))).thenReturn(List.of("ORD-1"));
+        when(paymentOrderDirectory.findCompletedOrderIds(List.of("ORD-1", "ORD-2"), OrderType.RESERVATION))
+                .thenReturn(List.of("ORD-1"));
 
         scheduler.reconcile();
 
