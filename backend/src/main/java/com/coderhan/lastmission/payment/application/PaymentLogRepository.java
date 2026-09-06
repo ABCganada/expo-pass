@@ -18,4 +18,13 @@ public interface PaymentLogRepository {
     PaymentLogPage findAll(int page, int size);
 
     Optional<PaymentLog> findById(long id);
+
+    /**
+     * 해당 주문(orderId)에 대해 실제로 승인이 완료된 토스 APPROVE 기록이 있는지 확인한다.
+     *
+     * TossPaymentGateway.confirm()은 승인 성공/실패 모두 action="APPROVE"로 감사 로그를 남기므로
+     * action만으로는 판단할 수 없다 — 응답이 실제 승인 완료(status=DONE)인 경우만 true를 반환한다.
+     * payments 테이블 저장이 실패해 결제 기록이 유실된 주문을 재확인하는 용도로 쓰인다.
+     */
+    boolean existsApprovedOrderId(String orderId);
 }

@@ -57,6 +57,11 @@ class JpaPaymentLogRepository implements PaymentLogRepository {
             .map(JpaPaymentLogRepository::toDomain);
     }
 
+    @Override
+    public boolean existsApprovedOrderId(String orderId) {
+        return jpaRepository.existsApprovedOrderId(orderId);
+    }
+
     private static PaymentLog toDomain(PaymentLogEntity entity) {
         return PaymentLog.builder()
                 .id(entity.getId())
