@@ -268,6 +268,66 @@ class PaymentServiceTest {
         verify(eventRecorder, never()).reportFailure(any(), any(), any(), any(), any(), any());
     }
 
+    @Test
+    @DisplayName("reconcileApprovedPayment: 이미 승인 확인된 결제는 토스를 호출하지 않고 저장 + 이벤트 발행만 위임한다")
+    void reconcileApprovedPaymentSavesWithoutCallingGateway() {
+        Payment saved = completedPayment();
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(AMOUNT));
+        when(repository.findByIdempotencyKey(PAYMENT_KEY)).thenReturn(Optional.empty());
+        when(eventRecorder.reportConfirmation(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY, AMOUNT, "CARD", "TOSS",
+                PG_ORDER_ID, PAYMENT_KEY, APPROVED_AT)).thenReturn(saved);
+
+        Payment result = service.reconcileApprovedPayment(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY, AMOUNT,
+                "CARD", PG_ORDER_ID, APPROVED_AT);
+
+        assertThat(result).isSameAs(saved);
+        verify(paymentGateway, never()).confirm(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("reconcileApprovedPayment: 이미 같은 paymentKey로 저장된 결제가 있으면 그대로 반환한다")
+    void reconcileApprovedPaymentReturnsExistingWhenAlreadySaved() {
+        Payment existing = completedPayment();
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(AMOUNT));
+        when(repository.findByIdempotencyKey(PAYMENT_KEY)).thenReturn(Optional.of(existing));
+
+        Payment result = service.reconcileApprovedPayment(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY, AMOUNT,
+                "CARD", PG_ORDER_ID, APPROVED_AT);
+
+        assertThat(result).isSameAs(existing);
+        verify(eventRecorder, never()).reportConfirmation(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("reconcileApprovedPayment: 결제 금액이 주문 금액과 다르면 저장 전에 PAYMENT_INVALID_REQUEST 예외를 던진다")
+    void reconcileApprovedPaymentRejectsAmountMismatch() {
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(BigDecimal.valueOf(9000)));
+
+        assertThatThrownBy(() -> service.reconcileApprovedPayment(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY,
+                AMOUNT, "CARD", PG_ORDER_ID, APPROVED_AT))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_INVALID_REQUEST));
+
+        verify(repository, never()).findByIdempotencyKey(any());
+    }
+
+    @Test
+    @DisplayName("reconcileApprovedPayment: 저장 시점에 idempotency_key 경합이 나면 먼저 커밋된 결제를 반환한다")
+    void reconcileApprovedPaymentReturnsAlreadyCommittedPaymentWhenSaveRaces() {
+        Payment committedByOtherRequest = completedPayment();
+        when(reservationOrderDirectory.findOrderAmount(ORDER_ID)).thenReturn(Optional.of(AMOUNT));
+        when(repository.findByIdempotencyKey(PAYMENT_KEY))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(committedByOtherRequest));
+        when(eventRecorder.reportConfirmation(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(new DataIntegrityViolationException("duplicate idempotency_key"));
+
+        Payment result = service.reconcileApprovedPayment(ORDER_ID, ORDER_TYPE, USER_ID, PAYMENT_KEY, AMOUNT,
+                "CARD", PG_ORDER_ID, APPROVED_AT);
+
+        assertThat(result).isSameAs(committedByOtherRequest);
+    }
+
     private static Payment completedPayment() {
         return Payment.builder()
                 .id(PAYMENT_ID)
