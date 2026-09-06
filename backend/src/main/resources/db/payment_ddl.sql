@@ -122,3 +122,9 @@ CREATE TABLE payment_logs (
 CREATE UNIQUE INDEX idx_payment_logs_webhook_transmission_id
     ON payment_logs (webhook_transmission_id)
     WHERE webhook_transmission_id IS NOT NULL;
+
+-- payments 저장 유실 주문을 orderId로 재확인(findApprovedByOrderId)할 때 쓰는 표현식 인덱스.
+-- 실제 승인 완료 건만 대상이라 부분 인덱스로 좁혀 크기를 줄인다.
+CREATE INDEX idx_payment_logs_approved_order_id
+    ON payment_logs ((request_payload->>'orderId'))
+    WHERE action = 'APPROVE' AND response_payload->>'status' = 'DONE';
