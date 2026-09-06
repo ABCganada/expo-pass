@@ -50,4 +50,19 @@ class JpaPaymentOrderDirectoryTest {
         assertThat(result).isEmpty();
         verify(jpaRepository, never()).findByOrderIdInAndStatus(any(), any());
     }
+
+    @Test
+    @DisplayName("[버그 재현 - #1] payments에 기록이 없으면 실제로는 PG 승인이 완료된 주문도 결제완료로 인식하지 못한다")
+    void doesNotDetectPgApprovedOrderWhenPaymentsRowIsMissing() {
+        // 결제 승인(PG)은 성공했지만 payments 테이블 저장이 실패해 row 자체가 없는 상황을 재현한다.
+        when(jpaRepository.findByOrderIdInAndStatus(Set.of("ORD-1"), PaymentStatus.COMPLETED))
+                .thenReturn(List.of());
+
+        List<String> result = directory.findCompletedOrderIds(Set.of("ORD-1"));
+
+        // TODO(#1): payment_logs의 APPROVE 감사 로그로 재확인하는 로직이 추가되면
+        // 이 케이스도 결제완료로 판정되어야 한다. 지금은 그 수단이 없어 미결제로 오판되고,
+        // 이 주문은 ReservationReconcileScheduler에 의해 잘못 취소된다.
+        assertThat(result).isEmpty();
+    }
 }
