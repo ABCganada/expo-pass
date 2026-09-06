@@ -14,13 +14,25 @@ interface PaymentLogJpaRepository extends JpaRepository<PaymentLogEntity, Long> 
     @Query(value = "SELECT unique_rowid()", nativeQuery = true)
     long nextId();
     
+    /** order_id 컬럼이 없어 request_payload의 orderId로 매칭. status=DONE인 것만 승인 완료로 본다. */
     @Query(value = """
-            SELECT EXISTS (
-                SELECT 1 FROM payment_logs
-                WHERE action = 'APPROVE'
-                  AND request_payload->>'orderId' = :orderId
-                  AND response_payload->>'status' = 'DONE'
-            )
+            SELECT payment_key AS paymentKey,
+                   request_payload->>'amount' AS amount,
+                   response_payload->>'method' AS method,
+                   response_payload->>'approvedAt' AS approvedAt
+            FROM payment_logs
+            WHERE action = 'APPROVE'
+              AND request_payload->>'orderId' = :orderId
+              AND response_payload->>'status' = 'DONE'
+            ORDER BY created_at DESC
+            LIMIT 1
             """, nativeQuery = true)
-    boolean existsApprovedOrderId(@Param("orderId") String orderId);
+    Optional<ApprovedPaymentLogRow> findApprovedByOrderId(@Param("orderId") String orderId);
+
+    interface ApprovedPaymentLogRow {
+        String getPaymentKey();
+        String getAmount();
+        String getMethod();
+        String getApprovedAt();
+    }
 }

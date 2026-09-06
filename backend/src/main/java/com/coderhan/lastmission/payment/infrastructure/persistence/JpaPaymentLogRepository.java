@@ -1,5 +1,6 @@
 package com.coderhan.lastmission.payment.infrastructure.persistence;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.application.PaymentLogPage;
@@ -58,8 +59,13 @@ class JpaPaymentLogRepository implements PaymentLogRepository {
     }
 
     @Override
-    public boolean existsApprovedOrderId(String orderId) {
-        return jpaRepository.existsApprovedOrderId(orderId);
+    public Optional<ApprovedPaymentLog> findApprovedByOrderId(String orderId) {
+        return jpaRepository.findApprovedByOrderId(orderId)
+                .map(row -> new ApprovedPaymentLog(
+                        row.getPaymentKey(),
+                        new BigDecimal(row.getAmount()),
+                        row.getMethod(),
+                        OffsetDateTime.parse(row.getApprovedAt())));
     }
 
     private static PaymentLog toDomain(PaymentLogEntity entity) {
