@@ -1,5 +1,6 @@
 package com.coderhan.lastmission.payment.application;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import com.coderhan.lastmission.payment.domain.PaymentLog;
@@ -18,4 +19,12 @@ public interface PaymentLogRepository {
     PaymentLogPage findAll(int page, int size);
 
     Optional<PaymentLog> findById(long id);
+
+    /**
+     * orderId로 실제 승인 완료된(status=DONE) APPROVE 기록을 찾는다. action="APPROVE"는 승인 실패
+     * 시에도 남으므로 action만으로는 판단할 수 없다. payments 저장 유실 주문 재확인용.
+     */
+    Optional<ApprovedPaymentLog> findApprovedByOrderId(String orderId);
+
+    record ApprovedPaymentLog(String paymentKey, BigDecimal amount, String method, OffsetDateTime approvedAt) {}
 }

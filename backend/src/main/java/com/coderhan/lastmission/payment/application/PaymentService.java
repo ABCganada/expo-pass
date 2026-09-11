@@ -98,13 +98,21 @@ public class PaymentService {
                                    String pgOrderId, String paymentKey, BigDecimal amount) {
         PaymentGateway.ConfirmResult result = paymentGateway.confirm(paymentKey, pgOrderId, amount);
 
+        return saveConfirmedPayment(orderId, orderType, userId, paymentKey, amount,
+                result.method(), pgOrderId, result.approvedAt());
+    }
+
+    /** confirmAndSave()/reconcileApprovedPayment() 공통: 확보된 승인 정보를 저장 + 이벤트 발행한다. */
+    private Payment saveConfirmedPayment(String orderId, OrderType orderType, Long userId,
+                                         String paymentKey, BigDecimal amount, String method,
+                                         String pgOrderId, OffsetDateTime approvedAt) {
         try {
             /** 저장 + 이벤트 발행은 PaymentEventRecorder의 @Transactional 메서드가 하나로 묶어서 처리한다. */
             return eventRecorder.reportConfirmation(
                     orderId, orderType, userId,
-                    paymentKey, amount, result.method(),
+                    paymentKey, amount, method,
                     "TOSS", pgOrderId, paymentKey,
-                    result.approvedAt()
+                    approvedAt
             );
         } catch (DataIntegrityViolationException e) {
             /** paymentKey(idempotency_key) 경합이면 먼저 커밋된 쪽을 반환.
@@ -115,6 +123,21 @@ public class PaymentService {
              * 후속 쿼리를 거부하는 문제 없음). */
             return repository.findByIdempotencyKey(paymentKey).orElseThrow(() -> e);
         }
+    }
+
+    /**
+     * PG 승인은 이미 확인됐지만(payment_logs 재확인, #1) payments 저장이 유실된 결제를 토스를 다시
+     * 호출하지 않고 사후 기록한다. userId는 호출 측이 모를 수 있어 nullable(결제 내역 조회에선 빠짐).
+     */
+    public Payment reconcileApprovedPayment(String orderId, OrderType orderType, Long userId,
+                                            String paymentKey, BigDecimal amount, String method,
+                                            String pgOrderId, OffsetDateTime approvedAt) {
+        Payment.validate(orderId, orderType, pgOrderId, paymentKey, amount);
+        validateAmountMatchesOrder(orderId, orderType, amount);
+
+        return repository.findByIdempotencyKey(paymentKey)
+                .orElseGet(() -> saveConfirmedPayment(orderId, orderType, userId, paymentKey, amount,
+                        method, pgOrderId, approvedAt));
     }
 
     @Transactional(readOnly = true)

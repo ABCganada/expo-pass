@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
+import com.coderhan.lastmission.shared.order.OrderType;
 import com.coderhan.lastmission.shared.order.PaymentOrderDirectory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +39,7 @@ class BannerAdReconcileScheduler {
         }
 
         Set<String> paidOrderIds = Set.copyOf(
-                paymentOrderDirectory.findCompletedOrderIds(pendingOrderIds));
+                paymentOrderDirectory.findCompletedOrderIds(pendingOrderIds, OrderType.ADVERTISEMENT));
 
         for (String orderId : pendingOrderIds) {
             if (paidOrderIds.contains(orderId)) {
