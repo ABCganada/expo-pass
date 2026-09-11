@@ -1,14 +1,16 @@
 name: Build and Push Backend Image to GHCR
 
 # 모노레포: backend/ 가 바뀔 때만 백엔드 이미지를 빌드한다.
+# 포트폴리오 공개 버전: 사설 Nexus/Vault/GitOps 저장소 접근이 없어 항상 실패하므로
+# push 자동 트리거는 꺼두고 수동 실행(workflow_dispatch)만 남긴다.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "backend/**"
-      - ".github/workflows/build-backend-ghcr.yml"
   workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - "backend/**"
+  #     - ".github/workflows/build-backend-ghcr.yml"
 
 permissions:
   contents: read
