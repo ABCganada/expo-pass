@@ -28,6 +28,9 @@ class PaymentEntity {
     @Column(name = "order_id", nullable = false)
     private String orderId;  // reservation_orders.order_id 참조 (String, FK 미설정)
 
+    @Column(name = "user_id")
+    private Long userId;  // user_accounts.id 참조, 논리적 참조 (내 결제 내역 조회용)
+
     @Column(name = "idempotency_key", nullable = false)
     private String idempotencyKey;  // 결제 요청 재시도 시 중복 처리 방지용, 유니크 인덱스 걸림
 
@@ -59,14 +62,19 @@ class PaymentEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    PaymentEntity(String orderId, String idempotencyKey, BigDecimal amount, String method, String pgProvider,
-            OffsetDateTime now) {
+    /** 승인(confirm) 성공 직후 COMPLETED 상태로 바로 만든다 — REQUESTED row를 거치지 않는다. */
+    PaymentEntity(String orderId, Long userId, String idempotencyKey, BigDecimal amount, String method,
+            String pgProvider, String pgOrderId, String pgTransactionId, OffsetDateTime paidAt, OffsetDateTime now) {
         this.orderId = orderId;
+        this.userId = userId;
         this.idempotencyKey = idempotencyKey;
         this.amount = amount;
         this.method = method;
-        this.status = PaymentStatus.REQUESTED;
+        this.status = PaymentStatus.COMPLETED;
         this.pgProvider = pgProvider;
+        this.pgOrderId = pgOrderId;
+        this.pgTransactionId = pgTransactionId;
+        this.paidAt = paidAt;
         this.createdAt = now;
         this.updatedAt = now;
     }
