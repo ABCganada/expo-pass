@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -63,7 +64,7 @@ class BannerMarketerController {
 
     @GetMapping
     ApiResponse<List<BannerAdResponse>> getMyAds(@AuthenticationPrincipal LastMissionPrincipal principal) {
-        return ApiResponse.success(bannerAdService.getMyAds(principal.email()).stream()
+        return ApiResponse.success(bannerAdService.getMyAds(principal.userId()).stream()
                 .map(BannerAdResponse::from)
                 .toList());
     }
@@ -74,7 +75,7 @@ class BannerMarketerController {
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAd ad = bannerAdService.registerAd(
                 request.slotIds(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
-                request.linkUrl(), request.startsAt(), request.endsAt(), principal.email());
+                request.linkUrl(), request.startsAt(), request.endsAt(), principal.userId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(BannerAdResponse.from(ad)));
     }
 
@@ -84,9 +85,17 @@ class BannerMarketerController {
             @RequestBody UpdateAdRequest request,
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAd ad = bannerAdService.updateAd(
-                id, principal.email(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
+                id, principal.userId(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
                 request.linkUrl(), request.startsAt(), request.endsAt());
         return ApiResponse.success(BannerAdResponse.from(ad));
+    }
+
+    @DeleteMapping("/{id}")
+    ResponseEntity<ApiResponse<Void>> deleteAd(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        bannerAdService.deleteAdByMarketer(id, principal.userId());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/stats")
@@ -157,7 +166,7 @@ class BannerMarketerController {
             BannerAdStatus status,
             OffsetDateTime startsAt,
             OffsetDateTime endsAt,
-            String createdBy,
+            long createdBy,
             OffsetDateTime createdAt,
             Long totalAmount
     ) {

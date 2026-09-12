@@ -20,10 +20,4 @@ interface SettlementJpaRepository extends JpaRepository<SettlementEntity, Long> 
         "FROM SettlementEntity s"
     )
     BigDecimal sumCommissionAmount();
-
-    @Query(
-        "SELECT COALESCE(SUM(s.netAmount), 0) " +
-        "FROM SettlementEntity s"
-    )
-    BigDecimal sumNetAmount();
 }

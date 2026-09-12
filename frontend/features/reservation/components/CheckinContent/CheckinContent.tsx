@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import jsQR from "jsqr";
 import { useCheckinMutation } from "../../api/adminApi";
+import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./CheckinContent.module.css";
 
 export function CheckinContent() {
@@ -77,7 +78,7 @@ export function CheckinContent() {
         }
       }, 3000);
     } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : "체크인에 실패했습니다";
+      const errorMsg = queryErrorMessage(e, "체크인에 실패했습니다");
       console.error("[CheckinContent] Checkin error:", errorMsg);
       setCheckinResult({
         type: "error",
@@ -146,7 +147,7 @@ export function CheckinContent() {
     } catch (e) {
       setCheckinResult({
         type: "error",
-        message: e instanceof Error ? e.message : "체크인에 실패했습니다",
+        message: queryErrorMessage(e, "체크인에 실패했습니다"),
       });
     }
   }

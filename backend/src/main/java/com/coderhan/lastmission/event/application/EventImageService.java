@@ -25,17 +25,18 @@ public class EventImageService {
     private final EventRepository eventRepository;
     private final EventImageRepository eventImageRepository;
     private final EventImageStorage eventImageStorage;
+    private final EventOwnershipValidator ownershipValidator;
 
     /**
-     * 행사 이미지 등록 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 행사 이미지 등록 - MANAGER 전용, 본인이 담당(manager_id)하는 행사만.
      */
     @Transactional
-    public EventImage uploadImage(long eventId, long callerUserId, boolean isAdmin,
+    public EventImage uploadImageAsManager(long eventId, long callerUserId,
             EventImageType imageType, MultipartFile file) {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
 
-        validateEventAccess(event, callerUserId, isAdmin, "이미지를 등록");
+        ownershipValidator.requireOwner(event, callerUserId, "이미지를 등록");
 
         int displayOrder = (int) eventImageRepository.countByEventId(eventId);
         EventImageContentType contentType = validateImageFile(file);
@@ -44,16 +45,16 @@ public class EventImageService {
     }
 
     /**
-     * 행사 이미지 다중 등록 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 행사 이미지 다중 등록 - MANAGER 전용, 본인이 담당(manager_id)하는 행사만.
      * 전체 성공 또는 전체 실패로 취급
      */
     @Transactional
-    public List<EventImage> uploadAll(long eventId, long callerUserId, boolean isAdmin,
+    public List<EventImage> uploadAllAsManager(long eventId, long callerUserId,
             List<EventImageType> imageTypes, List<MultipartFile> files) {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
 
-        validateEventAccess(event, callerUserId, isAdmin, "이미지를 등록");
+        ownershipValidator.requireOwner(event, callerUserId, "이미지를 등록");
         List<EventImageContentType> contentTypes = validateImageFiles(imageTypes, files);
 
         int displayOrder = (int) eventImageRepository.countByEventId(eventId);
@@ -82,13 +83,13 @@ public class EventImageService {
     }
 
     /**
-     * 행사 이미지 삭제 - ADMIN은 전체, MANAGER는 본인이 담당(manager_id)하는 행사만.
+     * 행사 이미지 삭제 - MANAGER 전용, 본인이 담당(manager_id)하는 행사만.
      */
     @Transactional
-    public void deleteImage(long eventId, long imageId, long callerUserId, boolean isAdmin) {
+    public void deleteImageAsManager(long eventId, long imageId, long callerUserId) {
         Event event = eventRepository.findNotDeletedById(eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "행사를 찾을 수 없습니다."));
-        validateEventAccess(event, callerUserId, isAdmin, "이미지를 삭제");
+        ownershipValidator.requireOwner(event, callerUserId, "이미지를 삭제");
 
         EventImage image = eventImageRepository.findByIdAndEventId(imageId, eventId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_IMAGE_NOT_FOUND, "이미지를 찾을 수 없습니다."));
@@ -127,13 +128,6 @@ public class EventImageService {
         }
     }
 
-    /** ADMIN은 전체 허용, 아니면 본인이 담당(manager_id)하는 행사인지 확인 */
-    private void validateEventAccess(Event event, long callerUserId, boolean isAdmin, String action) {
-        if (!isAdmin && !Objects.equals(event.getManagerId(), callerUserId)) {
-            throw new BusinessException(ErrorCode.EVENT_ACCESS_DENIED, "본인이 담당하는 행사만 " + action + "할 수 있습니다.");
-        }
-    }
-
     private EventImageContentType validateImageFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "이미지 파일은 필수입니다.");
@@ -155,7 +149,7 @@ public class EventImageService {
         }
 
         if (files.size() > MAX_BATCH_SIZE) {
-            throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "이미지는 최대 10개까지 등록할 수 있습니다.");
+            throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST, "이미지는 최대 5개까지 등록할 수 있습니다.");
         }
 
         if (imageTypes == null || imageTypes.size() != files.size()) { // 파일마다 대응되는 타입 정보 반드시 하나씩

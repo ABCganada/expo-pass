@@ -1,0 +1,283 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0 32px;
+  width: 100%;
+}
+
+.topRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.countRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+
+.countText {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.primaryButton,
+.secondaryButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.primaryButton {
+  padding: 12px 18px;
+  border: none;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+.primaryButton:hover {
+  background: var(--color-primary-hover);
+}
+
+.secondaryButton {
+  padding: 12px 18px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card-background);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.secondaryButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.listSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.statusTabs {
+  display: flex;
+  gap: 32px;
+  padding-right: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.statusTab {
+  padding: 12px 2px;
+  margin-bottom: -1px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.statusTab[data-active="true"] {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: 600;
+}
+
+.state {
+  display: flex;
+  min-height: 240px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.emptyIcon {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-background);
+  box-shadow: var(--shadow-sm);
+  transition: opacity 0.15s ease;
+}
+
+.tableWrap[data-fetching="true"] {
+  opacity: 0.6;
+}
+
+.table {
+  width: 100%;
+  min-width: 720px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.titleCol {
+  width: auto;
+}
+
+.periodCol {
+  width: 240px;
+}
+
+.statusCol {
+  width: 130px;
+}
+
+.createdCol {
+  width: 150px;
+}
+
+.manageCol {
+  width: 72px;
+  text-align: center;
+}
+
+.table th,
+.table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding-left: 24px;
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: 24px;
+}
+
+.table thead th {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: var(--color-content-background);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.row {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.row:hover {
+  background: var(--color-content-background);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.eventTitle {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.eventCategory {
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusBadge[data-status="DRAFT"] {
+  background: color-mix(in srgb, var(--color-text-secondary) 16%, transparent);
+  color: var(--color-text-secondary);
+}
+
+.statusBadge[data-status="PUBLISHED"] {
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+  color: var(--color-success);
+}
+
+.statusBadge[data-status="CANCELLED"] {
+  background: color-mix(in srgb, var(--color-danger) 16%, transparent);
+  color: var(--color-danger);
+}
+
+.deleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deleteError {
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+@media (max-width: 767px) {
+  .headerActions {
+    width: 100%;
+  }
+}

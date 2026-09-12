@@ -2,34 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MapPin, Search, X } from "lucide-react";
-import type { KakaoPlaceDocument, KakaoPlacesService } from "@/features/event/types/kakaoMaps";
-import "@/features/event/types/kakaoMaps";
+import type { KakaoGeocoderService, KakaoPlaceDocument, KakaoPlacesService } from "@/features/event/types/kakaoMaps";
+import { KAKAO_MAP_APP_KEY, loadKakaoMapsSdk } from "@/features/event/utils/kakaoMapsLoader";
 import styles from "./VenueSearchInput.module.css";
-
-const SCRIPT_ID = "kakao-map-sdk-services";
-const APP_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_APP_KEY;
-
-function loadKakaoServicesSdk(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (window.kakao?.maps?.services) {
-      resolve();
-      return;
-    }
-    const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
-    if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("장소 검색 기능을 불러오지 못했습니다.")));
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = SCRIPT_ID;
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${APP_KEY}&autoload=false&libraries=services`;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("장소 검색 기능을 불러오지 못했습니다."));
-    document.head.appendChild(script);
-  });
-}
 
 export interface VenueSelection {
   venueName: string;
@@ -37,6 +12,7 @@ export interface VenueSelection {
   latitude: number;
   longitude: number;
   kakaoPlaceId: string;
+  legalDongCode: string | null;
 }
 
 interface VenueSearchInputProps {
@@ -49,22 +25,20 @@ export function VenueSearchInput({ selectedVenueName, onSelect, onClear }: Venue
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<KakaoPlaceDocument[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [asyncError, setError] = useState<string | null>(null);
+  const configError = KAKAO_MAP_APP_KEY ? null : "장소 검색에 필요한 설정이 누락되었습니다.";
+  const error = configError ?? asyncError;
   const placesRef = useRef<KakaoPlacesService | null>(null);
+  const geocoderRef = useRef<KakaoGeocoderService | null>(null);
 
   useEffect(() => {
-    if (!APP_KEY) {
-      setError("장소 검색에 필요한 설정이 누락되었습니다.");
-      return;
-    }
+    if (!KAKAO_MAP_APP_KEY) return;
     let cancelled = false;
-    loadKakaoServicesSdk()
+    loadKakaoMapsSdk()
       .then(() => {
         if (cancelled) return;
-        window.kakao!.maps.load(() => {
-          if (cancelled) return;
-          placesRef.current = new window.kakao!.maps.services.Places();
-        });
+        placesRef.current = new window.kakao!.maps.services.Places();
+        geocoderRef.current = new window.kakao!.maps.services.Geocoder();
       })
       .catch((e: Error) => {
         if (!cancelled) setError(e.message);
@@ -90,15 +64,26 @@ export function VenueSearchInput({ selectedVenueName, onSelect, onClear }: Venue
   };
 
   const handleSelect = (place: KakaoPlaceDocument) => {
-    onSelect({
+    const latitude = Number(place.y);
+    const longitude = Number(place.x);
+    const base = {
       venueName: place.place_name,
       address: place.road_address_name || place.address_name,
-      latitude: Number(place.y),
-      longitude: Number(place.x),
+      latitude,
+      longitude,
       kakaoPlaceId: place.id,
-    });
+    };
     setResults([]);
     setQuery("");
+
+    if (!geocoderRef.current) {
+      onSelect({ ...base, legalDongCode: null });
+      return;
+    }
+    geocoderRef.current.coord2RegionCode(longitude, latitude, (data, status) => {
+      const legalDongCode = status === "OK" ? (data.find((region) => region.region_type === "B")?.code ?? null) : null;
+      onSelect({ ...base, legalDongCode });
+    });
   };
 
   if (selectedVenueName) {

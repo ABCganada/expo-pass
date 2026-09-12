@@ -1,0 +1,27 @@
+.page {
+  width: 100%;
+  padding: 8px 0;
+}
+
+/* 배너는 viewport 패딩을 일부 상쇄해 넓게 노출 */
+.bannerWrapper {
+  margin: -8px -8px 56px;
+}
+
+@media (min-width: 768px) {
+  .bannerWrapper {
+    margin: -8px -8px 56px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .bannerWrapper {
+    margin: -8px -16px 56px;
+  }
+}
+
+@media (max-width: 767px) {
+  .page {
+    padding: 16px;
+  }
+}

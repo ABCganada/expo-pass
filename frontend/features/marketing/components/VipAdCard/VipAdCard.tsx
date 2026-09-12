@@ -42,7 +42,7 @@ export function VipAdCard({ ad }: VipAdCardProps) {
     <article ref={cardRef} className={styles.card}>
       <div className={styles.imageWrapper}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={ad.bannerImageUrl ?? ad.adImageUrl ?? ""} alt={ad.title} className={styles.image} draggable={false} />
+        <img src={ad.adImageUrl ?? ad.bannerImageUrl ?? ""} alt={ad.title} className={styles.image} draggable={false} />
       </div>
       <div className={styles.body}>
         <p className={styles.title}>{ad.title}</p>

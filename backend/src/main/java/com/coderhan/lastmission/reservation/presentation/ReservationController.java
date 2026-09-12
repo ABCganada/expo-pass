@@ -3,6 +3,7 @@ package com.coderhan.lastmission.reservation.presentation;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Locale;
 import com.coderhan.lastmission.reservation.application.ReservationService;
 import com.coderhan.lastmission.reservation.domain.OrderStatus;
 import com.coderhan.lastmission.reservation.domain.QrTicketView;
@@ -10,6 +11,8 @@ import com.coderhan.lastmission.reservation.domain.ReservationOrder;
 import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
 import com.coderhan.lastmission.reservation.domain.TicketQuantity;
 import com.coderhan.lastmission.shared.ApiResponse;
+import com.coderhan.lastmission.shared.error.BusinessException;
+import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -46,9 +50,23 @@ class ReservationController {
     }
 
     @GetMapping("/me")
-    ApiResponse<List<OrderSummary>> getMyOrders(@AuthenticationPrincipal LastMissionPrincipal principal) {
-        List<ReservationService.OrderWithTickets> orders = reservationService.getMyOrders(principal.userId());
-        return ApiResponse.success(orders.stream().map(OrderSummary::from).toList());
+    ApiResponse<OrdersPageResponse> getMyOrders(@AuthenticationPrincipal LastMissionPrincipal principal,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        ReservationService.MyOrdersPage result = reservationService.getMyOrders(
+                principal.userId(), parseStatus(status), page, size);
+        return ApiResponse.success(OrdersPageResponse.from(result));
+    }
+
+    private OrderStatus parseStatus(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return OrderStatus.valueOf(value.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.RESERVATION_INVALID_REQUEST, "status 값이 올바르지 않습니다.");
+        }
     }
 
     @GetMapping("/me/qr-tickets")
@@ -87,6 +105,19 @@ class ReservationController {
             return new OrderSummary(order.orderId(), Long.toString(order.eventId()), order.status(),
                     order.totalAmount(), order.reservedAt(),
                     orderWithTickets.ticketQuantities().stream().map(TicketQuantityResponse::from).toList());
+        }
+    }
+
+    record OrdersPageResponse(
+            List<OrderSummary> orders, int page, int size, long totalElements, int totalPages
+    ) {
+        static OrdersPageResponse from(ReservationService.MyOrdersPage pageResult) {
+            List<OrderSummary> orders = pageResult.orders().stream().map(OrderSummary::from).toList();
+            int totalPages = pageResult.size() == 0
+                    ? 0
+                    : (int) Math.ceil((double) pageResult.totalElements() / pageResult.size());
+            return new OrdersPageResponse(orders, pageResult.page(), pageResult.size(),
+                    pageResult.totalElements(), totalPages);
         }
     }
 

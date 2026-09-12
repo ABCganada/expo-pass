@@ -85,6 +85,7 @@
 .pageCenter {
   display: flex;
   justify-content: center;
+  margin-top: 24px;
 }
 
 .stepBody {
@@ -153,28 +154,6 @@
 .nextButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.required {
-  color: var(--color-danger);
-  font-style: normal;
-}
-
-.fieldError {
-  color: var(--color-danger);
-  font-size: 12px;
-}
-
-.readonlyBox {
-  display: flex;
-  align-items: center;
-  height: 44px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-input);
-  background: var(--color-content-background);
-  color: var(--color-text-secondary);
-  font-size: 14px;
 }
 
 @media (max-width: 767px) {

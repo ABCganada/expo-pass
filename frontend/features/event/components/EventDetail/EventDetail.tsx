@@ -1,0 +1,74 @@
+"use client";
+
+import { useState } from "react";
+import { useGetAdminEventDetailQuery } from "../../api/adminEventDetailApi";
+import { useGetManagerEventDetailQuery } from "../../api/managerEventDetailApi";
+import { EventDetailHeader } from "./EventDetailHeader";
+import { BasicInfoTab } from "./BasicInfoTab";
+import { ContentTab } from "./ContentTab";
+import { ImageGridManager } from "../ImageGridManager/ImageGridManager";
+import { TicketCardList } from "../TicketCardList/TicketCardList";
+import { Toast } from "../Toast/Toast";
+import type { EventRole } from "../../types/eventRole";
+import { queryErrorMessage } from "@/features/store/api/queryError";
+import styles from "./EventDetail.module.css";
+
+type TabKey = "basic" | "content" | "images" | "tickets";
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "basic", label: "기본정보" },
+  { key: "content", label: "콘텐츠" },
+  { key: "images", label: "이미지" },
+  { key: "tickets", label: "티켓" },
+];
+
+interface EventDetailProps {
+  eventId: string;
+  mode: EventRole;
+}
+
+function useEventDetailQuery(mode: EventRole, eventId: string) {
+  const adminResult = useGetAdminEventDetailQuery(eventId, { skip: mode !== "admin" });
+  const managerResult = useGetManagerEventDetailQuery(eventId, { skip: mode !== "manager" });
+  return mode === "admin" ? adminResult : managerResult;
+}
+
+export function EventDetail({ eventId, mode }: EventDetailProps) {
+  const [activeTab, setActiveTab] = useState<TabKey>("basic");
+  const [toast, setToast] = useState<string | null>(null);
+  const { data: detail, isLoading, isError, error } = useEventDetailQuery(mode, eventId);
+
+  if (isLoading) return <div className={styles.state}>불러오는 중...</div>;
+  if (isError || !detail) {
+    return <div className={styles.state}>{queryErrorMessage(error, "행사 정보를 불러오지 못했습니다.")}</div>;
+  }
+
+  return (
+    <section className={styles.page}>
+      <EventDetailHeader eventId={eventId} detail={detail} onStatusChanged={setToast} mode={mode} />
+
+      <nav className={styles.tabBar}>
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={styles.tabButton}
+            data-active={activeTab === tab.key}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className={styles.tabPanel}>
+        {activeTab === "basic" && <BasicInfoTab eventId={eventId} detail={detail} mode={mode} onSaved={setToast} />}
+        {activeTab === "content" && <ContentTab eventId={eventId} detail={detail} mode={mode} onSaved={setToast} />}
+        {activeTab === "images" && <ImageGridManager eventId={eventId} images={detail.images} mode={mode} />}
+        {activeTab === "tickets" && <TicketCardList eventId={eventId} tickets={detail.tickets} mode={mode} />}
+      </div>
+
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
+    </section>
+  );
+}

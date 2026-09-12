@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type MouseEvent } from "react";
 import type { BannerSlot, MarketerBannerAd } from "../../types/marketerBanner";
 import { BANNER_SLOT_TYPE_LABEL } from "../../types/marketerBanner";
 import { useGetBannerSlotsQuery, useRegisterAdMutation, useUpdateAdMutation } from "../../api/marketerBannerApi";
 import { marketerBannerService } from "../../services/marketerBannerService";
+import { ImageCropModal } from "../ImageCropModal/ImageCropModal";
+import { PaymentCheckoutButton } from "@/features/payment/components/PaymentCheckoutButton";
 import styles from "./RegisterAdModal.module.css";
 
 interface RegisterAdModalProps {
@@ -59,8 +61,21 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingAd, setUploadingAd] = useState(false);
   const [error, setError] = useState("");
+  const [cropTarget, setCropTarget] = useState<{
+    src: string;
+    field: "bannerImageUrl" | "adImageUrl";
+    targetWidth: number;
+    targetHeight: number;
+    fileName: string;
+  } | null>(null);
+  const [pendingPayment, setPendingPayment] = useState<{
+    orderId: string;
+    amount: number;
+    title: string;
+  } | null>(null);
   const bannerFileRef = useRef<HTMLInputElement>(null);
   const adFileRef = useRef<HTMLInputElement>(null);
+  const mouseDownTargetRef = useRef<EventTarget | null>(null);
 
   const isLoading = registering || updating || uploadingBanner || uploadingAd;
 
@@ -84,14 +99,27 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
     }));
   };
 
-  const handleFileUpload = async (
+  const handleFileSelect = (
     file: File,
     field: "bannerImageUrl" | "adImageUrl",
-    setUploading: (v: boolean) => void,
   ) => {
+    const targetWidth = field === "bannerImageUrl" ? 1200 : 1280;
+    const targetHeight = field === "bannerImageUrl" ? 220 : 720;
+    const src = URL.createObjectURL(file);
+    setCropTarget({ src, field, targetWidth, targetHeight, fileName: file.name });
+  };
+
+  const handleCropConfirm = async (blob: Blob) => {
+    if (!cropTarget) return;
+    const { field, targetWidth, targetHeight, fileName, src } = cropTarget;
+    URL.revokeObjectURL(src);
+    setCropTarget(null);
+
+    const setUploading = field === "bannerImageUrl" ? setUploadingBanner : setUploadingAd;
     setUploading(true);
     setError("");
     try {
+      const file = new File([blob], fileName.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
       const url = await marketerBannerService.uploadImage(file);
       setForm((prev) => ({ ...prev, [field]: url }));
     } catch (err: unknown) {
@@ -99,6 +127,11 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleCropCancel = () => {
+    if (cropTarget) URL.revokeObjectURL(cropTarget.src);
+    setCropTarget(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,8 +154,9 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
           startsAt: toOffsetDateTime(form.startsAt),
           endsAt: toOffsetDateTime(form.endsAt),
         }).unwrap();
+        onClose();
       } else {
-        await registerAd({
+        const created = await registerAd({
           slotIds: form.slotIds,
           title: form.title,
           bannerImageUrl: form.bannerImageUrl || undefined,
@@ -131,15 +165,66 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
           startsAt: toOffsetDateTime(form.startsAt),
           endsAt: toOffsetDateTime(form.endsAt),
         }).unwrap();
+        setPendingPayment({ orderId: created.orderId, amount: created.totalAmount, title: created.title });
       }
-      onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "저장에 실패했습니다.");
     }
   };
 
+  const handleOverlayMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    mouseDownTargetRef.current = e.target;
+  };
+  const handleOverlayClick = (e: MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && mouseDownTargetRef.current === e.currentTarget) onClose();
+  };
+
+  if (pendingPayment) {
+    return (
+      <div className={styles.overlay} onMouseDown={handleOverlayMouseDown} onClick={handleOverlayClick}>
+        <div className={styles.modal}>
+          <h2 className={styles.title}>광고 결제</h2>
+          <p className={styles.paymentDesc}>광고가 등록되었습니다. 결제를 완료해야 검토가 시작됩니다.</p>
+          <div className={styles.paymentSummary}>
+            <div className={styles.paymentRow}>
+              <span>광고 제목</span>
+              <strong>{pendingPayment.title}</strong>
+            </div>
+            <div className={styles.paymentRow}>
+              <span>결제 금액</span>
+              <strong>{pendingPayment.amount.toLocaleString("ko-KR")}원</strong>
+            </div>
+          </div>
+          <PaymentCheckoutButton
+            orderId={pendingPayment.orderId}
+            amount={pendingPayment.amount}
+            orderName={pendingPayment.title}
+            successUrl="/manager/banner-ads/payment/success"
+            failUrl="/manager/banner-ads/payment/fail"
+          />
+          <button type="button" className={styles.btnPayLater} onClick={onClose}>
+            나중에 결제하기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (cropTarget) {
+    return (
+      <ImageCropModal
+        src={cropTarget.src}
+        aspectRatio={cropTarget.targetWidth / cropTarget.targetHeight}
+        targetWidth={cropTarget.targetWidth}
+        targetHeight={cropTarget.targetHeight}
+        onConfirm={handleCropConfirm}
+        onCancel={handleCropCancel}
+      />
+    );
+  }
+
   return (
-    <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={styles.overlay} onMouseDown={handleOverlayMouseDown} onClick={handleOverlayClick}>
       <div className={styles.modal}>
         <h2 className={styles.title}>{isEdit ? "광고 수정" : "광고 등록"}</h2>
         <form className={styles.form} onSubmit={handleSubmit}>
@@ -190,9 +275,10 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
           {(needsBannerImage || (isEdit && editTarget?.bannerImageUrl)) && (
             <div className={styles.field}>
               <label className={styles.label}>배너 이미지</label>
+              <p className={styles.hint}>업로드 후 1200 x 220px 비율로 직접 영역을 선택할 수 있습니다 · 중요 내용은 중앙에 배치 권장</p>
               <div className={styles.fileRow}>
                 <input ref={bannerFileRef} type="file" accept="image/*" className={styles.fileInput}
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, "bannerImageUrl", setUploadingBanner); }} />
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f, "bannerImageUrl"); e.target.value = ""; }} />
                 <button type="button" className={styles.btnFile} onClick={() => bannerFileRef.current?.click()} disabled={uploadingBanner}>
                   {uploadingBanner ? "업로드 중..." : "파일 선택"}
                 </button>
@@ -200,7 +286,7 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
               </div>
               {form.bannerImageUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={form.bannerImageUrl} alt="배너 미리보기" className={styles.preview} />
+                <img src={form.bannerImageUrl} alt="배너 미리보기" className={styles.previewBanner} />
               )}
             </div>
           )}
@@ -209,9 +295,10 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
           {(needsAdImage || (isEdit && editTarget?.adImageUrl)) && (
             <div className={styles.field}>
               <label className={styles.label}>광고탭 이미지</label>
+              <p className={styles.hint}>업로드 후 1280 x 720px 비율로 직접 영역을 선택할 수 있습니다 · 중요 내용은 중앙에 배치 권장</p>
               <div className={styles.fileRow}>
                 <input ref={adFileRef} type="file" accept="image/*" className={styles.fileInput}
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, "adImageUrl", setUploadingAd); }} />
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f, "adImageUrl"); e.target.value = ""; }} />
                 <button type="button" className={styles.btnFile} onClick={() => adFileRef.current?.click()} disabled={uploadingAd}>
                   {uploadingAd ? "업로드 중..." : "파일 선택"}
                 </button>
@@ -219,7 +306,7 @@ export function RegisterAdModal({ editTarget, onClose }: RegisterAdModalProps) {
               </div>
               {form.adImageUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={form.adImageUrl} alt="광고탭 이미지 미리보기" className={styles.preview} />
+                <img src={form.adImageUrl} alt="광고탭 이미지 미리보기" className={styles.previewAd} />
               )}
             </div>
           )}

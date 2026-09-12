@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ClipboardCheck, Minus, Plus } from "lucide-react";
+import { CreditCard, Minus, Plus } from "lucide-react";
 import styles from "./TicketSelectionPanel.module.css";
 
 // TODO: Event 도메인 API 연결 시 이 컴포넌트를 호출하는 쪽(행사 상세 페이지)에서
@@ -101,8 +101,8 @@ export function TicketSelectionPanel({ ticketTypes, isSubmitting, onSubmit }: Ti
         disabled={totalQuantity === 0 || isSubmitting}
         onClick={handleSubmit}
       >
-        <ClipboardCheck size={18} />
-        {isSubmitting ? "예약 신청 중..." : "예약 신청하기"}
+        <CreditCard size={18} />
+        {isSubmitting ? "결제 준비 중..." : "결제하기"}
       </button>
     </div>
   );

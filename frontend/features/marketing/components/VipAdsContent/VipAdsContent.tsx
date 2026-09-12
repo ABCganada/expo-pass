@@ -13,11 +13,6 @@ export function VipAdsContent() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>VIP 광고</h1>
-        <p className={styles.subtitle}>엄선된 프리미엄 광고 파트너를 만나보세요.</p>
-      </header>
-
       {isLoading && (
         <div className={styles.grid}>
           {Array.from({ length: 6 }).map((_, i) => (

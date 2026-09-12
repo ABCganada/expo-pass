@@ -1,5 +1,7 @@
 .page {
-  padding: 32px;
+  /* 감싸는 관리자 레이아웃 셸이 이미 32px 여백을 주고 있어서, 좌우/아래는 셸에 맡기고
+     위쪽만 최소로 둔다(EventSelectContent/CheckinStatusContent와 같은 방식). */
+  padding: 8px 0 32px;
   width: 100%;
 }
 
@@ -8,23 +10,6 @@
   text-align: center;
   color: var(--color-text-secondary);
   font-size: 15px;
-}
-
-.header {
-  margin-bottom: 40px;
-}
-
-.title {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin: 0 0 8px;
-}
-
-.subtitle {
-  font-size: 15px;
-  color: var(--color-text-secondary);
-  margin: 0;
 }
 
 .grid {
@@ -91,60 +76,4 @@
   font-size: 13px;
   color: var(--color-text-secondary);
   margin: 0;
-}
-
-.progressSection {
-  background: var(--color-card-background);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  padding: 28px;
-}
-
-.sectionTitle {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin: 0 0 24px;
-}
-
-.progressCard {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.progressRow {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.progressLabel {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  min-width: 80px;
-}
-
-.progressBar {
-  flex: 1;
-  height: 8px;
-  background: var(--color-border);
-  border-radius: 9999px;
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  background: var(--color-primary);
-  border-radius: 9999px;
-  transition: width 0.3s ease;
-}
-
-.progressValue {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  min-width: 60px;
-  text-align: right;
 }

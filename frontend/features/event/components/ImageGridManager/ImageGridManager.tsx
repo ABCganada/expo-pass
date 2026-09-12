@@ -2,21 +2,24 @@
 
 import { useRef, useState } from "react";
 import { ImagePlus, X } from "lucide-react";
-import { useUploadAdminEventImageMutation, useDeleteAdminEventImageMutation } from "../../api/adminEventDetailApi";
-import type { AdminEventImageItem } from "../../types/adminEventDetail";
+import { useUploadManagerEventImageMutation, useDeleteManagerEventImageMutation } from "../../api/managerEventDetailApi";
+import type { EventImageItem } from "../../types/eventManagementDetail";
+import type { EventRole } from "../../types/eventRole";
 import { ConfirmDialog } from "../ConfirmDialog/ConfirmDialog";
 import { queryErrorMessage } from "@/features/store/api/queryError";
 import styles from "./ImageGridManager.module.css";
 
 interface ImageGridManagerProps {
   eventId: string;
-  images: AdminEventImageItem[];
+  images: EventImageItem[];
+  mode: EventRole;
 }
 
-export function ImageGridManager({ eventId, images }: ImageGridManagerProps) {
+export function ImageGridManager({ eventId, images, mode }: ImageGridManagerProps) {
+  const canEdit = mode === "manager";
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadImage, { isLoading: isUploading }] = useUploadAdminEventImageMutation();
-  const [deleteImage, { isLoading: isDeleting }] = useDeleteAdminEventImageMutation();
+  const [uploadImage, { isLoading: isUploading }] = useUploadManagerEventImageMutation();
+  const [deleteImage, { isLoading: isDeleting }] = useDeleteManagerEventImageMutation();
   const [error, setError] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
@@ -59,23 +62,27 @@ export function ImageGridManager({ eventId, images }: ImageGridManagerProps) {
 
   return (
     <div className={styles.manager}>
-      <button
-        type="button"
-        className={styles.uploadButton}
-        onClick={() => fileInputRef.current?.click()}
-        disabled={isUploading}
-      >
-        <ImagePlus size={16} />
-        {isUploading ? "업로드 중..." : "+ 이미지 업로드"}
-      </button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        hidden
-        onChange={(event) => void handleFilesSelected(event)}
-      />
+      {canEdit && (
+        <>
+          <button
+            type="button"
+            className={styles.uploadButton}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            <ImagePlus size={16} />
+            {isUploading ? "업로드 중..." : "+ 이미지 업로드"}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(event) => void handleFilesSelected(event)}
+          />
+        </>
+      )}
 
       {error && <p className={styles.error}>{error}</p>}
 
@@ -88,15 +95,17 @@ export function ImageGridManager({ eventId, images }: ImageGridManagerProps) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={image.imageUrl} alt="" className={styles.image} />
               {image.imageType === "THUMBNAIL" && <span className={styles.thumbnailBadge}>대표</span>}
-              <button
-                type="button"
-                className={styles.removeButton}
-                aria-label="이미지 삭제"
-                disabled={isDeleting}
-                onClick={() => setPendingDeleteId(image.id)}
-              >
-                <X size={14} />
-              </button>
+              {canEdit && (
+                <button
+                  type="button"
+                  className={styles.removeButton}
+                  aria-label="이미지 삭제"
+                  disabled={isDeleting}
+                  onClick={() => setPendingDeleteId(image.id)}
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           ))}
         </div>

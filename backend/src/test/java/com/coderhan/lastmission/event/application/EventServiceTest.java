@@ -2,19 +2,24 @@ package com.coderhan.lastmission.event.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Optional;
 
 import com.coderhan.lastmission.event.ReservationQueryPort;
+import com.coderhan.lastmission.event.application.command.UpdateEventCommand;
 import com.coderhan.lastmission.event.domain.Event;
 import com.coderhan.lastmission.event.domain.EventCategory;
+import com.coderhan.lastmission.event.domain.EventStatus;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import com.coderhan.lastmission.user.UserAccess;
@@ -34,44 +39,118 @@ class EventServiceTest {
     private static final long EVENT_ID = 1L;
     private static final long MANAGER_ID = 100L;
 
+    private static final long OTHER_MANAGER_ID = 200L;
+
     @Mock EventRepository eventRepository;
     @Mock EventCategoryRepository eventCategoryRepository;
     @Mock EventBookmarkService eventBookmarkService;
     @Mock ReservationQueryPort reservationQueryPort;
     @Mock UserDirectory userDirectory;
+    @Spy EventOwnershipValidator ownershipValidator = new EventOwnershipValidator();
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks EventService service;
 
     @Test
-    void deleteEvent_소프트삭제_후_북마크_삭제() {
+    void createDraftEvent_본인을_담당자로_생성() {
+        EventCategory category = new EventCategory("MUSIC", "음악", true);
+        when(eventCategoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(eventRepository.save(any(Event.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Event created = service.createDraftEvent("새 행사", 1L, MANAGER_ID);
+
+        assertThat(created.getManagerId()).isEqualTo(MANAGER_ID);
+        assertThat(created.getStatus()).isEqualTo(EventStatus.DRAFT);
+    }
+
+    @Test
+    void deleteEventAsManager_DRAFT_본인_담당_행사_소프트삭제_후_북마크_삭제() {
         Event event = event(MANAGER_ID);
+
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
-        service.deleteEvent(EVENT_ID);
+        service.deleteEventAsManager(EVENT_ID, MANAGER_ID);
 
         assertThat(event.isDeleted()).isTrue();
         verify(eventBookmarkService).removeBookmarksForEvent(EVENT_ID);
     }
 
     @Test
-    void deleteEvent_예약_이력이_있으면_거부되고_삭제되지_않음() {
+    void deleteEventAsManager_담당하지_않는_행사면_거부() {
+        Event event = event(OTHER_MANAGER_ID);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.deleteEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
+        assertThat(event.isDeleted()).isFalse();
+    }
+
+    @Test
+    void deleteEventAsManager_DRAFT가_아니면_거부() {
+        Event event = event(MANAGER_ID);
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.deleteEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_DELETE_NOT_ALLOWED));
+        assertThat(event.isDeleted()).isFalse();
+    }
+
+    @Test
+    void deleteEventAsManager_예약_이력이_있으면_거부되고_삭제되지_않음() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(reservationQueryPort.hasActiveReservationsForEvent(EVENT_ID)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.deleteEvent(EVENT_ID))
+        assertThatThrownBy(() -> service.deleteEventAsManager(EVENT_ID, MANAGER_ID))
                 .isInstanceOfSatisfying(BusinessException.class,
-                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_DELETE_NOT_ALLOWED));
         assertThat(event.isDeleted()).isFalse();
         verify(eventBookmarkService, never()).removeBookmarksForEvent(anyLong());
     }
 
     @Test
-    void deleteEvent_존재하지_않는_행사면_예외() {
+    void deleteEventAsManager_존재하지_않는_행사면_예외() {
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.deleteEvent(EVENT_ID))
+        assertThatThrownBy(() -> service.deleteEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_NOT_FOUND));
+        verify(eventBookmarkService, never()).removeBookmarksForEvent(anyLong());
+    }
+
+    @Test
+    void deleteEventAsAdmin_상태_무관하게_소프트삭제() {
+        Event event = event(MANAGER_ID);
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        service.deleteEventAsAdmin(EVENT_ID);
+
+        assertThat(event.isDeleted()).isTrue();
+        verify(eventBookmarkService).removeBookmarksForEvent(EVENT_ID);
+    }
+
+    @Test
+    void deleteEventAsAdmin_예약_이력이_있으면_거부되고_삭제되지_않음() {
+        Event event = event(MANAGER_ID);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+        when(reservationQueryPort.hasActiveReservationsForEvent(EVENT_ID)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.deleteEventAsAdmin(EVENT_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_DELETE_NOT_ALLOWED));
+        assertThat(event.isDeleted()).isFalse();
+        verify(eventBookmarkService, never()).removeBookmarksForEvent(anyLong());
+    }
+
+    @Test
+    void deleteEventAsAdmin_존재하지_않는_행사면_예외() {
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.deleteEventAsAdmin(EVENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_NOT_FOUND));
         verify(eventBookmarkService, never()).removeBookmarksForEvent(anyLong());
@@ -93,6 +172,113 @@ class EventServiceTest {
         assertThatThrownBy(() -> service.increaseViewCount(EVENT_ID))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_NOT_FOUND));
+    }
+
+    @Test
+    void updateEventAsManager_본인_담당_행사_수정_성공() {
+        Event event = event(MANAGER_ID);
+        EventCategory category = new EventCategory("MUSIC", "음악", true);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+        when(eventCategoryRepository.findById(1L)).thenReturn(Optional.of(category));
+
+        Event updated = service.updateEventAsManager(EVENT_ID, MANAGER_ID, updateCommand());
+
+        assertThat(updated.getTitle()).isEqualTo("수정된 행사");
+    }
+
+    @Test
+    void updateEventAsManager_담당하지_않는_행사면_거부() {
+        Event event = event(OTHER_MANAGER_ID);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.updateEventAsManager(EVENT_ID, MANAGER_ID, updateCommand()))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
+    }
+
+    @Test
+    void publishEvent_필수정보가_모두_있으면_게시() {
+        Event event = publishableEvent(MANAGER_ID, LocalDate.parse("2026-08-01"), LocalDate.parse("2026-08-31"));
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        Event published = service.publishEvent(EVENT_ID);
+
+        assertThat(published.getStatus()).isEqualTo(EventStatus.PUBLISHED);
+    }
+
+    @Test
+    void publishEvent_DRAFT가_아니면_거부() {
+        Event event = publishableEvent(MANAGER_ID, LocalDate.parse("2026-08-01"), LocalDate.parse("2026-08-31"));
+        ReflectionTestUtils.setField(event, "status", EventStatus.CANCELLED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.publishEvent(EVENT_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+    }
+
+    @Test
+    void publishEvent_필수정보가_없으면_거부() {
+        Event event = event(MANAGER_ID);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.publishEvent(EVENT_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+    }
+
+    @Test
+    void cancelEventAsManager_본인_담당_게시된_행사_취소() {
+        Event event = publishableEvent(MANAGER_ID, LocalDate.parse("2026-07-01"), LocalDate.parse("2026-07-31"));
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        Event cancelled = service.cancelEventAsManager(EVENT_ID, MANAGER_ID);
+
+        assertThat(cancelled.getStatus()).isEqualTo(EventStatus.CANCELLED);
+    }
+
+    @Test
+    void cancelEventAsManager_담당하지_않는_행사면_거부() {
+        Event event = publishableEvent(OTHER_MANAGER_ID, LocalDate.parse("2026-07-01"), LocalDate.parse("2026-07-31"));
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.cancelEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
+    }
+
+    @Test
+    void cancelEventAsManager_DRAFT면_거부() {
+        Event event = publishableEvent(MANAGER_ID, LocalDate.parse("2026-07-01"), LocalDate.parse("2026-07-31"));
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.cancelEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+    }
+
+    @Test
+    void cancelEventAsManager_이미_종료된_행사면_거부() {
+        Event event = publishableEvent(MANAGER_ID, LocalDate.parse("2026-01-01"), LocalDate.parse("2026-01-31"));
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.cancelEventAsManager(EVENT_ID, MANAGER_ID))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_INVALID_REQUEST));
+    }
+
+    @Test
+    void cancelEventAsAdmin_소유권_무관하게_취소() {
+        Event event = publishableEvent(OTHER_MANAGER_ID, LocalDate.parse("2026-07-01"), LocalDate.parse("2026-07-31"));
+        ReflectionTestUtils.setField(event, "status", EventStatus.PUBLISHED);
+        when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        Event cancelled = service.cancelEventAsAdmin(EVENT_ID);
+
+        assertThat(cancelled.getStatus()).isEqualTo(EventStatus.CANCELLED);
     }
 
     @Test
@@ -136,5 +322,24 @@ class EventServiceTest {
         Event event = new Event("테스트 행사", category, managerId);
         ReflectionTestUtils.setField(event, "id", EVENT_ID);
         return event;
+    }
+
+    /** 게시(publish) 필수 항목이 전부 채워진 DRAFT 상태 이벤트 */
+    private Event publishableEvent(long managerId, LocalDate startDate, LocalDate endDate) {
+        Event event = event(managerId);
+        ReflectionTestUtils.setField(event, "hostName", "주최자");
+        ReflectionTestUtils.setField(event, "venueName", "장소");
+        ReflectionTestUtils.setField(event, "address", "주소");
+        ReflectionTestUtils.setField(event, "legalDongCode", "1111000000");
+        ReflectionTestUtils.setField(event, "latitude", BigDecimal.valueOf(37.5));
+        ReflectionTestUtils.setField(event, "longitude", BigDecimal.valueOf(127.0));
+        ReflectionTestUtils.setField(event, "startDate", startDate);
+        ReflectionTestUtils.setField(event, "endDate", endDate);
+        return event;
+    }
+
+    private UpdateEventCommand updateCommand() {
+        return new UpdateEventCommand("수정된 행사", 1L, "주최자", "장소", "주소", null, null, null,
+                null, null, null, null);
     }
 }

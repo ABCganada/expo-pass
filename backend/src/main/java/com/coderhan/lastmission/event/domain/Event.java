@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.event.domain;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -100,6 +101,15 @@ public class Event {
 
     public boolean isDeleted() {
         return deletedAt != null;
+    }
+
+    public boolean isCancelled() {
+        return status == EventStatus.CANCELLED;
+    }
+
+    /** 게시된 채로 종료일이 지난 행사인지 여부 */
+    public boolean isEnded(Clock clock) {
+        return status == EventStatus.PUBLISHED && phase(LocalDate.now(clock)) == EventPhase.ENDED;
     }
 
     /** 필드 수정 전용 */

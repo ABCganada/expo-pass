@@ -22,7 +22,7 @@ public record BannerAd(
         BannerAdStatus status,
         OffsetDateTime startsAt,
         OffsetDateTime endsAt,
-        String createdBy,
+        long createdBy,
         OffsetDateTime createdAt,
         Long totalAmount
 ) {

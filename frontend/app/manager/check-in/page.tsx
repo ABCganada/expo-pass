@@ -7,6 +7,7 @@ export default function CheckInPage() {
       title="QR 체크인"
       subtitle="체크인을 진행할 행사를 선택하세요"
       phaseFilter="ONGOING"
+      showSearch
     />
   );
 }

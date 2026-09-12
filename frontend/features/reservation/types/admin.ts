@@ -31,3 +31,8 @@ export interface CheckinProgress {
   totalItems: number;
   checkedInCount: number;
 }
+
+export interface DailyReservationCount {
+  date: string;
+  count: number;
+}

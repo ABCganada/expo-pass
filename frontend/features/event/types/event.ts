@@ -71,7 +71,9 @@ export interface BookmarkedEvent {
   id: string;
   title: string;
   categoryName: string;
+  venueName: string;
   startDate: string;
   endDate: string;
   phase: string;
+  thumbnailUrl: string | null;
 }

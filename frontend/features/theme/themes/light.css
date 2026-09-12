@@ -1,7 +1,7 @@
 :root,
 :root[data-theme="light"] {
-  --color-primary: #5b55e7;
-  --color-primary-hover: #4943cf;
+  --color-primary: #0f6f52;
+  --color-primary-hover: #0c5a42;
   --color-page-background: #f6f7fb;
   --color-content-background: #f8f9fc;
   --color-card-background: #ffffff;
@@ -10,8 +10,8 @@
   --color-sidebar-text-strong: #18223a;
   --color-sidebar-border: #e7eaf1;
   --color-sidebar-hover: #f5f6fb;
-  --color-sidebar-active: #efefff;
-  --color-sidebar-active-text: #554ee3;
+  --color-sidebar-active: #f0f6f4;
+  --color-sidebar-active-text: #0f6f52;
   --color-header-background: rgb(255 255 255 / 0.94);
   --color-border: #e5e8f0;
   --color-text-primary: #18223a;

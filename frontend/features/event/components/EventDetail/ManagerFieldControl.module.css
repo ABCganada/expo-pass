@@ -1,0 +1,90 @@
+.managerRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.readonlyBox {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-content-background);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.changeButton {
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.changeButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.fieldError {
+  color: var(--color-danger);
+  font-size: 12px;
+}
+
+.managerEditActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.managerSaveButton {
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.managerSaveButton:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.managerSaveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.managerCancelButton {
+  padding: 10px 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.managerCancelButton:hover:not(:disabled) {
+  border-color: var(--color-text-secondary);
+}
+
+.managerCancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -1,8 +1,9 @@
 import { getCsrfToken } from "@/features/shared/api/csrf";
 import type {
   CreateOrderItemInput,
+  MyOrdersQuery,
   OrderDetail,
-  OrderSummary,
+  OrdersPage,
   QrTicket,
 } from "../types/reservation";
 
@@ -16,14 +17,22 @@ async function parseData<T>(res: Response): Promise<T> {
 }
 
 export const reservationService = {
-  getMyOrders: (signal?: AbortSignal): Promise<OrderSummary[]> =>
-    fetch(`${BASE}/reservations/me`, { credentials: "include", signal }).then((res) =>
-      parseData<OrderSummary[]>(res),
-    ),
+  getMyOrders: ({ status, page, size }: MyOrdersQuery, signal?: AbortSignal): Promise<OrdersPage> => {
+    const params = new URLSearchParams({ page: String(page), size: String(size) });
+    if (status) params.set("status", status);
+    return fetch(`${BASE}/reservations/me?${params.toString()}`, { credentials: "include", signal }).then((res) =>
+      parseData<OrdersPage>(res),
+    );
+  },
 
   getMyQrTickets: (signal?: AbortSignal): Promise<QrTicket[]> =>
     fetch(`${BASE}/reservations/me/qr-tickets`, { credentials: "include", signal }).then((res) =>
       parseData<QrTicket[]>(res),
+    ),
+
+  getOrder: (orderId: string, signal?: AbortSignal): Promise<OrderDetail> =>
+    fetch(`${BASE}/reservations/${orderId}`, { credentials: "include", signal }).then((res) =>
+      parseData<OrderDetail>(res),
     ),
 
   createOrder: async (

@@ -1,7 +1,7 @@
 import { baseApi } from "@/features/store/api/baseApi";
 import { queryResult } from "@/features/store/api/queryError";
 import { eventLookupService } from "../services/eventLookupService";
-import type { AdminEventListItem, EventSummary, EventTicketOption } from "../types/eventLookup";
+import type { AdminEventListItem, EventSummary, EventTicketOption, PublishedEventListItem } from "../types/eventLookup";
 
 // Reservation 화면(예약 카드, 티켓 구매 위젯 등)이 Event의 공개 API를 조회 전용으로 쓰는 엔드포인트.
 // Event 도메인의 프론트 기능을 대신 만드는 게 아니다.
@@ -19,6 +19,10 @@ const eventLookupApi = baseApi.injectEndpoints({
       queryFn: (_arg, api) => queryResult(eventLookupService.getAdminEvents(api.signal)),
       providesTags: ["Event"],
     }),
+    getPublishedEventsForDisplay: build.query<PublishedEventListItem[], void>({
+      queryFn: (_arg, api) => queryResult(eventLookupService.getPublishedEvents(api.signal)),
+      providesTags: ["Event"],
+    }),
   }),
 });
 
@@ -27,4 +31,5 @@ export const {
   useLazyGetEventForDisplayQuery,
   useGetEventTicketsForDisplayQuery,
   useGetAdminEventsForDisplayQuery,
+  useGetPublishedEventsForDisplayQuery,
 } = eventLookupApi;

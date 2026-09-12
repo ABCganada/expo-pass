@@ -6,6 +6,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import com.coderhan.lastmission.marketing.AdExpiredEvent;
+import com.coderhan.lastmission.marketing.AdRejectedEvent;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
@@ -13,21 +15,25 @@ import com.coderhan.lastmission.marketing.domain.BannerSlotType;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BannerAdService {
     private final BannerAdRepository adRepository;
     private final BannerSlotRepository slotRepository;
     private final BannerStatRepository statRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     @Transactional
     public BannerAd registerAd(Set<UUID> slotIds, String title, String bannerImageUrl, String adImageUrl,
                                String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt,
-                               String createdBy) {
+                               long createdBy) {
         if (slotIds == null || slotIds.isEmpty()) {
             throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "광고 슬롯을 하나 이상 선택해야 합니다.");
         }
@@ -47,11 +53,11 @@ public class BannerAdService {
     }
 
     @Transactional
-    public BannerAd updateAd(UUID id, String createdBy, String title, String bannerImageUrl, String adImageUrl,
+    public BannerAd updateAd(UUID id, long createdBy, String title, String bannerImageUrl, String adImageUrl,
                               String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt) {
         BannerAd ad = adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
-        if (!ad.createdBy().equals(createdBy)) {
+        if (ad.createdBy() != createdBy) {
             throw new BusinessException(ErrorCode.BANNER_AD_ACCESS_DENIED, "본인의 광고만 수정할 수 있습니다.");
         }
         if (ad.status() != BannerAdStatus.PENDING) {
@@ -65,20 +71,32 @@ public class BannerAdService {
     public BannerAd approve(UUID id) {
         BannerAd ad = adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
-        if (ad.status() != BannerAdStatus.PENDING) {
+        if (ad.status() == BannerAdStatus.PENDING) {
+            throw new BusinessException(ErrorCode.BANNER_AD_PAYMENT_REQUIRED, "결제가 완료되지 않은 광고입니다.");
+        }
+        if (ad.status() != BannerAdStatus.PAID) {
             throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "이미 처리된 광고입니다.");
         }
         return adRepository.updateStatus(id, BannerAdStatus.APPROVED);
     }
 
+    /**
+     * 광고 반려. 결제완료(PAID) 상태만 반려 가능하며, 반려되면 {@link AdRejectedEvent}를 발행해
+     * payment 모듈이 결제를 자동 환불하도록 한다(광고 환불 정책 — 항상 100%).
+     */
     @Transactional
     public BannerAd reject(UUID id) {
         BannerAd ad = adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
-        if (ad.status() != BannerAdStatus.PENDING) {
+        if (ad.status() == BannerAdStatus.PENDING) {
+            throw new BusinessException(ErrorCode.BANNER_AD_PAYMENT_REQUIRED, "결제가 완료되지 않은 광고입니다.");
+        }
+        if (ad.status() != BannerAdStatus.PAID) {
             throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "이미 처리된 광고입니다.");
         }
-        return adRepository.updateStatus(id, BannerAdStatus.REJECTED);
+        BannerAd rejected = adRepository.updateStatus(id, BannerAdStatus.REJECTED);
+        eventPublisher.publishEvent(new AdRejectedEvent(rejected.id(), rejected.orderId()));
+        return rejected;
     }
 
     @Transactional(readOnly = true)
@@ -87,8 +105,8 @@ public class BannerAdService {
     }
 
     @Transactional(readOnly = true)
-    public List<BannerAd> getMyAds(String email) {
-        return adRepository.findByCreatedBy(email);
+    public List<BannerAd> getMyAds(long userId) {
+        return adRepository.findByCreatedBy(userId);
     }
 
     @Transactional(readOnly = true)
@@ -99,7 +117,26 @@ public class BannerAdService {
     @Transactional
     public void expireAds() {
         adRepository.findExpiredApproved(OffsetDateTime.now(clock))
-                .forEach(ad -> adRepository.updateStatus(ad.id(), BannerAdStatus.EXPIRED));
+                .forEach(ad -> {
+                    adRepository.updateStatus(ad.id(), BannerAdStatus.EXPIRED);
+                    if (ad.totalAmount() != null) {
+                        eventPublisher.publishEvent(new AdExpiredEvent(ad.id(), ad.totalAmount()));
+                    }
+                });
+    }
+
+    @Transactional
+    public void deleteAdByMarketer(UUID id, long requesterId) {
+        BannerAd ad = adRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
+        if (ad.createdBy() != requesterId) {
+            throw new BusinessException(ErrorCode.BANNER_AD_ACCESS_DENIED, "본인의 광고만 삭제할 수 있습니다.");
+        }
+        if (ad.status() != BannerAdStatus.PENDING) {
+            throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "결제 대기 상태의 광고만 삭제할 수 있습니다.");
+        }
+        statRepository.deleteStatsByAdId(id);
+        adRepository.deleteById(id);
     }
 
     @Transactional
@@ -108,6 +145,29 @@ public class BannerAdService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
         statRepository.deleteStatsByAdId(id);
         adRepository.deleteById(id);
+    }
+
+    /** 결제 완료 이벤트 리스너용 — 멱등 (이미 PAID 이상이면 스킵). */
+    @Transactional
+    public void markAsPaidByOrderId(String orderId) {
+        adRepository.findByOrderId(orderId).ifPresent(ad -> {
+            if (ad.status() != BannerAdStatus.PENDING) {
+                log.warn("markAsPaidByOrderId: 예상 밖 상태. orderId={}, status={}", orderId, ad.status());
+                return;
+            }
+            adRepository.updateStatus(ad.id(), BannerAdStatus.PAID);
+        });
+    }
+
+    /** 정합성 스케줄러용 — 미결제 타임아웃된 PENDING 광고 취소. */
+    @Transactional
+    public void cancelByOrderId(String orderId) {
+        adRepository.findByOrderId(orderId).ifPresent(ad -> {
+            if (ad.status() != BannerAdStatus.PENDING) {
+                return;
+            }
+            adRepository.updateStatus(ad.id(), BannerAdStatus.CANCELLED);
+        });
     }
 
     @Transactional(readOnly = true)

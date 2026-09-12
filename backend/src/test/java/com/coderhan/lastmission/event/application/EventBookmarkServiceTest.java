@@ -36,6 +36,7 @@ class EventBookmarkServiceTest {
 
     @Mock EventBookmarkRepository eventBookmarkRepository;
     @Mock EventRepository eventRepository;
+    @Mock EventImageRepository eventImageRepository;
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks EventBookmarkService service;
@@ -86,11 +87,13 @@ class EventBookmarkServiceTest {
         Event event = event();
         EventBookmark bookmark = new EventBookmark(event, USER_ID);
         when(eventBookmarkRepository.findAllByUserIdOrderByCreatedAtDesc(USER_ID)).thenReturn(List.of(bookmark));
+        when(eventImageRepository.findAllByEventIdInAndImageType(any(), any())).thenReturn(List.of());
 
         List<EventBookmarkService.BookmarkedEvent> result = service.getMyBookmarkedEvents(USER_ID);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).event()).isSameAs(event);
+        assertThat(result.get(0).id()).isEqualTo(EVENT_ID);
+        assertThat(result.get(0).title()).isEqualTo(event.getTitle());
         assertThat(result.get(0).phase()).isEqualTo(EventPhase.ONGOING);
     }
 

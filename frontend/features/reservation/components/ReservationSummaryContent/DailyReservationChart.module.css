@@ -1,0 +1,144 @@
+.section {
+  background: var(--color-card-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 28px;
+  margin-top: 20px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 24px;
+}
+
+.empty {
+  padding: 32px 0;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.chart {
+  display: flex;
+  gap: 12px;
+  height: 200px;
+}
+
+.yAxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 28px;
+  flex-shrink: 0;
+}
+
+.yTick {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.yTick:last-child {
+  transform: translateY(50%);
+}
+
+.plot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.gridLines {
+  position: absolute;
+  inset: 0 0 28px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.gridLine {
+  height: 1px;
+  background: var(--color-border);
+}
+
+.bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  gap: 4px;
+}
+
+.column {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  outline: none;
+}
+
+.barTrack {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.bar {
+  width: 100%;
+  max-width: 24px;
+  min-height: 0;
+  background: var(--color-primary);
+  border-radius: 4px 4px 0 0;
+  transition: opacity 0.15s ease;
+}
+
+.bar[data-hovered="true"] {
+  opacity: 0.8;
+}
+
+.xLabel {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: var(--radius-button);
+  background: var(--color-card-background);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.tooltipValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.tooltipLabel {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}

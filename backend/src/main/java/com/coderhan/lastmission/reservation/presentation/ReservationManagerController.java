@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.reservation.presentation;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -24,10 +25,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 관리자 전용 예약 관리 API — 체크인, 예약자 명단, 행사별 예약 현황.
+ * 매니저 전용 예약 관리 API — 체크인, 예약자 명단, 행사별 예약 현황.
  *
- * <p>경로가 {@code /api/v1/manager/**} 라 SecurityConfig 에서 ROLE_ADMIN, ROLE_MANAGER 가 접근 가능하다
- * (박람회관리자가 자신이 담당하는 행사의 예약을 관리하기 위한 API — 컨트롤러엔 별도 권한 체크 코드 없음).</p>
+ * <p>경로가 {@code /api/v1/manager/**} 라 SecurityConfig 에서 ROLE_ADMIN, ROLE_MANAGER 가 접근 가능하지만,
+ * 여기서는 호출자의 role과 무관하게 항상 본인이 담당하는 행사만 접근할 수 있도록
+ * {@code ReservationService}가 매 호출마다 소유권을 검증한다(ADMIN도 예외 없음 — EventManagerController와
+ * 동일한 방식). 소유권 검증 없이 전체 행사를 보려면 {@code ReservationAdminController}(/api/v1/admin/reservations)를 쓴다.</p>
  */
 @RestController
 @RequestMapping("/api/v1/manager/reservations")
@@ -44,8 +47,10 @@ class ReservationManagerController {
 
     /** 예약자 명단 조회. 유저 이름/이메일까지 채워서 내려준다. */
     @GetMapping("/events/{eventId}/attendees")
-    ApiResponse<List<AttendeeResponse>> getAttendees(@PathVariable String eventId) {
-        List<AttendeeResponse> attendees = reservationService.getEventAttendees(parseEventId(eventId)).stream()
+    ApiResponse<List<AttendeeResponse>> getAttendees(@PathVariable String eventId,
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        List<AttendeeResponse> attendees = reservationService
+                .getEventAttendees(parseEventId(eventId), principal.userId()).stream()
                 .map(info -> AttendeeResponse.from(info.order(), info.userRef()))
                 .toList();
         return ApiResponse.success(attendees);
@@ -53,17 +58,30 @@ class ReservationManagerController {
 
     /** 행사별 예약 현황(상태별 건수). */
     @GetMapping("/events/{eventId}/summary")
-    ApiResponse<EventSummaryResponse> getEventSummary(@PathVariable String eventId) {
-        ReservationService.EventReservationSummary summary =
-                reservationService.getEventSummary(parseEventId(eventId));
+    ApiResponse<EventSummaryResponse> getEventSummary(@PathVariable String eventId,
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        ReservationService.EventReservationSummary summary = reservationService.getEventSummary(
+                parseEventId(eventId), principal.userId());
         return ApiResponse.success(EventSummaryResponse.from(summary));
     }
 
     @GetMapping("/events/{eventId}/checkin-status")
-    ApiResponse<CheckinProgressResponse> getCheckinStatus(@PathVariable String eventId){
-        CheckinProgress checkinStatus =
-                reservationService.getCheckinProgress(parseEventId(eventId));
+    ApiResponse<CheckinProgressResponse> getCheckinStatus(@PathVariable String eventId,
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        CheckinProgress checkinStatus = reservationService.getCheckinProgress(
+                parseEventId(eventId), principal.userId());
         return ApiResponse.success(CheckinProgressResponse.from(checkinStatus));
+    }
+
+    /** 날짜별 예약 건수(예약 추이 그래프용). */
+    @GetMapping("/events/{eventId}/daily-counts")
+    ApiResponse<List<DailyCountResponse>> getDailyCounts(@PathVariable String eventId,
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        List<DailyCountResponse> counts = reservationService
+                .getDailyReservationCounts(parseEventId(eventId), principal.userId()).stream()
+                .map(DailyCountResponse::from)
+                .toList();
+        return ApiResponse.success(counts);
     }
 
     private long parseEventId(String value) {
@@ -104,6 +122,12 @@ class ReservationManagerController {
     record CheckinProgressResponse(long totalItems, long checkedInCount) {
         static CheckinProgressResponse from(CheckinProgress progress) {
             return new CheckinProgressResponse(progress.totalItems(), progress.checkedInCount());
+        }
+    }
+
+    record DailyCountResponse(LocalDate date, long count) {
+        static DailyCountResponse from(ReservationService.DailyReservationCount dailyCount) {
+            return new DailyCountResponse(dailyCount.date(), dailyCount.count());
         }
     }
 

@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -46,6 +47,7 @@ class EventImageServiceTest {
     @Mock EventRepository eventRepository;
     @Mock EventImageRepository eventImageRepository;
     @Mock EventImageStorage eventImageStorage;
+    @Spy EventOwnershipValidator ownershipValidator = new EventOwnershipValidator();
 
     @InjectMocks EventImageService service;
 
@@ -65,7 +67,7 @@ class EventImageServiceTest {
             {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 0, 0, 0, 0};
 
     @Test
-    void uploadImage_성공하면_reserveUrl_save_uploadTo_순서로_수행() {
+    void uploadImageAsManager_성공하면_reserveUrl_save_uploadTo_순서로_수행() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventImageRepository.countByEventId(EVENT_ID)).thenReturn(0L);
@@ -74,7 +76,7 @@ class EventImageServiceTest {
 
         MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", PNG_BYTES);
 
-        EventImage saved = service.uploadImage(EVENT_ID, MANAGER_ID, true, EventImageType.GENERAL, file);
+        EventImage saved = service.uploadImageAsManager(EVENT_ID, MANAGER_ID, EventImageType.GENERAL, file);
 
         assertThat(saved.getImageUrl()).isEqualTo("https://bucket/a-key.png");
         assertThat(saved.getDisplayOrder()).isZero();
@@ -90,7 +92,7 @@ class EventImageServiceTest {
     }
 
     @Test
-    void uploadImage_업로드_도중_실패하면_롤백시_S3_파일이_정리() {
+    void uploadImageAsManager_업로드_도중_실패하면_롤백시_S3_파일이_정리() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventImageRepository.countByEventId(EVENT_ID)).thenReturn(0L);
@@ -102,7 +104,7 @@ class EventImageServiceTest {
         MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", PNG_BYTES);
 
         assertThatThrownBy(() ->
-                service.uploadImage(EVENT_ID, MANAGER_ID, true, EventImageType.GENERAL, file))
+                service.uploadImageAsManager(EVENT_ID, MANAGER_ID, EventImageType.GENERAL, file))
                 .isInstanceOf(BusinessException.class);
 
         simulateRollback();
@@ -111,7 +113,7 @@ class EventImageServiceTest {
     }
 
     @Test
-    void uploadImage_DB_save_실패하면_업로드_시도하지_않음() {
+    void uploadImageAsManager_DB_save_실패하면_업로드_시도하지_않음() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventImageRepository.countByEventId(EVENT_ID)).thenReturn(0L);
@@ -121,7 +123,7 @@ class EventImageServiceTest {
         MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", PNG_BYTES);
 
         assertThatThrownBy(() ->
-                service.uploadImage(EVENT_ID, MANAGER_ID, true, EventImageType.GENERAL, file))
+                service.uploadImageAsManager(EVENT_ID, MANAGER_ID, EventImageType.GENERAL, file))
                 .isInstanceOf(RuntimeException.class);
 
         // save 자체가 실패했으므로 아직 파일을 올리지 않은 상태 -> uploadTo가 호출되면 X
@@ -134,34 +136,34 @@ class EventImageServiceTest {
     }
 
     @Test
-    void uploadImage_MANAGER가_담당하지_않는_행사면_거부() {
+    void uploadImageAsManager_담당하지_않는_행사면_거부() {
         Event event = event(OTHER_MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
         MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", PNG_BYTES);
 
         assertThatThrownBy(() ->
-                service.uploadImage(EVENT_ID, MANAGER_ID, false, EventImageType.GENERAL, file))
+                service.uploadImageAsManager(EVENT_ID, MANAGER_ID, EventImageType.GENERAL, file))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_ACCESS_DENIED));
         verify(eventImageStorage, never()).reserveUrl(anyLong(), any(EventImageContentType.class));
     }
 
     @Test
-    void uploadImage_허용되지_않는_파일형식이면_거부() {
+    void uploadImageAsManager_허용되지_않는_파일형식이면_거부() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
         MockMultipartFile file = new MockMultipartFile("file", "a.txt", "text/plain", "data".getBytes());
 
         assertThatThrownBy(() ->
-                service.uploadImage(EVENT_ID, MANAGER_ID, true, EventImageType.GENERAL, file))
+                service.uploadImageAsManager(EVENT_ID, MANAGER_ID, EventImageType.GENERAL, file))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_IMAGE_INVALID_REQUEST));
     }
 
     @Test
-    void uploadImage_확장자는_이미지지만_내용이_다른_형식이면_거부() {
+    void uploadImageAsManager_확장자는_이미지지만_내용이_다른_형식이면_거부() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
@@ -169,14 +171,14 @@ class EventImageServiceTest {
         MockMultipartFile file = new MockMultipartFile("file", "fake.png", "image/png", "not-a-real-image".getBytes());
 
         assertThatThrownBy(() ->
-                service.uploadImage(EVENT_ID, MANAGER_ID, true, EventImageType.GENERAL, file))
+                service.uploadImageAsManager(EVENT_ID, MANAGER_ID, EventImageType.GENERAL, file))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_IMAGE_INVALID_REQUEST));
         verify(eventImageStorage, never()).reserveUrl(anyLong(), any(EventImageContentType.class));
     }
 
     @Test
-    void uploadAll_전체_성공하면_모두_저장되고_displayOrder가_이어짐() {
+    void uploadAllAsManager_전체_성공하면_모두_저장되고_displayOrder가_이어짐() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventImageRepository.countByEventId(EVENT_ID)).thenReturn(3L); // 기존 3장 존재
@@ -189,7 +191,7 @@ class EventImageServiceTest {
                 new MockMultipartFile("files", "2.png", "image/png", PNG_BYTES));
         List<EventImageType> types = List.of(EventImageType.THUMBNAIL, EventImageType.GENERAL);
 
-        List<EventImage> saved = service.uploadAll(EVENT_ID, MANAGER_ID, true, types, files);
+        List<EventImage> saved = service.uploadAllAsManager(EVENT_ID, MANAGER_ID, types, files);
 
         assertThat(saved).extracting(EventImage::getDisplayOrder).containsExactly(3, 4);
         verify(eventImageStorage).uploadTo("https://bucket/1.png", EventImageContentType.PNG, PNG_BYTES);
@@ -197,7 +199,7 @@ class EventImageServiceTest {
     }
 
     @Test
-    void uploadAll_두번째_파일_업로드가_실패하면_첫번째_파일도_함께_정리() {
+    void uploadAllAsManager_두번째_파일_업로드가_실패하면_첫번째_파일도_함께_정리() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventImageRepository.countByEventId(EVENT_ID)).thenReturn(0L);
@@ -213,7 +215,7 @@ class EventImageServiceTest {
                 new MockMultipartFile("files", "2.png", "image/png", PNG_BYTES));
         List<EventImageType> types = List.of(EventImageType.GENERAL, EventImageType.GENERAL);
 
-        assertThatThrownBy(() -> service.uploadAll(EVENT_ID, MANAGER_ID, true, types, files))
+        assertThatThrownBy(() -> service.uploadAllAsManager(EVENT_ID, MANAGER_ID, types, files))
                 .isInstanceOf(BusinessException.class);
 
         simulateRollback();
@@ -224,7 +226,7 @@ class EventImageServiceTest {
     }
 
     @Test
-    void uploadAll_파일과_imageType_개수가_다르면_아무것도_시도하지_않고_거부() {
+    void uploadAllAsManager_파일과_imageType_개수가_다르면_아무것도_시도하지_않고_거부() {
         Event event = event(MANAGER_ID);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
 
@@ -232,20 +234,20 @@ class EventImageServiceTest {
                 new MockMultipartFile("files", "1.png", "image/png", "d1".getBytes()));
         List<EventImageType> types = List.of(EventImageType.GENERAL, EventImageType.GENERAL);
 
-        assertThatThrownBy(() -> service.uploadAll(EVENT_ID, MANAGER_ID, true, types, files))
+        assertThatThrownBy(() -> service.uploadAllAsManager(EVENT_ID, MANAGER_ID, types, files))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.EVENT_IMAGE_INVALID_REQUEST));
         verify(eventImageStorage, never()).reserveUrl(anyLong(), any(EventImageContentType.class));
     }
 
     @Test
-    void deleteImage_삭제후_커밋되면_S3_파일도_정리() {
+    void deleteImageAsManager_삭제후_커밋되면_S3_파일도_정리() {
         Event event = event(MANAGER_ID);
         EventImage image = new EventImage(event, "https://bucket/a-key.png", EventImageType.GENERAL, 0);
         when(eventRepository.findNotDeletedById(EVENT_ID)).thenReturn(Optional.of(event));
         when(eventImageRepository.findByIdAndEventId(10L, EVENT_ID)).thenReturn(Optional.of(image));
 
-        service.deleteImage(EVENT_ID, 10L, MANAGER_ID, true);
+        service.deleteImageAsManager(EVENT_ID, 10L, MANAGER_ID);
 
         verify(eventImageRepository).delete(image);
         verify(eventImageStorage, never()).cleanup(anyString());

@@ -38,7 +38,7 @@ export function ManagerPicker({ selectedManager, onSelect, onClear, invalid }: M
     return (
       <div className={styles.chip}>
         <span>
-          {selectedManager.name} ({selectedManager.email})
+          {selectedManager.email ? `${selectedManager.name} (${selectedManager.email})` : selectedManager.name}
         </span>
         <button type="button" className={styles.clearButton} onClick={onClear} aria-label="담당자 선택 해제">
           <X size={18} strokeWidth={2.5} />

@@ -1,5 +1,11 @@
-export type PaymentStatus = "REQUESTED" | "COMPLETED" | "FAILED" | "CANCELLED" | "REFUNDED";
+export type PaymentStatus =
+  | "REQUESTED"
+  | "COMPLETED"
+  | "FAILED"
+  | "CANCELLED"
+  | "REFUNDED";
 export type RefundStatus = "COMPLETED";
+export type OrderType = "RESERVATION" | "ADVERTISEMENT";
 
 export interface Payment {
   id: string;
@@ -24,4 +30,16 @@ export interface Refund {
   autoApproved: boolean;
   requestedAt: string;
   createdAt: string;
+}
+
+export interface PaymentConfirmRequest {
+  orderType: OrderType;
+  pgOrderId: string;
+  paymentKey: string;
+  amount: number;
+}
+
+export interface PaymentFailRequest {
+  orderType: OrderType;
+  reason: string;
 }

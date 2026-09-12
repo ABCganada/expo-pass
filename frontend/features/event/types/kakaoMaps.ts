@@ -25,6 +25,20 @@ export interface KakaoPlacesService {
   ) => void;
 }
 
+export interface KakaoRegionCodeDocument {
+  region_type: "H" | "B";
+  code: string;
+  address_name: string;
+}
+
+export interface KakaoGeocoderService {
+  coord2RegionCode: (
+      lng: number,
+      lat: number,
+      callback: (data: KakaoRegionCodeDocument[], status: string) => void
+  ) => void;
+}
+
 export interface KakaoMap {
   setCenter: (
       latlng: KakaoLatLng
@@ -44,6 +58,7 @@ export interface KakaoMarker {
 
 export interface KakaoMapsServices {
   Places: new () => KakaoPlacesService;
+  Geocoder: new () => KakaoGeocoderService;
 }
 
 export interface KakaoMaps {

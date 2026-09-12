@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import type { EventContentType } from "../../types/adminEventDetail";
+import type { EventContentType } from "../../types/eventManagementDetail";
 import styles from "./ContentSectionsEditor.module.css";
 
 const SECTION_LABELS: Record<EventContentType, string> = {
@@ -16,9 +16,10 @@ const BASIC_SECTION_TYPE: EventContentType = "DESCRIPTION";
 interface ContentSectionsEditorProps {
   sections: Partial<Record<EventContentType, string>>;
   onChange: (sections: Partial<Record<EventContentType, string>>) => void;
+  readOnly?: boolean;
 }
 
-export function ContentSectionsEditor({ sections, onChange }: ContentSectionsEditorProps) {
+export function ContentSectionsEditor({ sections, onChange, readOnly = false }: ContentSectionsEditorProps) {
   const activeTypes = SECTION_ORDER.filter((type) => sections[type] !== undefined);
   const availableTypes = SECTION_ORDER.filter((type) => sections[type] === undefined);
 
@@ -38,7 +39,7 @@ export function ContentSectionsEditor({ sections, onChange }: ContentSectionsEdi
 
   return (
     <div className={styles.editor}>
-      {availableTypes.length > 0 && (
+      {!readOnly && availableTypes.length > 0 && (
         <div className={styles.toolbar}>
           {availableTypes.map((type) => (
             <button key={type} type="button" className={styles.addButton} onClick={() => addSection(type)}>
@@ -64,10 +65,12 @@ export function ContentSectionsEditor({ sections, onChange }: ContentSectionsEdi
                       {isBasic ? "기본" : "선택"}
                     </span>
                   </span>
-                  <button type="button" className={styles.deleteButton} onClick={() => removeSection(type)}>
-                    <Trash2 size={14} />
-                    삭제
-                  </button>
+                  {!readOnly && (
+                    <button type="button" className={styles.deleteButton} onClick={() => removeSection(type)}>
+                      <Trash2 size={14} />
+                      삭제
+                    </button>
+                  )}
                 </div>
                 <textarea
                   className={styles.textarea}
@@ -75,6 +78,7 @@ export function ContentSectionsEditor({ sections, onChange }: ContentSectionsEdi
                   onChange={(event) => updateContent(type, event.target.value)}
                   rows={5}
                   placeholder={`${SECTION_LABELS[type]} 내용을 입력하세요.`}
+                  disabled={readOnly}
                 />
               </div>
             );

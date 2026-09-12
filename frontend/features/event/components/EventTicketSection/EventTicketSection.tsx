@@ -32,7 +32,10 @@ export function EventTicketSection({ eventId, tickets }: EventTicketSectionProps
         <ul className={styles.list}>
           {tickets.map((ticket) => (
             <li key={ticket.id} className={styles.row}>
-              <span className={styles.name}>{ticket.name}</span>
+              <span className={styles.nameGroup}>
+                <span className={styles.name}>{ticket.name}</span>
+                <span className={styles.limit}>(최대 {ticket.maxPurchasePerUser}매)</span>
+              </span>
               <span className={styles.price}>{formatPrice(ticket.price)}</span>
             </li>
           ))}

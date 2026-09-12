@@ -1,4 +1,4 @@
-import type { AdminEventListItem, EventSummary, EventTicketOption } from "../types/eventLookup";
+import type { AdminEventListItem, EventSummary, EventTicketOption, PublishedEventListItem } from "../types/eventLookup";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 const BASE = `${API_BASE_URL}/api/v1`;
@@ -22,9 +22,15 @@ export const eventLookupService = {
       parseData<EventTicketOption[]>(res),
     ),
 
-  // ADMIN이면 전체 행사, MANAGER면 자신이 관리하는 행사만 반환한다 (Event 도메인이 역할별로 필터링).
+  // MANAGER 컨텍스트용 — 호출자 본인이 담당하는 행사만 반환한다.
   getAdminEvents: (signal?: AbortSignal): Promise<AdminEventListItem[]> =>
     fetch(`${BASE}/manager/events`, { credentials: "include", signal }).then((res) =>
       parseData<AdminEventListItem[]>(res),
+    ),
+
+  // 게시된 행사만 반환하는 공개 목록 — DRAFT를 볼 필요가 없는(예약 대상 행사만 고르면 되는) 화면용.
+  getPublishedEvents: (signal?: AbortSignal): Promise<PublishedEventListItem[]> =>
+    fetch(`${BASE}/events`, { credentials: "include", signal }).then((res) =>
+      parseData<PublishedEventListItem[]>(res),
     ),
 };

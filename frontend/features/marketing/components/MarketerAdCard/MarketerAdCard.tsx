@@ -1,6 +1,7 @@
 "use client";
 
-import { BarChart2, CalendarRange, Edit2, Link } from "lucide-react";
+import { BarChart2, CalendarRange, CreditCard, Edit2, Link, Trash2 } from "lucide-react";
+import { useDeleteMyAdMutation } from "../../api/marketerBannerApi";
 import type { MarketerBannerAd } from "../../types/marketerBanner";
 import { BANNER_AD_STATUS_LABEL } from "../../types/marketerBanner";
 import styles from "./MarketerAdCard.module.css";
@@ -9,7 +10,9 @@ interface MarketerAdCardProps {
   ad: MarketerBannerAd;
   slotName?: string;
   onEdit: (ad: MarketerBannerAd) => void;
+  onPay: (ad: MarketerBannerAd) => void;
   onStats: (ad: MarketerBannerAd) => void;
+  onPaymentDetail: (ad: MarketerBannerAd) => void;
 }
 
 function formatDate(iso: string) {
@@ -20,7 +23,14 @@ function formatDate(iso: string) {
   });
 }
 
-export function MarketerAdCard({ ad, slotName, onEdit, onStats }: MarketerAdCardProps) {
+export function MarketerAdCard({ ad, slotName, onEdit, onPay, onStats, onPaymentDetail }: MarketerAdCardProps) {
+  const [deleteAd, { isLoading: isDeleting }] = useDeleteMyAdMutation();
+
+  const handleDelete = async () => {
+    if (!window.confirm("광고를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return;
+    await deleteAd(ad.id);
+  };
+
   return (
     <div className={styles.card}>
       <div className={styles.header}>
@@ -47,15 +57,38 @@ export function MarketerAdCard({ ad, slotName, onEdit, onStats }: MarketerAdCard
 
       <div className={styles.actions}>
         {ad.status === "PENDING" && (
-          <button type="button" className={styles.btnOutline} onClick={() => onEdit(ad)}>
-            <Edit2 size={14} />
-            수정
-          </button>
+          <>
+            <button type="button" className={styles.btnOutline} onClick={() => onEdit(ad)}>
+              <Edit2 size={14} />
+              수정
+            </button>
+            <button type="button" className={styles.btnPrimary} onClick={() => onPay(ad)}>
+              <CreditCard size={14} />
+              결제하기
+            </button>
+            <button
+              type="button"
+              className={styles.btnDanger}
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              <Trash2 size={14} />
+              삭제
+            </button>
+          </>
         )}
-        <button type="button" className={styles.btnPrimary} onClick={() => onStats(ad)}>
-          <BarChart2 size={14} />
-          성과 보기
-        </button>
+        {ad.status !== "PENDING" && (
+          <>
+            <button type="button" className={styles.btnOutline} onClick={() => onPaymentDetail(ad)}>
+              <CreditCard size={14} />
+              결제 정보
+            </button>
+            <button type="button" className={styles.btnPrimary} onClick={() => onStats(ad)}>
+              <BarChart2 size={14} />
+              성과 보기
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

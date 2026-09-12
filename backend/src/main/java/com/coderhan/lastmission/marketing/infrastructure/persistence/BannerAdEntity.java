@@ -70,7 +70,7 @@ class BannerAdEntity {
     private OffsetDateTime endsAt;
 
     @Column(name = "created_by", nullable = false)
-    private String createdBy;
+    private long createdBy;
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;

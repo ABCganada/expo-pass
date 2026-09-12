@@ -15,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,10 +34,10 @@ class EventImageManagerController {
     ResponseEntity<ApiResponse<EventImageResponse>> uploadImage(@PathVariable long eventId,
             @RequestParam("file") MultipartFile file,
             @RequestParam("imageType") String imageType,
-            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
 
-        EventImage image = eventImageService.uploadImage(
-                eventId, principal.userId(), isAdmin(authentication), toImageType(imageType), file);
+        EventImage image = eventImageService.uploadImageAsManager(
+                eventId, principal.userId(), toImageType(imageType), file);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(EventImageResponse.from(image)));
     }
@@ -48,11 +46,11 @@ class EventImageManagerController {
     ResponseEntity<ApiResponse<List<EventImageResponse>>> uploadImages(@PathVariable long eventId,
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam("imageTypes") List<String> imageTypes,
-            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
 
         List<EventImageType> types = imageTypes.stream().map(EventImageManagerController::toImageType).toList();
-        List<EventImage> images = eventImageService.uploadAll(
-                eventId, principal.userId(), isAdmin(authentication), types, files);
+        List<EventImage> images = eventImageService.uploadAllAsManager(
+                eventId, principal.userId(), types, files);
 
         List<EventImageResponse> response = images.stream().map(EventImageResponse::from).toList();
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
@@ -60,8 +58,8 @@ class EventImageManagerController {
 
     @DeleteMapping("/{imageId}")
     ResponseEntity<ApiResponse<Void>> deleteImage(@PathVariable long eventId, @PathVariable long imageId,
-            @AuthenticationPrincipal LastMissionPrincipal principal, Authentication authentication) {
-        eventImageService.deleteImage(eventId, imageId, principal.userId(), isAdmin(authentication));
+            @AuthenticationPrincipal LastMissionPrincipal principal) {
+        eventImageService.deleteImageAsManager(eventId, imageId, principal.userId());
         return ResponseEntity.ok(ApiResponse.success("이미지를 삭제했습니다.", null));
     }
 
@@ -72,13 +70,6 @@ class EventImageManagerController {
             throw new BusinessException(ErrorCode.EVENT_IMAGE_INVALID_REQUEST,
                     "imageType 값이 올바르지 않습니다. (THUMBNAIL, GENERAL 중 하나여야 합니다.)");
         }
-    }
-
-    private static boolean isAdmin(Authentication authentication) {
-        return authentication != null && authentication.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch("ROLE_ADMIN"::equals);
     }
 
     record EventImageResponse(

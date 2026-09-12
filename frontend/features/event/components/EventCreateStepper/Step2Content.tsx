@@ -2,21 +2,21 @@
 
 import { useState } from "react";
 import { ContentSectionsEditor } from "../ContentSectionsEditor/ContentSectionsEditor";
-import { useUpsertAdminEventContentsMutation } from "../../api/adminEventDetailApi";
-import type { AdminEventContentItem, EventContentType } from "../../types/adminEventDetail";
+import { useUpsertManagerEventContentsMutation } from "../../api/managerEventDetailApi";
+import type { EventContentItem, EventContentType } from "../../types/eventManagementDetail";
 import { queryErrorMessage } from "@/features/store/api/queryError";
-import formStyles from "../AdminEventDetail/AdminEventDetail.module.css";
+import formStyles from "../EventDetail/EventDetail.module.css";
 import styles from "./EventCreateStepper.module.css";
 
 interface Step2ContentProps {
   eventId: string;
-  initialContents: AdminEventContentItem[];
+  initialContents: EventContentItem[];
   onBack: () => void;
   onNext: () => void;
 }
 
 export function Step2Content({ eventId, initialContents, onBack, onNext }: Step2ContentProps) {
-  const [upsertContents, { isLoading }] = useUpsertAdminEventContentsMutation();
+  const [upsertContents, { isLoading }] = useUpsertManagerEventContentsMutation();
   const [sections, setSections] = useState<Partial<Record<EventContentType, string>>>(() => {
     const initial: Partial<Record<EventContentType, string>> = {};
     initialContents.forEach((content) => {

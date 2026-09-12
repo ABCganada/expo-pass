@@ -3,6 +3,11 @@ import { EventSelectContent } from "@/features/reservation/components/EventSelec
 export default function ReservationsSummaryPage() {
   return (
     <EventSelectContent
-        basePath="/admin/reservations-summary" title={""} subtitle={""}    showSearch />
+      basePath="/admin/reservations-summary"
+      title=""
+      subtitle=""
+      showPhaseTabs
+      showSearch
+    />
   );
 }

@@ -32,6 +32,7 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
+  min-width: 0;
 }
 
 .skeleton {
@@ -61,7 +62,7 @@
 
 @media (min-width: 1024px) {
   .mainGrid {
-    grid-template-columns: 440px 1fr;
+    grid-template-columns: minmax(0, 835px) minmax(280px, 1fr);
     gap: 40px;
   }
 }
