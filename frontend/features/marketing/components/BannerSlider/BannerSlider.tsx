@@ -7,7 +7,10 @@ import { bannerService } from "../../services/bannerService";
 import styles from "./BannerSlider.module.css";
 
 export function BannerSlider() {
-  const { data: banners = [], isLoading } = useGetActiveBannersQuery();
+  const { data: allBanners = [], isLoading } = useGetActiveBannersQuery();
+  const banners = allBanners.filter((b) =>
+    b.slotTypes?.length ? b.slotTypes.includes("BANNER") : !!b.bannerImageUrl,
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -40,7 +43,8 @@ export function BannerSlider() {
 
   const handleBannerClick = async (id: string, linkUrl: string) => {
     await bannerService.recordClick(id);
-    window.open(linkUrl, "_blank", "noopener,noreferrer");
+    const url = /^https?:\/\//i.test(linkUrl) ? linkUrl : `https://${linkUrl}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   if (isLoading) return <div className={styles.skeleton} aria-busy="true" />;
@@ -56,16 +60,17 @@ export function BannerSlider() {
           onClick={() => handleBannerClick(current.id, current.linkUrl)}
           aria-label={`${current.title} 광고 바로가기`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={current.imageUrl}
-            alt={current.title}
-            className={styles.image}
-            draggable={false}
-          />
-          <div className={styles.overlay}>
-            <span className={styles.title}>{current.title}</span>
-          </div>
+          <div className={styles.placeholder} />
+          {(current.bannerImageUrl ?? current.adImageUrl) && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={current.bannerImageUrl ?? current.adImageUrl ?? ""}
+              alt={current.title}
+              className={styles.image}
+              draggable={false}
+              onError={(e) => { e.currentTarget.style.display = "none"; }}
+            />
+          )}
         </button>
       </div>
 

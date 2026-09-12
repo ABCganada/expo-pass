@@ -75,9 +75,14 @@ public class Ticket {
         this.saleEndAt = saleEndAt;
     }
 
-    public void updateDetails(String name, int price, int maxPurchasePerUser, Instant saleStartAt, Instant saleEndAt) {
+    public void updateDetails(String name, int price, int quantityTotal, int maxPurchasePerUser,
+            Instant saleStartAt, Instant saleEndAt) {
         this.name = name;
         this.price = price;
+        if (quantityTotal != this.quantityTotal) {
+            this.quantityRemaining += quantityTotal - this.quantityTotal;
+            this.quantityTotal = quantityTotal;
+        }
         this.maxPurchasePerUser = maxPurchasePerUser;
         this.saleStartAt = saleStartAt;
         this.saleEndAt = saleEndAt;

@@ -27,4 +27,54 @@ interface ReservationOrderItemJpaRepository extends JpaRepository<ReservationOrd
     @Query("SELECT COUNT(i) FROM ReservationOrderItemEntity i, ReservationOrderEntity o "
             + "WHERE i.orderId = o.orderId AND o.userId = :userId AND i.ticketId = :ticketId")
     long countByUserIdAndTicketId(@Param("userId") Long userId, @Param("ticketId") Long ticketId);
+
+    // 이 유저의 모든 주문에 대해 주문ID·티켓ID별 수량을 한 번의 쿼리로 집계 (목록 화면 N+1 방지용)
+    @Query("SELECT i.orderId as orderId, i.ticketId as ticketId, COUNT(i) as quantity "
+            + "FROM ReservationOrderItemEntity i, ReservationOrderEntity o "
+            + "WHERE i.orderId = o.orderId AND o.userId = :userId "
+            + "GROUP BY i.orderId, i.ticketId")
+    List<OrderTicketQuantityRow> findTicketQuantitiesByUserId(@Param("userId") Long userId);
+
+    interface OrderTicketQuantityRow {
+        String getOrderId();
+        Long getTicketId();
+        long getQuantity();
+    }
+
+    // QR 자체는 주문 생성 시 바로 발급되지만(ReservationOrderItem 참고), 결제 확인 전엔 이 화면에
+    // 노출하지 않는다 — 그래서 PENDING(결제대기)은 제외하고 CONFIRMED(결제완료)만 가져온다.
+    @Query("SELECT i.orderId as orderId, o.eventId as eventId, i.orderItemId as orderItemId, "
+            + "i.ticketId as ticketId, i.qrCodeHash as qrCodeHash, i.checkedInAt as checkedInAt "
+            + "FROM ReservationOrderItemEntity i, ReservationOrderEntity o "
+            + "WHERE i.orderId = o.orderId AND o.userId = :userId "
+            + "AND o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED")
+    List<QrTicketRow> findQrTicketsByUserId(@Param("userId") Long userId);
+
+    interface QrTicketRow {
+        String getOrderId();
+        Long getEventId();
+        Long getOrderItemId();
+        Long getTicketId();
+        String getQrCodeHash();
+        OffsetDateTime getCheckedInAt();
+    }
+
+    // 이 행사의 CONFIRMED 주문에 속한 아이템 전체 수 / 체크인된 수를 한 번의 쿼리로 집계 (체크인 현황 화면용)
+    @Query("SELECT COUNT(i) as totalItems, COUNT(i.checkedInAt) as checkedInCount "
+            + "FROM ReservationOrderItemEntity i, ReservationOrderEntity o "
+            + "WHERE i.orderId = o.orderId AND o.eventId = :eventId "
+            + "AND o.status = com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED")
+    CheckinProgressRow countCheckinProgressByEventId(@Param("eventId") long eventId);
+
+    interface CheckinProgressRow {
+        long getTotalItems();
+        long getCheckedInCount();
+    }
+
+    // Event 도메인이 티켓을 삭제해도 되는지 확인할 때 사용 (PENDING/CONFIRMED만 유효한 예약으로 취급)
+    @Query("SELECT COUNT(i) > 0 FROM ReservationOrderItemEntity i, ReservationOrderEntity o "
+            + "WHERE i.orderId = o.orderId AND i.ticketId = :ticketId AND o.status IN "
+            + "(com.coderhan.lastmission.reservation.domain.OrderStatus.PENDING, "
+            + "com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED)")
+    boolean existsActiveByTicketId(@Param("ticketId") long ticketId);
 }

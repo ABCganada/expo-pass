@@ -2,7 +2,6 @@ package com.coderhan.lastmission.marketing.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
@@ -11,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
+import com.coderhan.lastmission.marketing.domain.BannerSlotType;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import org.junit.jupiter.api.Test;
@@ -29,54 +29,6 @@ class BannerSlotServiceTest {
     @InjectMocks BannerSlotService service;
 
     // ─────────────────────────────────────────────────────────────────────────
-    // createSlot
-    // ─────────────────────────────────────────────────────────────────────────
-
-    @Test
-    void createSlot_이름이_null이면_예외() {
-        // Arrange (없음)
-
-        // Act & Assert
-        assertThatThrownBy(() -> service.createSlot(null, 3))
-                .isInstanceOfSatisfying(BusinessException.class,
-                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
-    }
-
-    @Test
-    void createSlot_이름이_공백이면_예외() {
-        // Arrange (없음)
-
-        // Act & Assert
-        assertThatThrownBy(() -> service.createSlot("   ", 3))
-                .isInstanceOfSatisfying(BusinessException.class,
-                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
-    }
-
-    @Test
-    void createSlot_maxCount가_0이면_예외() {
-        // Arrange (없음)
-
-        // Act & Assert
-        assertThatThrownBy(() -> service.createSlot("메인 배너", 0))
-                .isInstanceOfSatisfying(BusinessException.class,
-                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.BANNER_AD_INVALID_REQUEST));
-    }
-
-    @Test
-    void createSlot_정상입력이면_저장하고_반환() {
-        // Arrange
-        BannerSlot expected = new BannerSlot(SLOT_ID, "메인 배너", 3, NOW);
-        when(slotRepository.save("메인 배너", 3)).thenReturn(expected);
-
-        // Act
-        BannerSlot result = service.createSlot("메인 배너", 3);
-
-        // Assert
-        assertThat(result).isSameAs(expected);
-        verify(slotRepository).save("메인 배너", 3);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
     // getSlots
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -84,8 +36,8 @@ class BannerSlotServiceTest {
     void getSlots_전체_슬롯_목록_반환() {
         // Arrange
         List<BannerSlot> slots = List.of(
-                new BannerSlot(SLOT_ID, "메인 배너", 3, NOW),
-                new BannerSlot(UUID.randomUUID(), "사이드 배너", 1, NOW)
+                new BannerSlot(SLOT_ID, "메인 배너", 3, BannerSlotType.BANNER, 50_000L, NOW),
+                new BannerSlot(UUID.randomUUID(), "광고 탭", 5, BannerSlotType.TAB, 30_000L, NOW)
         );
         when(slotRepository.findAll()).thenReturn(slots);
 
@@ -104,7 +56,7 @@ class BannerSlotServiceTest {
     @Test
     void getSlot_존재하는_슬롯이면_반환() {
         // Arrange
-        BannerSlot expected = new BannerSlot(SLOT_ID, "메인 배너", 3, NOW);
+        BannerSlot expected = new BannerSlot(SLOT_ID, "메인 배너", 3, BannerSlotType.BANNER, 50_000L, NOW);
         when(slotRepository.findById(SLOT_ID)).thenReturn(Optional.of(expected));
 
         // Act

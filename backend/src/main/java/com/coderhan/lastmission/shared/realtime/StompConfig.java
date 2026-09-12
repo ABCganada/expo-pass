@@ -3,7 +3,9 @@ package com.coderhan.lastmission.shared.realtime;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
+
+import com.coderhan.lastmission.config.CorsProperties;
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -31,25 +33,22 @@ class StompConfig implements WebSocketMessageBrokerConfigurer {
     /** 프록시(nginx ingress, Cloudflare)의 유휴 타임아웃보다 짧아야 연결이 안 끊긴다. */
     private static final long HEARTBEAT_MILLIS = 25_000L;
 
-    private final String[] allowedOrigins;
+    private final CorsProperties corsProperties;
     private final List<SubscriptionGuard> guards;
     private final RealtimeUserResolver userResolver;
 
     StompConfig(List<SubscriptionGuard> guards, RealtimeUserResolver userResolver,
-            @Value("${lastmission.cors.allowed-origins:"
-                    + "https://lastmission.example.com,"
-                    + "https://localhost.example.com:3000,"
-                    + "http://localhost:3000}") String[] allowedOrigins) {
+            CorsProperties corsProperties) {
         this.guards = guards;
         this.userResolver = userResolver;
-        this.allowedOrigins = allowedOrigins;
+        this.corsProperties = corsProperties;
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 // 핸드셰이크는 CSRF 검사를 받지 않으므로 허용 Origin 을 반드시 명시한다(CSWSH).
-                .setAllowedOrigins(allowedOrigins)
+                .setAllowedOrigins(corsProperties.allowedOriginsArray())
                 .setHandshakeHandler(new PrincipalHandshakeHandler(userResolver));
     }
 
@@ -83,8 +82,8 @@ class StompConfig implements WebSocketMessageBrokerConfigurer {
         }
 
         @Override
-        protected Principal determineUser(ServerHttpRequest request, WebSocketHandler handler,
-                Map<String, Object> attributes) {
+        protected Principal determineUser(@NonNull ServerHttpRequest request, @NonNull WebSocketHandler handler,
+                                          @NonNull Map<String, Object> attributes) {
             return userResolver.currentUser().orElse(null);
         }
     }

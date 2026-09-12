@@ -1,6 +1,12 @@
-import { ScanLine } from "lucide-react";
-import { FeaturePlaceholder } from "@/features/shared/components/FeaturePlaceholder";
+import { EventSelectContent } from "@/features/reservation/components/EventSelectContent";
 
 export default function CheckInPage() {
-  return <FeaturePlaceholder icon={ScanLine} title="QR 체크인" description="현장 입장객의 QR 티켓을 스캔하고 체크인 처리하는 화면입니다." />;
+  return (
+    <EventSelectContent
+      basePath="/manager/check-in"
+      title="QR 체크인"
+      subtitle="체크인을 진행할 행사를 선택하세요"
+      phaseFilter="ONGOING"
+    />
+  );
 }

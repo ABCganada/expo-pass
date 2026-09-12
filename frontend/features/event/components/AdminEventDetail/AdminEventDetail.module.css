@@ -1,0 +1,112 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.field,
+.fieldFull {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field span,
+.fieldFull span {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.field input,
+.field select,
+.fieldFull input,
+.fieldFull select {
+  height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.field textarea,
+.fieldFull textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-card-background);
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.field input[data-invalid="true"],
+.field select[data-invalid="true"],
+.fieldFull input[data-invalid="true"],
+.fieldFull select[data-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+.field input:disabled,
+.field select:disabled,
+.fieldFull input:disabled,
+.fieldFull select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.fieldFull input:focus,
+.fieldFull select:focus,
+.fieldFull textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.saveButton {
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 767px) {
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+}

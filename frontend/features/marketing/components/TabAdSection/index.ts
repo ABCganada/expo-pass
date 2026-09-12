@@ -1,0 +1,1 @@
+export { TabAdSection } from "./TabAdSection";

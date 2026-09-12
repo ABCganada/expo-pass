@@ -6,7 +6,9 @@ export async function queryResult<T>(
   request: Promise<T>,
 ): Promise<{ data: T } | { error: QueryError }> {
   try {
-    return { data: await request };
+    const result = await request;
+    // RTK Query v2: data must not be undefined (void mutations return undefined)
+    return { data: (result === undefined ? null : result) as T };
   } catch (reason: unknown) {
     return {
       error: {

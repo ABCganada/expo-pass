@@ -37,9 +37,9 @@ public class PresenceRegistry {
     public void connected(SessionConnectedEvent event) {
         String sessionId = SimpMessageHeaderAccessor.getSessionId(event.getMessage().getHeaders());
         Principal principal = event.getUser();
-        if (sessionId != null && principal instanceof StompUser user) {
-            boolean wasOnline = isOnline(user.userId());
-            sessions.put(sessionId, new SessionPresence(user.userId(), OffsetDateTime.now(clock)));
+        if (sessionId != null && principal instanceof StompUser(long userId)) {
+            boolean wasOnline = isOnline(userId);
+            sessions.put(sessionId, new SessionPresence(userId, OffsetDateTime.now(clock)));
             if (!wasOnline) broadcastChanged();
         }
     }

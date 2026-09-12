@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
+import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.application.command.CreateTicketCommand;
 import com.coderhan.lastmission.event.application.command.UpdateTicketCommand;
 import com.coderhan.lastmission.event.domain.Event;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TicketService {
     private final EventRepository eventRepository;
     private final TicketRepository ticketRepository;
+    private final ReservationQueryPort reservationQueryPort;
     private final Clock clock;
 
     /**
@@ -51,10 +53,15 @@ public class TicketService {
 
         Ticket ticket = ticketRepository.findNotDeletedByIdAndEventId(ticketId, event.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.TICKET_NOT_FOUND, "티켓을 찾을 수 없습니다."));
-        validateTicketFields(command.name(), command.price(), ticket.getQuantityTotal(),
+        validateTicketFields(command.name(), command.price(), command.quantityTotal(),
                 command.maxPurchasePerUser(), command.saleStartAt(), command.saleEndAt());
 
-        ticket.updateDetails(command.name(), command.price(), command.maxPurchasePerUser(),
+        boolean saleAlreadyStarted = !ticket.getSaleStartAt().isAfter(Instant.now(clock));
+        if (saleAlreadyStarted && !Objects.equals(command.quantityTotal(), ticket.getQuantityTotal())) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "판매 시작 이후에는 총 수량을 수정할 수 없습니다.");
+        }
+
+        ticket.updateDetails(command.name(), command.price(), command.quantityTotal(), command.maxPurchasePerUser(),
                 command.saleStartAt(), command.saleEndAt());
         return ticket;
     }
@@ -70,9 +77,8 @@ public class TicketService {
 
         Ticket ticket = ticketRepository.findNotDeletedByIdAndEventId(ticketId, event.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.TICKET_NOT_FOUND, "티켓을 찾을 수 없습니다."));
-        // TODO : 예약 이력 조회 후 판단으로 변경
-        // 현재 : 재고 차감 여부를 예약 발생 여부로 간주 (임시)
-        if (ticket.getQuantityRemaining() != ticket.getQuantityTotal()) {
+
+        if (reservationQueryPort.hasActiveReservationsForTicket(ticketId)) {
             throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "예약 이력이 있는 티켓은 삭제할 수 없습니다.");
         }
         ticket.softDelete(Instant.now(clock));
@@ -108,12 +114,6 @@ public class TicketService {
     }
 
     private void validateTicketCreation(CreateTicketCommand command) {
-        if (command.quantityTotal() == null) {
-            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "총 수량은 필수입니다.");
-        }
-        if (command.quantityTotal() <= 0) {
-            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "총 수량은 1 이상이어야 합니다.");
-        }
         validateTicketFields(command.name(), command.price(), command.quantityTotal(),
                 command.maxPurchasePerUser(), command.saleStartAt(), command.saleEndAt());
     }
@@ -128,6 +128,12 @@ public class TicketService {
         }
         if (price < 0) {
             throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "가격은 0 이상이어야 합니다.");
+        }
+        if (quantityTotal == null) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "총 수량은 필수입니다.");
+        }
+        if (quantityTotal <= 0) {
+            throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "총 수량은 1 이상이어야 합니다.");
         }
         if (maxPurchasePerUser == null) {
             throw new BusinessException(ErrorCode.EVENT_INVALID_REQUEST, "인당 최대 구매 수량은 필수입니다.");

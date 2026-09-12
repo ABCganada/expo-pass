@@ -12,19 +12,25 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.filter.OncePerRequestFilter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class LastMissionAuthenticationFilter extends OncePerRequestFilter {
     private final AuthClient authClient;
     private final UserProvisioningService userProvisioningService;
+    private final SecurityContextRepository securityContextRepository = new RequestAttributeSecurityContextRepository();
 
     public LastMissionAuthenticationFilter(AuthClient authClient, UserProvisioningService userProvisioningService) {
         this.authClient = authClient;
@@ -53,7 +59,7 @@ public class LastMissionAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
             throws ServletException, IOException {
         AuthCheckResponse authResponse;
         try {
@@ -86,6 +92,10 @@ public class LastMissionAuthenticationFilter extends OncePerRequestFilter {
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
         securityContext.setAuthentication(authentication);
         SecurityContextHolder.setContext(securityContext);
+        // SSE 등 비동기 요청은 완료 시점에 서블릿 컨테이너가 필터 체인을 ASYNC 디스패치로 한 번 더 태우는데,
+        // 이 필터(OncePerRequestFilter)는 기본적으로 ASYNC 디스패치에서 재실행되지 않는다.
+        // 컨텍스트를 요청 속성에 저장해둬야 SecurityContextHolderFilter가 그 시점에 다시 불러올 수 있다.
+        securityContextRepository.saveContext(securityContext, request, response);
         filterChain.doFilter(request, response);
     }
 

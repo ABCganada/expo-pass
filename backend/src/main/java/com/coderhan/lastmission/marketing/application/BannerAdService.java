@@ -2,10 +2,14 @@ package com.coderhan.lastmission.marketing.application;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
+import com.coderhan.lastmission.marketing.domain.BannerSlot;
+import com.coderhan.lastmission.marketing.domain.BannerSlotType;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -21,17 +25,30 @@ public class BannerAdService {
     private final Clock clock;
 
     @Transactional
-    public BannerAd registerAd(UUID slotId, String title, String imageUrl, String linkUrl,
-                               int priority, OffsetDateTime startsAt, OffsetDateTime endsAt, String createdBy) {
-        slotRepository.findById(slotId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_SLOT_NOT_FOUND, "광고 슬롯을 찾을 수 없습니다. id=" + slotId));
-        BannerAd.validate(title, imageUrl, startsAt, endsAt);
-        return adRepository.save(slotId, title, imageUrl, linkUrl, priority, startsAt, endsAt, createdBy);
+    public BannerAd registerAd(Set<UUID> slotIds, String title, String bannerImageUrl, String adImageUrl,
+                               String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt,
+                               String createdBy) {
+        if (slotIds == null || slotIds.isEmpty()) {
+            throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "광고 슬롯을 하나 이상 선택해야 합니다.");
+        }
+        List<BannerSlot> slots = slotRepository.findAllByIds(slotIds);
+        if (slots.size() != slotIds.size()) {
+            throw new BusinessException(ErrorCode.BANNER_SLOT_NOT_FOUND, "존재하지 않는 슬롯이 포함되어 있습니다.");
+        }
+        BannerAd.validate(title, startsAt, endsAt);
+        validateImages(slots, bannerImageUrl, adImageUrl);
+
+        int days = (int) Math.max(1, ChronoUnit.DAYS.between(startsAt.toLocalDate(), endsAt.toLocalDate()));
+        long totalAmount = calculateTotalAmount(slots, days);
+        String orderId = UUID.randomUUID().toString();
+
+        return adRepository.save(slotIds, orderId, title, bannerImageUrl, adImageUrl, linkUrl,
+                startsAt, endsAt, createdBy, totalAmount);
     }
 
     @Transactional
-    public BannerAd updateAd(UUID id, String createdBy, String title, String imageUrl, String linkUrl,
-                              int priority, OffsetDateTime startsAt, OffsetDateTime endsAt) {
+    public BannerAd updateAd(UUID id, String createdBy, String title, String bannerImageUrl, String adImageUrl,
+                              String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt) {
         BannerAd ad = adRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
         if (!ad.createdBy().equals(createdBy)) {
@@ -40,8 +57,8 @@ public class BannerAdService {
         if (ad.status() != BannerAdStatus.PENDING) {
             throw new BusinessException(ErrorCode.BANNER_AD_ALREADY_REVIEWED, "승인/거절된 광고는 수정할 수 없습니다.");
         }
-        BannerAd.validate(title, imageUrl, startsAt, endsAt);
-        return adRepository.update(id, title, imageUrl, linkUrl, priority, startsAt, endsAt);
+        BannerAd.validate(title, startsAt, endsAt);
+        return adRepository.update(id, title, bannerImageUrl, adImageUrl, linkUrl, startsAt, endsAt);
     }
 
     @Transactional
@@ -91,5 +108,28 @@ public class BannerAdService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
         statRepository.deleteStatsByAdId(id);
         adRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public BannerAd getAd(UUID id) {
+        return adRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANNER_AD_NOT_FOUND, "광고를 찾을 수 없습니다. id=" + id));
+    }
+
+    private void validateImages(List<BannerSlot> slots, String bannerImageUrl, String adImageUrl) {
+        boolean needsBanner = slots.stream().anyMatch(s -> s.type() == BannerSlotType.BANNER);
+        boolean needsAd = slots.stream().anyMatch(s -> s.type() == BannerSlotType.TAB);
+        if (needsBanner && (bannerImageUrl == null || bannerImageUrl.isBlank())) {
+            throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "배너 슬롯은 배너 이미지가 필요합니다.");
+        }
+        if (needsAd && (adImageUrl == null || adImageUrl.isBlank())) {
+            throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "광고 탭 슬롯은 광고 이미지가 필요합니다.");
+        }
+    }
+
+    private long calculateTotalAmount(List<BannerSlot> slots, int days) {
+        return slots.stream()
+                .mapToLong(slot -> slot.pricePerDay() * days)
+                .sum();
     }
 }

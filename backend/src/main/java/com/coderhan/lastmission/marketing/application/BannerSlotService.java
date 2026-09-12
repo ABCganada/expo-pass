@@ -14,17 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class BannerSlotService {
     private final BannerSlotRepository slotRepository;
 
-    @Transactional
-    public BannerSlot createSlot(String name, int maxCount) {
-        if (name == null || name.isBlank()) {
-            throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "슬롯 이름은 필수입니다.");
-        }
-        if (maxCount < 1) {
-            throw new BusinessException(ErrorCode.BANNER_AD_INVALID_REQUEST, "슬롯 최대 광고 수는 1 이상이어야 합니다.");
-        }
-        return slotRepository.save(name, maxCount);
-    }
-
     @Transactional(readOnly = true)
     public List<BannerSlot> getSlots() {
         return slotRepository.findAll();

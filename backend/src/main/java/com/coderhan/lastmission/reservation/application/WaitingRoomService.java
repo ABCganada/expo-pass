@@ -1,87 +1,96 @@
 package com.coderhan.lastmission.reservation.application;
 
-import java.time.Clock;
-import java.time.OffsetDateTime;
-import com.coderhan.lastmission.reservation.domain.WaitingTicket;
-import com.coderhan.lastmission.reservation.domain.WaitingTicketStatus;
+import java.util.List;
+import java.util.Map;
+
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-@Service
 @Slf4j
+@Service
 @RequiredArgsConstructor
 public class WaitingRoomService {
-    private final WaitingRoomRepository repository;
-    private final WaitingRoomEventPublisher eventPublisher;
-    private final Clock clock;
+    private static final int ADMIT_COUNT_PER_TICK = 10;
 
-    /** 대기열 입장. 이미 대기 중이면(중복 클릭 등) 새로 안 만들고 기존 티켓을 그대로 돌려준다(멱등). */
-    @Transactional
-    public WaitingTicket enterQueue(long userId, long eventId) {
-        if (eventId <= 0) {
-            throw new BusinessException(ErrorCode.RESERVATION_INVALID_REQUEST, "행사 ID가 올바르지 않습니다.");
+    private final WaitingRoomQueue waitingRoomQueue;
+    private final WaitingRoomEmitterManager emitterManager;
+
+    public SseEmitter enter(long userId, long eventId) {
+        // emitter를 먼저 등록해야 "대기열엔 있는데 emitter는 아직 없는" 구간이 사라진다.
+        // 이 순서가 뒤집혀 있으면, register() 직후 스케줄러가 바로 admitted를 보내려 할 때
+        // emitterManager에 아직 emitter가 없어서 그 알림이 조용히 유실될 수 있었다.
+        SseEmitter emitter = emitterManager.connect(userId);
+
+        emitter.onCompletion(() -> leaveIfEvicted(userId, eventId, emitter));
+        emitter.onTimeout(() -> leaveIfEvicted(userId, eventId, emitter));
+        emitter.onError(e -> leaveIfEvicted(userId, eventId, emitter));
+
+        // 이미 입장 허가를 받은 유저는 다시 줄 세우지 않는다.
+        // admitted 알림은 그 시점에 연결을 쥐고 있던 프로세스의 메모리를 거쳐 나가므로,
+        // 알림 순간 연결이 끊겨 있었거나 다른 인스턴스가 허가했다면 그대로 유실된다.
+        // 그때 대기열엔 이미 없으니 아무도 다시 부르지 않아 영영 멈춘다 — 티켓(5분 유효)이
+        // Redis에 남아 있으므로, 브라우저가 자동 재연결할 때 여기서 스스로 복구한다.
+        if (waitingRoomQueue.hasTicket(userId, eventId)) {
+            emitterManager.send(userId, "admitted", true);
+            return emitter;
         }
-        OffsetDateTime now = OffsetDateTime.now(clock);
-        try {
-            WaitingTicket ticket = repository.enterQueue(eventId, userId, now);
-            // 저장 성공 시에만 카프카 발행 (커밋 이후로 예약되는 건 Publisher 내부에서 처리)
-            eventPublisher.publishJoined(ticket.ticketNo(), eventId, userId);
-            return ticket;
-        } catch (DuplicateKeyException e) {
-            // 유니크 제약(event_id, user_id) 위반 = 이미 WAITING/ADMITTED 티켓이 있다는 뜻
-            // → 새로 만들지 않고 기존 티켓을 찾아서 그대로 반환 (재클릭해도 안전)
-            return repository.findTicket(eventId, userId).orElseThrow(() -> e);
-        }
-    }
 
-    /** 상태 조회(폴링). 호출될 때마다 "아직 보고 있다"는 신호(lastPolledAt)를 갱신한다. */
-    @Transactional
-    public StatusResult getStatus(long userId, long eventId) {
-        WaitingTicket ticket = repository.findTicket(eventId, userId)
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.RESERVATION_WAITING_ROOM_REQUIRED, "대기열에 입장한 적이 없습니다."));
+        waitingRoomQueue.register(userId, eventId);
 
-        repository.touch(ticket.ticketNo(), OffsetDateTime.now(clock));
+        sendInitialRank(userId, eventId);
 
-        // WAITING 일 때만 "앞에 몇 명"이 의미 있음. ADMITTED/USED/EXPIRED면 순번 정보 필요 없음
-        Long position = ticket.status() == WaitingTicketStatus.WAITING
-                ? repository.countWaitingAhead(eventId, ticket.ticketNo())
-                : null;
-        return new StatusResult(ticket.status(), position);
+        return emitter;
     }
 
     /**
-     * ReservationService.createOrder 가 호출하는 게이트. ADMITTED 상태가 아니면 주문 자체를 막는다.
-     * 통과 시 티켓을 USED 로 전환해서, 이 허가로는 딱 한 번만 주문할 수 있게 소비한다.
+     * register() 직후 대기자가 거의 없는 상태(로컬 테스트 등)에서는, getRank() 를 부르기
+     * 전에 스케줄러(admitAll)가 그 사이 이 유저를 이미 허가해버리는 레이스가 발생할 수 있다.
+     * 이 경우 대기열엔 이미 없으므로 WAITING_NOT_FOUND 가 나는데, 이건 실패가 아니라
+     * "등록하자마자 바로 허가된 것"이므로 admitted 로 처리한다.
      */
-    @Transactional
-    public void consumeAdmission(long userId, long eventId) {
-        WaitingTicket ticket = repository.findTicket(eventId, userId)
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.RESERVATION_WAITING_ROOM_REQUIRED, "먼저 대기열에 입장해야 합니다."));
-        if (ticket.status() != WaitingTicketStatus.ADMITTED) {
-            throw new BusinessException(
-                    ErrorCode.RESERVATION_WAITING_ROOM_REQUIRED, "아직 입장 순서가 되지 않았습니다.");
-        }
-        repository.markUsed(ticket.ticketNo());
-    }
-
-    /** 30초마다, 폴링이 30초 넘게 끊긴 WAITING/ADMITTED 티켓을 EXPIRED 로 정리한다. */
-    @Scheduled(fixedRate = 30_000)
-    @Transactional
-    public void expireStaleTickets() {
-        OffsetDateTime threshold = OffsetDateTime.now(clock).minusSeconds(30);
-        int expired = repository.expireStale(threshold);
-        if (expired > 0) {
-            log.info("폴링 끊긴 대기 티켓 {}건 만료 처리", expired);
+    private void sendInitialRank(long userId, long eventId) {
+        try {
+            emitterManager.send(userId, "rank", waitingRoomQueue.getRank(userId, eventId));
+        } catch (BusinessException e) {
+            if (e.errorCode() != ErrorCode.WAITING_NOT_FOUND) {
+                throw e;
+            }
+            emitterManager.send(userId, "admitted", true);
         }
     }
 
-    public record StatusResult(WaitingTicketStatus status, Long position) {}
+    public void admitAll() {
+        var activeEventIds = waitingRoomQueue.getActiveEventIds();
+        log.info("[waiting-room] admitAll tick activeEventIds={}", activeEventIds);
+        for (Long eventId : activeEventIds) {
+            List<Long> admittedUserIds = waitingRoomQueue.allowEntry(eventId, ADMIT_COUNT_PER_TICK);
+            for (Long userId : admittedUserIds) {
+                emitterManager.send(userId, "admitted", true);
+            }
+        }
+    }
+
+    public void consumeTicket(long userId, long eventId) {
+        waitingRoomQueue.consumeTicket(userId, eventId);
+    }
+
+    public void broadcastRanks() {
+        for (Long eventId : waitingRoomQueue.getActiveEventIds()) {
+            Map<Long, Long> ranks = waitingRoomQueue.getAllRanks(eventId);
+            ranks.forEach((userId, rank) -> emitterManager.send(userId, "rank", rank));
+        }
+    }
+
+    private void leaveIfEvicted(long userId, long eventId, SseEmitter emitter) {
+        // evict()가 원자적으로 "이 emitter가 여전히 현재 연결인지 확인 + 제거"를 한 번에 하므로,
+        // 그 결과(true)만 있을 때 Redis 대기열도 같이 정리한다. 이미 새 연결로 교체된 뒤
+        // 뒤늦게 도착한 콜백이면 evict()가 false를 반환하고 아무 것도 건드리지 않는다.
+        if (emitterManager.evict(userId, emitter)) {
+            waitingRoomQueue.leave(userId, eventId);
+        }
+    }
 }

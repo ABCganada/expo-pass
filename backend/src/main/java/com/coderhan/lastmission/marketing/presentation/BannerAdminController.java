@@ -2,6 +2,7 @@ package com.coderhan.lastmission.marketing.presentation;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.application.BannerAdService;
 import com.coderhan.lastmission.marketing.application.BannerSlotService;
@@ -10,21 +11,21 @@ import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStats;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
 import com.coderhan.lastmission.marketing.domain.BannerSlot;
+import com.coderhan.lastmission.marketing.domain.BannerSlotType;
 import com.coderhan.lastmission.shared.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 관리자용 광고 슬롯 관리 및 광고 승인/거절 API.
+ * 관리자용 광고 슬롯 조회 및 광고 승인/거절 API.
+ * 슬롯(BANNER/TAB)은 고정이므로 생성·수정·삭제 API는 제공하지 않는다.
  */
 @RestController
 @RequestMapping("/api/v1/admin/banner")
@@ -34,20 +35,13 @@ class BannerAdminController {
     private final BannerAdService bannerAdService;
     private final BannerStatService bannerStatService;
 
-    // --- 슬롯 관리 ---
-
-    @PostMapping("/slots")
-    ResponseEntity<ApiResponse<BannerSlotResponse>> createSlot(@RequestBody CreateSlotRequest request) {
-        BannerSlot slot = bannerSlotService.createSlot(request.name(), request.maxCount());
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(BannerSlotResponse.from(slot)));
-    }
+    // --- 슬롯 조회 ---
 
     @GetMapping("/slots")
     ApiResponse<List<BannerSlotResponse>> getSlots() {
-        List<BannerSlotResponse> responses = bannerSlotService.getSlots().stream()
+        return ApiResponse.success(bannerSlotService.getSlots().stream()
                 .map(BannerSlotResponse::from)
-                .toList();
-        return ApiResponse.success(responses);
+                .toList());
     }
 
     @GetMapping("/slots/{slotId}")
@@ -55,17 +49,16 @@ class BannerAdminController {
         return ApiResponse.success(BannerSlotResponse.from(bannerSlotService.getSlot(slotId)));
     }
 
-    // --- 광고 목록 (전체) ---
+    // --- 광고 목록 ---
 
     @GetMapping("/ads")
     ApiResponse<List<BannerAdResponse>> getAllAds() {
-        List<BannerAdResponse> responses = bannerAdService.getAllAds().stream()
+        return ApiResponse.success(bannerAdService.getAllAds().stream()
                 .map(BannerAdResponse::from)
-                .toList();
-        return ApiResponse.success(responses);
+                .toList());
     }
 
-    // --- 광고 승인/거절 ---
+    // --- 광고 승인/거절/삭제 ---
 
     @PostMapping("/ads/{id}/approve")
     ApiResponse<BannerAdResponse> approve(@PathVariable UUID id) {
@@ -83,14 +76,12 @@ class BannerAdminController {
         bannerAdService.deleteAd(id);
     }
 
-    // --- 통계 조회 ---
+    // --- 통계 ---
 
     @GetMapping("/ads/{id}/stats")
     ApiResponse<BannerStatsResponse> getStats(@PathVariable UUID id) {
         return ApiResponse.success(BannerStatsResponse.from(bannerStatService.getStats(id)));
     }
-
-    record CreateSlotRequest(String name, int maxCount) {}
 
     record BannerStatsResponse(UUID adId, long impressions, long clicks, double ctr) {
         static BannerStatsResponse from(BannerAdStats stats) {
@@ -98,28 +89,31 @@ class BannerAdminController {
         }
     }
 
-    record BannerSlotResponse(UUID id, String name, int maxCount, OffsetDateTime createdAt) {
+    record BannerSlotResponse(UUID id, String name, BannerSlotType type, int maxCount, long pricePerDay, OffsetDateTime createdAt) {
         static BannerSlotResponse from(BannerSlot slot) {
-            return new BannerSlotResponse(slot.id(), slot.name(), slot.maxCount(), slot.createdAt());
+            return new BannerSlotResponse(slot.id(), slot.name(), slot.type(), slot.maxCount(), slot.pricePerDay(), slot.createdAt());
         }
     }
 
     record BannerAdResponse(
             UUID id,
-            UUID slotId,
+            Set<UUID> slotIds,
             String title,
-            String imageUrl,
+            String bannerImageUrl,
+            String adImageUrl,
             String linkUrl,
-            int priority,
             BannerAdStatus status,
             OffsetDateTime startsAt,
             OffsetDateTime endsAt,
             String createdBy,
-            OffsetDateTime createdAt
+            OffsetDateTime createdAt,
+            Long totalAmount
     ) {
         static BannerAdResponse from(BannerAd ad) {
-            return new BannerAdResponse(ad.id(), ad.slotId(), ad.title(), ad.imageUrl(), ad.linkUrl(),
-                    ad.priority(), ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(), ad.createdAt());
+            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.title(),
+                    ad.bannerImageUrl(), ad.adImageUrl(), ad.linkUrl(),
+                    ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(),
+                    ad.createdAt(), ad.totalAmount());
         }
     }
 }

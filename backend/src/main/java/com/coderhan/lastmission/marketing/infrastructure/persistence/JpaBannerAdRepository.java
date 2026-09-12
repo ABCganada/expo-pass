@@ -3,7 +3,9 @@ package com.coderhan.lastmission.marketing.infrastructure.persistence;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.Arrays;
 import com.coderhan.lastmission.marketing.application.BannerAdRepository;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
@@ -16,12 +18,13 @@ class JpaBannerAdRepository implements BannerAdRepository {
     private final BannerAdJpaRepository jpaRepository;
 
     @Override
-    public BannerAd save(UUID slotId, String title, String imageUrl, String linkUrl,
-                         int priority, OffsetDateTime startsAt, OffsetDateTime endsAt, String createdBy) {
-        BannerAdEntity saved = jpaRepository.save(
-                new BannerAdEntity(null, slotId, title, imageUrl, linkUrl, priority,
-                        BannerAdStatus.PENDING, startsAt, endsAt, createdBy, OffsetDateTime.now()));
-        return toDomain(saved);
+    public BannerAd save(Set<UUID> slotIds, String orderId, String title, String bannerImageUrl, String adImageUrl,
+                         String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt,
+                         String createdBy, long totalAmount) {
+        BannerAdEntity entity = new BannerAdEntity(
+                null, slotIds, orderId, title, bannerImageUrl, adImageUrl, linkUrl,
+                BannerAdStatus.PENDING, startsAt, endsAt, createdBy, OffsetDateTime.now(), totalAmount);
+        return toDomain(jpaRepository.save(entity));
     }
 
     @Override
@@ -52,11 +55,11 @@ class JpaBannerAdRepository implements BannerAdRepository {
     }
 
     @Override
-    public BannerAd update(UUID id, String title, String imageUrl, String linkUrl,
-                           int priority, OffsetDateTime startsAt, OffsetDateTime endsAt) {
+    public BannerAd update(UUID id, String title, String bannerImageUrl, String adImageUrl,
+                           String linkUrl, OffsetDateTime startsAt, OffsetDateTime endsAt) {
         BannerAdEntity entity = jpaRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("BannerAd not found: " + id));
-        entity.update(title, imageUrl, linkUrl, priority, startsAt, endsAt);
+        entity.update(title, bannerImageUrl, adImageUrl, linkUrl, startsAt, endsAt);
         return toDomain(jpaRepository.save(entity));
     }
 
@@ -87,9 +90,17 @@ class JpaBannerAdRepository implements BannerAdRepository {
         jpaRepository.deleteById(id);
     }
 
+    @Override
+    public boolean existsActiveOrPendingBySlotId(UUID slotId) {
+        return jpaRepository.existsBySlotIdAndStatusIn(slotId,
+                Arrays.asList(BannerAdStatus.PENDING, BannerAdStatus.APPROVED));
+    }
+
     private static BannerAd toDomain(BannerAdEntity entity) {
-        return new BannerAd(entity.getId(), entity.getSlotId(), entity.getTitle(), entity.getImageUrl(),
-                entity.getLinkUrl(), entity.getPriority(), entity.getStatus(),
-                entity.getStartsAt(), entity.getEndsAt(), entity.getCreatedBy(), entity.getCreatedAt());
+        return new BannerAd(entity.getId(), entity.getSlotIds(), entity.getOrderId(), entity.getTitle(),
+                entity.getBannerImageUrl(), entity.getAdImageUrl(),
+                entity.getLinkUrl(), entity.getStatus(),
+                entity.getStartsAt(), entity.getEndsAt(), entity.getCreatedBy(),
+                entity.getCreatedAt(), entity.getTotalAmount());
     }
 }

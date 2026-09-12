@@ -38,6 +38,7 @@ export function AdminSidebar({
   const items: NavItem[] = mode === "user"
     ? USER_MENU_ITEMS.map((item) => ({ href: item.path, label: item.label, icon: userIcons[item.id] }))
     : mode === "manager" ? [
+        { href: "/manager/events", label: "박람회 관리", icon: CalendarDays },
         { href: "/manager/reservations", label: "예약자 명단 관리", icon: ClipboardList },
         { href: "/manager/check-in", label: "QR 체크인", icon: ScanLine },
         { href: "/manager/check-in/status", label: "체크인 현황", icon: QrCode },
@@ -45,7 +46,8 @@ export function AdminSidebar({
         { href: "/manager/banner-ads", label: "광고 관리", icon: Megaphone },
       ]
     : [
-        { href: "/admin/exhibitions", label: "행사별 예약 현황", icon: BarChart3 },
+        { href: "/admin/events", label: "박람회 관리", icon: CalendarDays },
+        { href: "/admin/reservations-summary", label: "행사별 예약 현황", icon: BarChart3 },
         { href: "/admin/members", label: "회원 관리", icon: Users },
         { href: "/admin/banners", label: "광고 관리", icon: Megaphone },
       ];

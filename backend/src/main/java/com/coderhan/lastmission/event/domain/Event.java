@@ -80,6 +80,9 @@ public class Event {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    @Column(name = "ended_notified_at")
+    private Instant endedNotifiedAt;
+
     public Event(String title, EventCategory category, Long managerId) {
         this.title = title;
         this.category = category;
@@ -87,8 +90,9 @@ public class Event {
         this.status = EventStatus.DRAFT;
         this.viewCount = 0L;
     }
-
+    
     public EventPhase phase(LocalDate today) {
+        if (startDate == null || endDate == null) return null;
         if (today.isBefore(startDate)) return EventPhase.UPCOMING;
         if (today.isAfter(endDate)) return EventPhase.ENDED;
         return EventPhase.ONGOING;
@@ -115,6 +119,10 @@ public class Event {
         this.startDate = startDate;
         this.endDate = endDate;
     }
+    
+    public void changeManager(long managerId) {
+        this.managerId = managerId;
+    }
 
     public void publish() {
         this.status = EventStatus.PUBLISHED;
@@ -126,6 +134,10 @@ public class Event {
 
     public void softDelete(Instant now) {
         this.deletedAt = now;
+    }
+
+    public void markEndedNotified(Instant now) {
+        this.endedNotifiedAt = now;
     }
 
     public void increaseViewCount() {

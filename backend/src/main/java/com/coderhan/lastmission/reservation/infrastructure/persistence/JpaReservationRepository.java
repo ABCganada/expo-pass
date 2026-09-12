@@ -9,9 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import com.coderhan.lastmission.reservation.application.ReservationRepository;
-import com.coderhan.lastmission.reservation.domain.OrderStatus;
-import com.coderhan.lastmission.reservation.domain.ReservationOrder;
-import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
+import com.coderhan.lastmission.reservation.domain.*;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -94,6 +92,41 @@ class JpaReservationRepository implements ReservationRepository {
     @Override
     public long countPurchasedQuantity(long userId, long ticketId) {
         return itemJpaRepository.countByUserIdAndTicketId(userId, ticketId);
+    }
+
+    @Override
+    public Map<String, List<TicketQuantity>> findTicketQuantitiesByUserId(long userId) {
+        return itemJpaRepository.findTicketQuantitiesByUserId(userId).stream()
+                .collect(Collectors.groupingBy(
+                        ReservationOrderItemJpaRepository.OrderTicketQuantityRow::getOrderId,
+                        Collectors.mapping(
+                                row -> new TicketQuantity(row.getTicketId(), (int) row.getQuantity()),
+                                Collectors.toList())));
+    }
+
+    @Override
+    public List<QrTicketView> findQrTicketsByUserId(long userId) {
+        return itemJpaRepository.findQrTicketsByUserId(userId).stream()
+                .map(row -> new QrTicketView(row.getOrderId(), row.getEventId(), row.getOrderItemId(),
+                        row.getTicketId(), row.getQrCodeHash(), row.getCheckedInAt()))
+                .toList();
+    }
+
+    @Override
+    public CheckinProgress countCheckinProgressByEventId(long eventId) {
+        ReservationOrderItemJpaRepository.CheckinProgressRow row =
+                itemJpaRepository.countCheckinProgressByEventId(eventId);
+        return new CheckinProgress(row.getTotalItems(), row.getCheckedInCount());
+    }
+
+    @Override
+    public boolean hasActiveOrdersForEvent(long eventId) {
+        return orderJpaRepository.existsActiveByEventId(eventId);
+    }
+
+    @Override
+    public boolean hasActiveOrderItemsForTicket(long ticketId) {
+        return itemJpaRepository.existsActiveByTicketId(ticketId);
     }
 
     private static ReservationOrder toDomain(ReservationOrderEntity entity) {

@@ -1,0 +1,71 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.map {
+  width: 100%;
+  height: 360px;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--color-page-background);
+}
+
+.mapFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 360px;
+  border-radius: var(--radius-card);
+  background: var(--color-page-background);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.placeLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.placeLink:hover {
+  text-decoration: underline;
+}
+
+.addressBlock {
+  display: flex;
+  gap: 8px;
+}
+
+.addressIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+}
+
+.venueName {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 4px;
+}
+
+.address {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}

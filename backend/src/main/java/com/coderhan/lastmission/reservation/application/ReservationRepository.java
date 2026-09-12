@@ -6,9 +6,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import com.coderhan.lastmission.reservation.domain.OrderStatus;
-import com.coderhan.lastmission.reservation.domain.ReservationOrder;
-import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
+
+import com.coderhan.lastmission.reservation.domain.*;
 
 public interface ReservationRepository {
     /** {@code ORD-yyyyMMdd-######} 형식의 새 주문 번호를 발급한다(시퀀스 기반). */
@@ -34,4 +33,17 @@ public interface ReservationRepository {
     Map<OrderStatus, Long> countOrdersByEventIdGroupedByStatus(long eventId);
     /** 이 유저가 이 티켓을 지금까지 총 몇 장 샀는지(1인당 구매 제한 검증용). */
     long countPurchasedQuantity(long userId, long ticketId);
+    /**
+     * 이 유저의 모든 주문에 대해, 주문ID별 티켓 종류별 수량을 한 번에 집계한다(목록 화면에서
+     * 주문마다 상세를 따로 조회하는 N+1을 피하기 위한 일괄 조회).
+     */
+    Map<String, List<TicketQuantity>> findTicketQuantitiesByUserId(long userId);
+    /** 이 유저의 QR 발급 대상(취소/환불 제외) 티켓을 전부 한 번에 조회한다(QR 화면 N+1 방지용). */
+    List<QrTicketView> findQrTicketsByUserId(long userId);
+    /** 해당 이벤트의 현재 체크인 현황 조회. */
+    CheckinProgress countCheckinProgressByEventId(long eventId);
+    /** 이 행사에 유효한(취소/환불되지 않은) 예약이 하나라도 있는지 확인 (Event 도메인 삭제 검증용). */
+    boolean hasActiveOrdersForEvent(long eventId);
+    /** 이 티켓에 유효한(취소/환불되지 않은) 예약이 하나라도 있는지 확인 (Event 도메인 삭제 검증용). */
+    boolean hasActiveOrderItemsForTicket(long ticketId);
 }

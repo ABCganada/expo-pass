@@ -11,22 +11,24 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.coderhan.lastmission.event.EventQueryPort;
+import com.coderhan.lastmission.event.ReservationQueryPort;
 import com.coderhan.lastmission.event.TicketInfo;
-import com.coderhan.lastmission.reservation.domain.OrderStatus;
-import com.coderhan.lastmission.reservation.domain.ReservationOrder;
-import com.coderhan.lastmission.reservation.domain.ReservationOrderItem;
+import com.coderhan.lastmission.reservation.domain.*;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
+import com.coderhan.lastmission.user.UserDirectory;
+import com.coderhan.lastmission.user.UserRef;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class ReservationService {
+public class ReservationService implements ReservationQueryPort {
     private final ReservationRepository repository;
     private final EventQueryPort eventQueryPort;
-    private final WaitingRoomService waitingRoomService;   // ← 추가
+    private final WaitingRoomService waitingRoomService;
+    private final UserDirectory userDirectory;
     private final Clock clock;
 
     /**
@@ -34,7 +36,7 @@ public class ReservationService {
      */
     @Transactional
     public OrderDetail createOrder(long userId, long eventId, List<OrderItemRequest> items) {
-        waitingRoomService.consumeAdmission(userId, eventId);
+        waitingRoomService.consumeTicket(userId, eventId);
         ReservationOrder.validateEventId(eventId);
         if (items == null || items.isEmpty()) {
             throw new BusinessException(ErrorCode.RESERVATION_INVALID_REQUEST, "주문할 티켓 항목이 없습니다.");
@@ -106,11 +108,25 @@ public class ReservationService {
     }
 
     /**
-     * 이 유저의 모든 주문을 최신순으로 조회한다(목록용, 아이템은 안 채움).
+     * 이 유저의 모든 주문을 최신순으로 조회한다(목록용). 아이템 자체는 안 채우고,
+     * 티켓 종류별 수량만 일괄 집계해서 같이 내려준다(주문마다 상세를 또 조회하는 N+1 방지).
      */
     @Transactional(readOnly = true)
-    public List<ReservationOrder> getMyOrders(long userId) {
-        return repository.findOrdersByUserId(userId);
+    public List<OrderWithTickets> getMyOrders(long userId) {
+        List<ReservationOrder> orders = repository.findOrdersByUserId(userId);
+        Map<String, List<TicketQuantity>> quantitiesByOrderId = repository.findTicketQuantitiesByUserId(userId);
+        return orders.stream()
+                .map(order -> new OrderWithTickets(order, quantitiesByOrderId.getOrDefault(order.orderId(), List.of())))
+                .toList();
+    }
+
+    /**
+     * 이 유저의 QR 발급 대상 티켓(취소/환불 제외)을 전부 조회한다(QR 티켓 화면용).
+     * 주문마다 상세를 따로 조회하지 않고 한 번의 쿼리로 다 가져온다.
+     */
+    @Transactional(readOnly = true)
+    public List<QrTicketView> getMyQrTickets(long userId) {
+        return repository.findQrTicketsByUserId(userId);
     }
 
     /**
@@ -139,6 +155,22 @@ public class ReservationService {
     }
 
     /**
+     * 관리자용 — 이 행사의 예약자 명단을 유저 이름/이메일까지 채워서 조회한다.
+     */
+    @Transactional(readOnly = true)
+    public List<AttendeeInfo> getEventAttendees(long eventId) {
+        List<ReservationOrder> orders = repository.findOrdersByEventId(eventId);
+
+        List<Long> userIds = orders.stream().map(ReservationOrder::userId).distinct().toList();
+        Map<Long, UserRef> usersById = userDirectory.findActiveByIds(userIds).stream()
+                .collect(Collectors.toMap(UserRef::id, ref -> ref));
+
+        return orders.stream()
+                .map(order -> new AttendeeInfo(order, usersById.get(order.userId())))
+                .toList();
+    }
+
+    /**
      * 관리자용 — 이 행사의 예약 현황(상태별 건수)을 조회한다.
      */
     @Transactional(readOnly = true)
@@ -148,10 +180,29 @@ public class ReservationService {
         return new EventReservationSummary(eventId, totalOrders, countsByStatus);
     }
 
+    public CheckinProgress getCheckinProgress(long eventId) {
+        return repository.countCheckinProgressByEventId(eventId);
+    }
+
+    @Override
+    public boolean hasActiveReservationsForEvent(long eventId) {
+        return repository.hasActiveOrdersForEvent(eventId);
+    }
+
+    @Override
+    public boolean hasActiveReservationsForTicket(long ticketId) {
+        return repository.hasActiveOrderItemsForTicket(ticketId);
+    }
+
     public record OrderItemRequest(long ticketId, BigDecimal unitPrice, int quantity) {}
 
     public record OrderDetail(ReservationOrder order, List<ReservationOrderItem> items) {}
 
+    public record OrderWithTickets(ReservationOrder order, List<TicketQuantity> ticketQuantities) {}
+
     public record EventReservationSummary(
             long eventId, long totalOrders, Map<OrderStatus, Long> countsByStatus) {}
+
+    /** userRef가 null이면(탈퇴 등으로 활성 유저가 아니면) 이름/이메일을 모른다는 뜻이다. */
+    public record AttendeeInfo(ReservationOrder order, UserRef userRef) {}
 }

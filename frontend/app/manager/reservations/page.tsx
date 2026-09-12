@@ -1,6 +1,13 @@
-import { ClipboardList } from "lucide-react";
-import { FeaturePlaceholder } from "@/features/shared/components/FeaturePlaceholder";
+import { EventSelectContent } from "@/features/reservation/components/EventSelectContent";
 
 export default function ManagerReservationsPage() {
-  return <FeaturePlaceholder icon={ClipboardList} title="예약자 명단 관리" description="예약자를 조회·검색하고 예약 상태를 현장에서 수동 변경하는 화면입니다." />;
+  return (
+    <EventSelectContent
+      basePath="/manager/reservations"
+      title="예약자 명단 관리"
+      subtitle="예약자 명단을 확인할 행사를 선택하세요"
+      showPhaseTabs
+      showSearch
+    />
+  );
 }

@@ -3,12 +3,17 @@ package com.coderhan.lastmission.marketing.presentation;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import com.coderhan.lastmission.marketing.application.BannerAdService;
+import com.coderhan.lastmission.marketing.application.BannerImageStorage;
+import com.coderhan.lastmission.marketing.application.BannerSlotService;
 import com.coderhan.lastmission.marketing.application.BannerStatService;
 import com.coderhan.lastmission.marketing.domain.BannerAd;
 import com.coderhan.lastmission.marketing.domain.BannerAdStats;
 import com.coderhan.lastmission.marketing.domain.BannerAdStatus;
+import com.coderhan.lastmission.marketing.domain.BannerSlot;
+import com.coderhan.lastmission.marketing.domain.BannerSlotType;
 import com.coderhan.lastmission.shared.ApiResponse;
 import com.coderhan.lastmission.user.LastMissionPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 마케터용 광고 등록/수정 API.
@@ -36,14 +42,30 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 class BannerMarketerController {
     private final BannerAdService bannerAdService;
+    private final BannerSlotService bannerSlotService;
     private final BannerStatService bannerStatService;
+    private final BannerImageStorage bannerImageStorage;
+
+    @PostMapping(path = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<ApiResponse<ImageUploadResponse>> uploadImage(
+            @RequestParam("file") MultipartFile file) throws java.io.IOException {
+        String url = bannerImageStorage.upload(
+                file.getOriginalFilename(), file.getContentType(), file.getBytes());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(new ImageUploadResponse(url)));
+    }
+
+    @GetMapping("/slots")
+    ApiResponse<List<SlotResponse>> getAvailableSlots() {
+        return ApiResponse.success(bannerSlotService.getSlots().stream()
+                .map(SlotResponse::from)
+                .toList());
+    }
 
     @GetMapping
     ApiResponse<List<BannerAdResponse>> getMyAds(@AuthenticationPrincipal LastMissionPrincipal principal) {
-        List<BannerAdResponse> responses = bannerAdService.getMyAds(principal.email()).stream()
+        return ApiResponse.success(bannerAdService.getMyAds(principal.email()).stream()
                 .map(BannerAdResponse::from)
-                .toList();
-        return ApiResponse.success(responses);
+                .toList());
     }
 
     @PostMapping
@@ -51,8 +73,8 @@ class BannerMarketerController {
             @RequestBody RegisterAdRequest request,
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAd ad = bannerAdService.registerAd(
-                request.slotId(), request.title(), request.imageUrl(), request.linkUrl(),
-                request.priority(), request.startsAt(), request.endsAt(), principal.email());
+                request.slotIds(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
+                request.linkUrl(), request.startsAt(), request.endsAt(), principal.email());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(BannerAdResponse.from(ad)));
     }
 
@@ -62,8 +84,8 @@ class BannerMarketerController {
             @RequestBody UpdateAdRequest request,
             @AuthenticationPrincipal LastMissionPrincipal principal) {
         BannerAd ad = bannerAdService.updateAd(
-                id, principal.email(), request.title(), request.imageUrl(), request.linkUrl(),
-                request.priority(), request.startsAt(), request.endsAt());
+                id, principal.email(), request.title(), request.bannerImageUrl(), request.adImageUrl(),
+                request.linkUrl(), request.startsAt(), request.endsAt());
         return ApiResponse.success(BannerAdResponse.from(ad));
     }
 
@@ -91,21 +113,29 @@ class BannerMarketerController {
         return ResponseEntity.ok().headers(headers).body(xlsx);
     }
 
+    record SlotResponse(UUID id, String name, BannerSlotType type, int maxCount, long pricePerDay) {
+        static SlotResponse from(BannerSlot slot) {
+            return new SlotResponse(slot.id(), slot.name(), slot.type(), slot.maxCount(), slot.pricePerDay());
+        }
+    }
+
+    record ImageUploadResponse(String imageUrl) {}
+
     record RegisterAdRequest(
-            UUID slotId,
+            Set<UUID> slotIds,
             String title,
-            String imageUrl,
+            String bannerImageUrl,
+            String adImageUrl,
             String linkUrl,
-            int priority,
             OffsetDateTime startsAt,
             OffsetDateTime endsAt
     ) {}
 
     record UpdateAdRequest(
             String title,
-            String imageUrl,
+            String bannerImageUrl,
+            String adImageUrl,
             String linkUrl,
-            int priority,
             OffsetDateTime startsAt,
             OffsetDateTime endsAt
     ) {}
@@ -118,20 +148,24 @@ class BannerMarketerController {
 
     record BannerAdResponse(
             UUID id,
-            UUID slotId,
+            Set<UUID> slotIds,
+            String orderId,
             String title,
-            String imageUrl,
+            String bannerImageUrl,
+            String adImageUrl,
             String linkUrl,
-            int priority,
             BannerAdStatus status,
             OffsetDateTime startsAt,
             OffsetDateTime endsAt,
             String createdBy,
-            OffsetDateTime createdAt
+            OffsetDateTime createdAt,
+            Long totalAmount
     ) {
         static BannerAdResponse from(BannerAd ad) {
-            return new BannerAdResponse(ad.id(), ad.slotId(), ad.title(), ad.imageUrl(), ad.linkUrl(),
-                    ad.priority(), ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(), ad.createdAt());
+            return new BannerAdResponse(ad.id(), ad.slotIds(), ad.orderId(), ad.title(),
+                    ad.bannerImageUrl(), ad.adImageUrl(), ad.linkUrl(),
+                    ad.status(), ad.startsAt(), ad.endsAt(), ad.createdBy(),
+                    ad.createdAt(), ad.totalAmount());
         }
     }
 }

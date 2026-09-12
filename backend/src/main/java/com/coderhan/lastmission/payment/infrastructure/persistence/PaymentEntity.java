@@ -2,6 +2,7 @@ package com.coderhan.lastmission.payment.infrastructure.persistence;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import com.coderhan.lastmission.payment.domain.OrderType;
 import com.coderhan.lastmission.payment.domain.PaymentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,7 +27,11 @@ class PaymentEntity {
     private Long id;  // DB 기본값 unique_rowid() — CockroachDB hot range 방지
 
     @Column(name = "order_id", nullable = false)
-    private String orderId;  // reservation_orders.order_id 참조 (String, FK 미설정)
+    private String orderId;  // reservation_orders.order_id 또는 marketing_banner_ads.order_id 논리적 참조
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "order_type", nullable = false)
+    private OrderType orderType;
 
     @Column(name = "user_id")
     private Long userId;  // user_accounts.id 참조, 논리적 참조 (내 결제 내역 조회용)
@@ -63,9 +68,14 @@ class PaymentEntity {
     private OffsetDateTime updatedAt;
 
     /** 승인(confirm) 성공 직후 COMPLETED 상태로 바로 만든다 — REQUESTED row를 거치지 않는다. */
-    PaymentEntity(String orderId, Long userId, String idempotencyKey, BigDecimal amount, String method,
-            String pgProvider, String pgOrderId, String pgTransactionId, OffsetDateTime paidAt, OffsetDateTime now) {
+    PaymentEntity(
+        String orderId, OrderType orderType, Long userId,
+        String idempotencyKey, BigDecimal amount, String method,
+        String pgProvider, String pgOrderId, String pgTransactionId,
+        OffsetDateTime paidAt, OffsetDateTime now
+    ) {
         this.orderId = orderId;
+        this.orderType = orderType;
         this.userId = userId;
         this.idempotencyKey = idempotencyKey;
         this.amount = amount;

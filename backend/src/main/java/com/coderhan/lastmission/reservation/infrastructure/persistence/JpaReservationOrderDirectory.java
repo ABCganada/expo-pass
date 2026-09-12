@@ -1,6 +1,7 @@
 package com.coderhan.lastmission.reservation.infrastructure.persistence;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import com.coderhan.lastmission.reservation.ReservationOrderDirectory;
 import lombok.RequiredArgsConstructor;
@@ -14,5 +15,10 @@ class JpaReservationOrderDirectory implements ReservationOrderDirectory {
     @Override
     public Optional<BigDecimal> findOrderAmount(String orderId) {
         return orderJpaRepository.findById(orderId).map(ReservationOrderEntity::getTotalAmount);
+    }
+
+    @Override
+    public List<String> findOrderIdsByEventId(long eventId) {
+        return orderJpaRepository.findOrderIdByEventId(eventId);
     }
 }

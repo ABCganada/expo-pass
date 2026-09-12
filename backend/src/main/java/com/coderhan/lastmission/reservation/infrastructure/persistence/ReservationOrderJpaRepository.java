@@ -12,6 +12,9 @@ interface ReservationOrderJpaRepository extends JpaRepository<ReservationOrderEn
     // 관리자 예약자 명단 조회용
     List<ReservationOrderEntity> findByEventIdOrderByReservedAtDesc(Long eventId);
 
+    // Payment 도메인 정산 매출 계산용 — orderId 필드만 뽑아온다 (메서드 이름만으로 JPA가 자동 생성)
+    List<String> findOrderIdByEventId(Long eventId);
+
     // 관리자 예약 현황(상태별 건수) 조회용
     @Query("SELECT o.status as status, COUNT(o) as count FROM ReservationOrderEntity o "
             + "WHERE o.eventId = :eventId GROUP BY o.status")
@@ -21,4 +24,11 @@ interface ReservationOrderJpaRepository extends JpaRepository<ReservationOrderEn
         OrderStatus getStatus();
         long getCount();
     }
+
+    // Event 도메인이 행사를 삭제해도 되는지 확인할 때 사용 (PENDING/CONFIRMED만 유효한 예약으로 취급)
+    @Query("SELECT COUNT(o) > 0 FROM ReservationOrderEntity o "
+            + "WHERE o.eventId = :eventId AND o.status IN "
+            + "(com.coderhan.lastmission.reservation.domain.OrderStatus.PENDING, "
+            + "com.coderhan.lastmission.reservation.domain.OrderStatus.CONFIRMED)")
+    boolean existsActiveByEventId(@Param("eventId") long eventId);
 }

@@ -1,6 +1,6 @@
 package com.coderhan.lastmission.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -15,24 +15,19 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * 프론트도 fetch 에 {@code credentials: 'include'} 를 붙여야 쿠키가 실린다.</p>
  */
 @Configuration
+@EnableConfigurationProperties(CorsProperties.class)
 public class WebConfig implements WebMvcConfigurer {
 
-    private final String[] allowedOrigins;
+    private final CorsProperties corsProperties;
 
-    public WebConfig(
-            @Value("${lastmission.cors.allowed-origins:"
-                    + "https://lastmission.example.com,"
-                    + "https://localhost.example.com:3000,"
-                    + "http://localhost:3000}")
-            String[] allowedOrigins
-    ) {
-        this.allowedOrigins = allowedOrigins;
+    public WebConfig(CorsProperties corsProperties) {
+        this.corsProperties = corsProperties;
     }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins(allowedOrigins)
+                .allowedOrigins(corsProperties.allowedOriginsArray())
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);

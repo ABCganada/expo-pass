@@ -19,16 +19,6 @@ export const adminBannerService = {
     fetch(`${BASE}/slots`, { credentials: "include", signal })
       .then((res) => parseData<BannerSlot[]>(res)),
 
-  createSlot: async (cmd: { name: string; maxCount: number }): Promise<BannerSlot> => {
-    const csrf = await getCsrfToken();
-    return fetch(`${BASE}/slots`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json", [csrf.headerName]: csrf.token },
-      body: JSON.stringify(cmd),
-    }).then((res) => parseData<BannerSlot>(res));
-  },
-
   approveAd: async (id: string): Promise<MarketerBannerAd> => {
     const csrf = await getCsrfToken();
     return fetch(`${BASE}/ads/${id}/approve`, {
