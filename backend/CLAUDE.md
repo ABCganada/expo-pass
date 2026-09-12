@@ -12,7 +12,7 @@
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Language/Runtime | Java 25 (`languageVersion = JavaLanguageVersion.of(25)`)                                                                                                    |
 | Framework        | Spring Boot 4, Spring Modulith 2.0.5, Spring Security                                                                                                       |
-| Build            | Gradle Kotlin DSL (`build.gradle.kts`), private Nexus (Cloudflare Access) dependencies (`coder-han-auth-client`, `coder-han-vault-cert`)                    |
+| Build            | Gradle Kotlin DSL (`build.gradle.kts`), private Nexus (Cloudflare Access) dependencies (`example-auth-client`, `example-vault-cert`)                    |
 | Container        | Multi-stage Dockerfile (`eclipse-temurin:25-jdk` build → `25-jre` runtime), runs `./gradlew test bootJar` during the build                                  |
 | Local run        | `application.yaml` imports `.env` / `../.env` / `../../.env` in that order; the `application-dev.yaml` profile runs HTTPS locally using mkcert certificates |
 
@@ -98,7 +98,7 @@ Inside a domain package, split into 4 layers (using the `chat` module as the exa
   - `/ws/**` → all 4 authenticated roles (the WebSocket handshake isn't subject to CSRF, so `StompConfig`'s Origin check is the separate line of defense)
   - Every other request is `denyAll()` — a new endpoint must be explicitly included in this rule set to be reachable (if omitted, it's rejected by this rule itself rather than returning a 403 elsewhere).
 - Authentication is **STATELESS** (no session) and integrated with in-house auth-core (`LastMissionAuthenticationFilter` + `AuthClient`; `UserProvisioningService` provisions the local `user_accounts` row on first login). CSRF is maintained separately via a cookie (`LASTMISSION-XSRF-TOKEN` / header `X-LASTMISSION-XSRF-TOKEN`).
-- CORS, configured in `config.WebConfig`, allows only the frontend domains (`*.coder-han.com`, local `localhost:3000`) with `allowCredentials(true)` — since the auth-core session cookie is delivered same-site, update this too whenever a new frontend domain is added.
+- CORS, configured in `config.WebConfig`, allows only the frontend domains (`*.example.com`, local `localhost:3000`) with `allowCredentials(true)` — since the auth-core session cookie is delivered same-site, update this too whenever a new frontend domain is added.
 
 ---
 

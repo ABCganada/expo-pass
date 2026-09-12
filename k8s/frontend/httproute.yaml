@@ -5,9 +5,9 @@ metadata:
   namespace: lastmission
 spec:
   hostnames:
-    - lastmission.coder-han.com
+    - lastmission.example.com
   parentRefs:
-    - name: coder-han-gateway
+    - name: example-gateway
       namespace: gateway-system
   rules:
     - matches:

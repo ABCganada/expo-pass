@@ -1,7 +1,7 @@
 ### 마케팅 배너 API
-### Base URL: https://localhost.coder-han.com:8080
+### Base URL: https://localhost.example.com:8080
 
-@baseUrl = https://localhost.coder-han.com:8080
+@baseUrl = https://localhost.example.com:8080
 
 # 아래 토큰은 실행 전 로그인 후 발급받은 토큰으로 교체
 @adminToken = Bearer <ADMIN_TOKEN>

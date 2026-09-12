@@ -37,8 +37,8 @@ class StompConfig implements WebSocketMessageBrokerConfigurer {
 
     StompConfig(List<SubscriptionGuard> guards, RealtimeUserResolver userResolver,
             @Value("${lastmission.cors.allowed-origins:"
-                    + "https://lastmission.coder-han.com,"
-                    + "https://localhost.coder-han.com:3000,"
+                    + "https://lastmission.example.com,"
+                    + "https://localhost.example.com:3000,"
                     + "http://localhost:3000}") String[] allowedOrigins) {
         this.guards = guards;
         this.userResolver = userResolver;

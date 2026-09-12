@@ -22,7 +22,7 @@ repositories {
 
     // 공인 TLS + Cloudflare Access로 보호되는 중앙 넥서스 레포지토리
     maven {
-        url = uri("https://nexus.coder-han.com/repository/maven-snapshots/")
+        url = uri("https://nexus.example.com/repository/maven-snapshots/")
 
         val cloudflareAccessAuthorization = providers
             .environmentVariable("CF_ACCESS_AUTHORIZATION")
@@ -54,11 +54,11 @@ dependencies {
     // 채팅 실시간 수신 (STOMP over WebSocket, SockJS 미사용)
     implementation("org.springframework.boot:spring-boot-starter-websocket")
 
-    // coder-han 중앙 인증 클라이언트
-    implementation("com.coder-han:coder-han-auth-client:0.1.1-SNAPSHOT")
+    // example 중앙 인증 클라이언트
+    implementation("com.example:example-auth-client:0.1.1-SNAPSHOT")
 
     // CoderHan Vault Cert 라이브러리 (운영 CockroachDB/Kafka 인증서 접속)
-    implementation("com.coder-han:coder-han-vault-cert:0.5.20-SNAPSHOT")
+    implementation("com.example:example-vault-cert:0.5.20-SNAPSHOT")
 
     // Kafka
     implementation("org.springframework.boot:spring-boot-starter-kafka")

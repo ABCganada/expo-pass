@@ -24,7 +24,7 @@ jobs:
     env:
       # NEXT_PUBLIC_* 는 빌드 시점에 번들에 박히므로 build-arg 로 주입해야 한다.
       # 브라우저에 공개되는 빌드 값이므로 운영 API 주소를 명시한다.
-      NEXT_PUBLIC_API_URL: https://lastmission-api.coder-han.com
+      NEXT_PUBLIC_API_URL: https://lastmission-api.example.com
 
     steps:
       - name: Checkout source

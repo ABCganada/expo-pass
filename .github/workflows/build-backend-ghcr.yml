@@ -36,7 +36,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      # backend/build.gradle.kts 가 사설 Nexus(coder-han-auth-client / vault-cert)에서
+      # backend/build.gradle.kts 가 사설 Nexus(example-auth-client / vault-cert)에서
       # 의존성을 받으므로 Cloudflare Access 서비스 토큰이 필요하다.
       # 이 값들은 GitHub repo Secrets 에 CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET 로 등록한다.
       # (Dockerfile 이 이 secret 들을 읽어 CF_ACCESS_AUTHORIZATION 헤더를 만든다.)

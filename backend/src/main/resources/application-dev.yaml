@@ -7,7 +7,7 @@ server:
 
 lastmission:
   cors:
-    allowed-origins: https://localhost.coder-han.com:3000
+    allowed-origins: https://localhost.example.com:3000
 
   security:
     csrf:
@@ -16,5 +16,5 @@ lastmission:
 coderhan:
   auth:
     # 공통 인증 서버 주소는 .env를 사용하고, 개발용 복귀 주소만 덮어쓴다.
-    post-login-redirect-path: https://localhost.coder-han.com:3000/
-    post-logout-redirect-path: https://localhost.coder-han.com:3000/
+    post-login-redirect-path: https://localhost.example.com:3000/
+    post-logout-redirect-path: https://localhost.example.com:3000/

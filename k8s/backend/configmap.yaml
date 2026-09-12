@@ -13,7 +13,7 @@ data:
   DB_DRIVER_CLASS_NAME: org.postgresql.Driver
   DB_HIKARI_INITIALIZATION_FAIL_TIMEOUT: "-1"
   KAFKA_BOOTSTRAP_SERVERS: kafka181-kafka-bootstrap.kafka.svc.cluster.local:9093
-  LASTMISSION_CORS_ALLOWED_ORIGINS: https://lastmission.coder-han.com
+  LASTMISSION_CORS_ALLOWED_ORIGINS: https://lastmission.example.com
   LASTMISSION_KAFKA_ENABLED: "true"
   LASTMISSION_KAFKA_TOPIC: lastmission.main.events
   LASTMISSION_KAFKA_CONSUMER_GROUP: lastmission-main
@@ -30,8 +30,8 @@ data:
   VAULT_KAFKA_PKI_PATH: pki_lastmission_kafka/sign/kafka-lastmission-svc-main-client
   AUTH_PROJECT_ID: lastmission
   AUTH_APP_ID: lastmission
-  AUTH_CHECK_URL: https://auth.coder-han.com/auth/check
-  AUTH_LOGIN_URL: https://auth.coder-han.com/auth/login
-  AUTH_LOGOUT_URL: https://auth.coder-han.com/auth/logout
-  POST_LOGIN_REDIRECT: https://lastmission.coder-han.com/
-  POST_LOGOUT_REDIRECT: https://lastmission.coder-han.com/
+  AUTH_CHECK_URL: https://auth.example.com/auth/check
+  AUTH_LOGIN_URL: https://auth.example.com/auth/login
+  AUTH_LOGOUT_URL: https://auth.example.com/auth/logout
+  POST_LOGIN_REDIRECT: https://lastmission.example.com/
+  POST_LOGOUT_REDIRECT: https://lastmission.example.com/

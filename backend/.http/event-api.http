@@ -1,7 +1,7 @@
 ### 행사(Event) API
-### Base URL: https://localhost.coder-han.com:8080
+### Base URL: https://localhost.example.com:8080
 
-@baseUrl = https://localhost.coder-han.com:8080
+@baseUrl = https://localhost.example.com:8080
 
 @authCookie = <PASTE_COOKIE_HEADER_VALUE>
 
