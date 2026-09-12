@@ -3,8 +3,6 @@ package com.coderhan.lastmission.payment.infrastructure.persistence;
 import java.time.OffsetDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -18,10 +16,10 @@ import org.hibernate.type.SqlTypes;
 @Table(name = "payment_logs")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 class PaymentLogEntity {
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long id;  // DB 기본값 unique_rowid() — CockroachDB hot range 방지
+    private Long id;
 
     @Column(name = "payment_key")
     private String paymentKey;  // 토스 paymentKey 그대로 저장, FK 없음(논리적 참조)
@@ -43,9 +41,10 @@ class PaymentLogEntity {
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
-    static PaymentLogEntity create(String paymentKey, String action, String requestPayload,
+    static PaymentLogEntity create(Long id, String paymentKey, String action, String requestPayload,
                                     String responsePayload, String webhookTransmissionId, OffsetDateTime createdAt) {
         PaymentLogEntity entity = new PaymentLogEntity();
+        entity.id = id;
         entity.paymentKey = paymentKey;
         entity.action = action;
         entity.requestPayload = requestPayload;

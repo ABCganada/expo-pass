@@ -17,6 +17,8 @@ import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +42,7 @@ public class SettlementService {
      * 결제는 status가 REFUNDED로 바뀌지만 남은 금액은 여전히 주최자 매출이므로, COMPLETED뿐 아니라
      * REFUNDED 결제도 대상에 포함해 환불액만큼만 차감한다(전액 환불이면 결과적으로 0원).
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void create(long eventId) {
         if (settlementRepository.existsByEventId(eventId)) {
             return;
@@ -56,12 +59,14 @@ public class SettlementService {
     }
 
     /** 정산 목록 조회. 본인이 담당하는 행사의 정산만 보인다(역방향 조회로 SQL 단에서 필터링). */
+    @Transactional(readOnly = true)
     public List<Settlement> list(long userId) {
         List<Long> managedEventIds = paymentEventQueryPort.findEventIdsManagedBy(userId);
         return settlementRepository.findByEventIdIn(managedEventIds);
     }
 
     /** 정산 상세 조회. 본인이 담당하는 행사의 정산만 조회할 수 있다(정방향 조회). */
+    @Transactional(readOnly = true)
     public Settlement get(long userId, long settlementId) {
         Settlement settlement = settlementRepository.findById(settlementId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_SETTLEMENT_NOT_FOUND, "정산 내역을 찾을 수 없습니다."));
@@ -73,6 +78,7 @@ public class SettlementService {
     }
 
     /** 전체 매출 대시보드 조회. 전체 정산을 합산한다(ADMIN 전용). */
+    @Transactional(readOnly = true)
     public SettlementSummary getDashboardSummary() {
         return settlementRepository.getDashboardSummary();
     }
@@ -81,6 +87,7 @@ public class SettlementService {
      * 정산에 포함된 결제 내역 조회(감사용). 접근 권한 검증은 get()과 동일하다.
      * 총매출 계산에 쓰인 것과 동일한 결제 목록에, 각 결제의 활성 환불액을 같이 반환한다.
      */
+    @Transactional(readOnly = true)
     public List<SettlementPaymentDetail> getSettlementPayments(long userId, long settlementId) {
         Settlement settlement = get(userId, settlementId);
         return findSettledPayments(settlement.eventId()).stream()

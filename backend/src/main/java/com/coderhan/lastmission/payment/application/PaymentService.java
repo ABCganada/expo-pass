@@ -14,6 +14,7 @@ import com.coderhan.lastmission.shared.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -116,10 +117,12 @@ public class PaymentService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<Payment> getMyPayments(long userId) {
         return repository.findByUserId(userId);
     }
 
+    @Transactional(readOnly = true)
     public Payment getPayment(long userId, String orderId) {
         Payment payment = repository.findByOrderId(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, "결제 내역을 찾을 수 없습니다."));
