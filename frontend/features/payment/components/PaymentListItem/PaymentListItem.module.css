@@ -79,6 +79,12 @@
   background: color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
+.badge[data-status="CANCELLED"],
+.badge[data-status="REFUNDED"] {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+}
+
 @media (max-width: 767px) {
   .row {
     padding: 16px;

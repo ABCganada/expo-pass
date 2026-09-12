@@ -1,0 +1,119 @@
+.panel {
+  composes: panel from "../../../shared/styles/panel.module.css";
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-page-background);
+}
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  composes: row from "../../../shared/styles/panel.module.css";
+}
+
+.label {
+  color: var(--color-text-secondary);
+}
+
+.value {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-page-background);
+}
+
+.badge[data-status="COMPLETED"] {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+}
+
+.badge[data-status="FAILED"],
+.badge[data-status="CANCELLED"],
+.badge[data-status="REFUNDED"] {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+}
+
+.badge[data-status="REQUESTED"] {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+.state {
+  margin: 0;
+  padding: 4px 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.refundButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-button);
+  background: var(--color-card-background);
+  color: var(--color-danger);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.refundButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+}
+
+.refundButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.successMessage,
+.errorMessage {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.successMessage {
+  color: var(--color-success);
+}
+
+.errorMessage {
+  color: var(--color-danger);
+}

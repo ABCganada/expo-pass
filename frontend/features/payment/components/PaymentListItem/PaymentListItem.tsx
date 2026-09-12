@@ -10,6 +10,7 @@ const STATUS_LABEL: Record<PaymentStatus, string> = {
   COMPLETED: "결제완료",
   FAILED: "결제실패",
   CANCELLED: "취소됨",
+  REFUNDED: "환불됨",
 };
 
 function formatAmount(amount: number): string {

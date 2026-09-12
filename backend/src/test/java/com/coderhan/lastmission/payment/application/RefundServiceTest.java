@@ -22,6 +22,7 @@ import com.coderhan.lastmission.payment.domain.Refund;
 import com.coderhan.lastmission.payment.domain.RefundStatus;
 import com.coderhan.lastmission.shared.error.BusinessException;
 import com.coderhan.lastmission.shared.error.ErrorCode;
+import com.coderhan.lastmission.shared.order.OrderType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +47,7 @@ class RefundServiceTest {
     @Mock PaymentRepository paymentRepository;
     @Mock PaymentGateway paymentGateway;
     @Mock EventScheduleReader eventScheduleReader;
+    @Mock PaymentEventRecorder eventRecorder;
     @Spy Clock clock = Clock.fixed(Instant.parse("2026-07-23T10:00:00Z"), ZoneOffset.UTC);
 
     @InjectMocks RefundService service;
@@ -73,12 +75,13 @@ class RefundServiceTest {
         when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
         when(refundRepository.findActiveByPaymentId(PAYMENT_ID)).thenReturn(Optional.empty());
         when(eventScheduleReader.findEventStartDate(anyString())).thenReturn(TODAY.plusDays(daysUntilStart));
-        when(refundRepository.save(anyLong(), any(), anyString(), any())).thenReturn(saved);
+        when(eventRecorder.reportRefund(anyLong(), anyString(), any(), any(), anyString(), any())).thenReturn(saved);
 
         Refund result = service.request(USER_ID, PAYMENT_ID, "단순 변심");
 
         assertThat(result).isSameAs(saved);
-        verify(refundRepository).save(PAYMENT_ID, expectedAmount, "단순 변심", OffsetDateTime.now(clock));
+        verify(eventRecorder).reportRefund(PAYMENT_ID, payment.orderId(), payment.orderType(), expectedAmount,
+                "단순 변심", OffsetDateTime.now(clock));
         if (expectCancelCall) {
             verify(paymentGateway).cancel(payment.pgTransactionId(), "단순 변심", expectedAmount);
         } else {
@@ -95,7 +98,7 @@ class RefundServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class,
                         exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_NOT_FOUND));
 
-        verify(refundRepository, never()).save(anyLong(), any(), any(), any());
+        verify(eventRecorder, never()).reportRefund(anyLong(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -107,7 +110,7 @@ class RefundServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class,
                         exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_ACCESS_DENIED));
 
-        verify(refundRepository, never()).save(anyLong(), any(), any(), any());
+        verify(eventRecorder, never()).reportRefund(anyLong(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -119,7 +122,7 @@ class RefundServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_NOT_ALLOWED));
 
-        verify(refundRepository, never()).save(anyLong(), any(), any(), any());
+        verify(eventRecorder, never()).reportRefund(anyLong(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -132,7 +135,7 @@ class RefundServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.errorCode()).isEqualTo(ErrorCode.PAYMENT_REFUND_ALREADY_EXISTS));
 
-        verify(refundRepository, never()).save(anyLong(), any(), any(), any());
+        verify(eventRecorder, never()).reportRefund(anyLong(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -141,7 +144,7 @@ class RefundServiceTest {
         when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(completedPayment()));
         when(refundRepository.findActiveByPaymentId(PAYMENT_ID)).thenReturn(Optional.empty());
         when(eventScheduleReader.findEventStartDate(anyString())).thenReturn(TODAY.plusDays(7));
-        when(refundRepository.save(anyLong(), any(), anyString(), any()))
+        when(eventRecorder.reportRefund(anyLong(), anyString(), any(), any(), anyString(), any()))
                 .thenThrow(new DataIntegrityViolationException("duplicate"));
 
         assertThatThrownBy(() -> service.request(USER_ID, PAYMENT_ID, "사유"))
@@ -153,6 +156,7 @@ class RefundServiceTest {
         return Payment.builder()
                 .id(PAYMENT_ID)
                 .orderId("ORD-1")
+                .orderType(OrderType.RESERVATION)
                 .userId(USER_ID)
                 .idempotencyKey("key-1")
                 .amount(AMOUNT)
