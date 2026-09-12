@@ -18,4 +18,10 @@ interface BannerAdJpaRepository extends JpaRepository<BannerAdEntity, UUID> {
     @Query("SELECT a FROM BannerAdEntity a WHERE a.status = :status AND a.startsAt <= :now AND a.endsAt >= :now ORDER BY a.priority ASC")
     List<BannerAdEntity> findAllActive(@Param("status") BannerAdStatus status,
                                        @Param("now") OffsetDateTime now);
+
+    List<BannerAdEntity> findByCreatedByOrderByCreatedAtDesc(String createdBy);
+
+    @Query("SELECT a FROM BannerAdEntity a WHERE a.status = :status AND a.endsAt < :now")
+    List<BannerAdEntity> findExpiredApproved(@Param("status") BannerAdStatus status,
+                                              @Param("now") OffsetDateTime now);
 }

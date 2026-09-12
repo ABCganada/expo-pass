@@ -43,6 +43,12 @@ class ReservationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(OrderResponse.from(detail)));
     }
 
+    @GetMapping("/me")
+    ApiResponse<List<OrderSummary>> getMyOrders(@AuthenticationPrincipal LastMissionPrincipal principal) {
+        List<ReservationOrder> orders = reservationService.getMyOrders(principal.userId());
+        return ApiResponse.success(orders.stream().map(OrderSummary::from).toList());
+    }
+
     @GetMapping("/{orderId}")
     ApiResponse<OrderResponse> getOrder(@PathVariable String orderId,
             @AuthenticationPrincipal LastMissionPrincipal principal) {
@@ -58,10 +64,20 @@ class ReservationController {
 
     record CreateOrderRequest(long eventId, List<OrderItemRequest> items) {}
 
-    record OrderItemResponse(String orderItemId, String ticketId, BigDecimal unitPrice) {
+    record OrderSummary(
+            String orderId, String eventId, OrderStatus status, BigDecimal totalAmount, OffsetDateTime reservedAt
+    ) {
+        static OrderSummary from(ReservationOrder order) {
+            return new OrderSummary(order.orderId(), Long.toString(order.eventId()), order.status(),
+                    order.totalAmount(), order.reservedAt());
+        }
+    }
+
+    record OrderItemResponse(String orderItemId, String ticketId, BigDecimal unitPrice, String qrCodeHash,
+            OffsetDateTime checkedInAt) {
         static OrderItemResponse from(ReservationOrderItem item) {
             return new OrderItemResponse(Long.toString(item.orderItemId()), Long.toString(item.ticketId()),
-                    item.unitPrice());
+                    item.unitPrice(), item.qrCodeHash(), item.checkedInAt());
         }
     }
 

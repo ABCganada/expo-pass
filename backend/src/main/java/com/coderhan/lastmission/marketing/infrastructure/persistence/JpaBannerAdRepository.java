@@ -60,6 +60,33 @@ class JpaBannerAdRepository implements BannerAdRepository {
         return toDomain(jpaRepository.save(entity));
     }
 
+    @Override
+    public List<BannerAd> findByCreatedBy(String email) {
+        return jpaRepository.findByCreatedByOrderByCreatedAtDesc(email).stream()
+                .map(JpaBannerAdRepository::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<BannerAd> findAll() {
+        return jpaRepository.findAll(org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Direction.DESC, "createdAt")).stream()
+                .map(JpaBannerAdRepository::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<BannerAd> findExpiredApproved(OffsetDateTime now) {
+        return jpaRepository.findExpiredApproved(BannerAdStatus.APPROVED, now).stream()
+                .map(JpaBannerAdRepository::toDomain)
+                .toList();
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        jpaRepository.deleteById(id);
+    }
+
     private static BannerAd toDomain(BannerAdEntity entity) {
         return new BannerAd(entity.getId(), entity.getSlotId(), entity.getTitle(), entity.getImageUrl(),
                 entity.getLinkUrl(), entity.getPriority(), entity.getStatus(),

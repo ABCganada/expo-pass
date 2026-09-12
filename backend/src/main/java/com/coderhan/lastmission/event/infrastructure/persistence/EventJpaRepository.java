@@ -27,4 +27,13 @@ interface EventJpaRepository extends JpaRepository<Event, Long>, EventRepository
         ORDER BY e.startDate ASC
     """)
     List<Event> findByStatusOrderByStartDateAsc(@Param("status") EventStatus status);
+
+    @Override
+    @Query("""
+        SELECT e FROM Event e
+        JOIN FETCH e.category
+        WHERE e.deletedAt IS NULL
+        ORDER BY e.startDate ASC
+    """)
+    List<Event> findAllOrderByStartDateAsc();
 }

@@ -28,7 +28,10 @@ class SecurityConfig {
         csrfTokenRepository.setCookieCustomizer(cookie -> cookie.path("/").secure(secureCsrfCookie).sameSite("Lax"));
 
         http.cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository))
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfTokenRepository)
+                        // 광고 노출/클릭 집계는 공개 트래킹 엔드포인트라 CSRF 제외
+                        .ignoringRequestMatchers("/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks"))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .requestCache(requestCache -> requestCache.disable())
                 .formLogin(formLogin -> formLogin.disable())
@@ -38,6 +41,9 @@ class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/check").denyAll()
                         .requestMatchers("/auth/**", "/error").permitAll()
+                        // 활성 배너 목록 및 집계는 비인증 허용
+                        .requestMatchers(HttpMethod.GET, "/api/v1/banners").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/banners/*/impressions", "/api/v1/banners/*/clicks").permitAll()
                         .requestMatchers("/api/v1/super-admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/events/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")

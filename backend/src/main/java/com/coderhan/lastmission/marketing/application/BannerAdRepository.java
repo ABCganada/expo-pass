@@ -16,4 +16,8 @@ public interface BannerAdRepository {
     BannerAd updateStatus(UUID id, BannerAdStatus status);
     BannerAd update(UUID id, String title, String imageUrl, String linkUrl,
                     int priority, OffsetDateTime startsAt, OffsetDateTime endsAt);
+    List<BannerAd> findByCreatedBy(String email);
+    List<BannerAd> findAll();
+    List<BannerAd> findExpiredApproved(OffsetDateTime now);
+    void deleteById(UUID id);
 }
