@@ -39,16 +39,16 @@ CREATE UNIQUE INDEX idx_payments_unique_active
 CREATE UNIQUE INDEX idx_payments_idempotency_key
     ON payments (idempotency_key);
 
--- 2. payment_refunds : 환불 (부분 환불 미허용 → 전액 환불만 지원)
+-- 2. payment_refunds : 환불 (행사 시작까지 남은 일수에 따라 환불율을 자동 적용 — 부분 환불 허용, D-0은 0% 환불)
 CREATE TABLE payment_refunds (
     id INT8 NOT NULL DEFAULT unique_rowid() PRIMARY KEY,
     payment_id INT8 NOT NULL REFERENCES payments(id),
-    amount DECIMAL(12, 2) NOT NULL,         -- 정책상 payments.amount와 동일해야 함 (앱 레벨 검증)
+    amount DECIMAL(12, 2) NOT NULL,         -- payments.amount × 환불율(정책상 계산, 0 이상 payments.amount 이하)
     reason STRING,
-    status STRING NOT NULL DEFAULT 'REQUESTED'
-        CHECK (status IN ('REQUESTED', 'APPROVED', 'REJECTED', 'COMPLETED')),
-    is_auto_approved BOOL NOT NULL DEFAULT false,  -- D-3 이전 신청 자동승인 여부
-    approved_by INT8,                       -- Identity 도메인 user_accounts.id (BIGINT) 참조, 논리적 참조
+    status STRING NOT NULL DEFAULT 'COMPLETED'
+        CHECK (status IN ('COMPLETED')),
+    is_auto_approved BOOL NOT NULL DEFAULT true,  -- 정책상 모든 환불이 자동승인되므로 항상 true
+    approved_by INT8,                       -- Identity 도메인 user_accounts.id (BIGINT) 참조, 논리적 참조. 수동 승인 플로우 없음 — 항상 null
     requested_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     refunded_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -58,10 +58,10 @@ CREATE TABLE payment_refunds (
     INDEX idx_payment_refunds_status (status)
 );
 
--- ⭐ 부분 환불 미허용 → 한 결제당 유효 환불은 1건만 (거절/취소 제외)
+-- ⭐ 결제 1건당 유효 환불(COMPLETED)은 1건만 — 중복 환불 신청 방지
 CREATE UNIQUE INDEX idx_payment_refunds_unique_active
     ON payment_refunds (payment_id)
-    WHERE status IN ('REQUESTED', 'APPROVED', 'COMPLETED');
+    WHERE status = 'COMPLETED';
 
 -- 3. payment_settlements : 정산 (행사 단위)
 CREATE TABLE payment_settlements (
